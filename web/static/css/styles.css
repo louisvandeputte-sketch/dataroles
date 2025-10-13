@@ -1,0 +1,11 @@
+/* Custom styles for DataRoles web interface */
+/* Tailwind CSS will be loaded via CDN in templates */
+
+:root {
+    --primary-color: #0a66c2;
+    --secondary-color: #057642;
+    --danger-color: #cc1016;
+    --warning-color: #f5c26b;
+}
+
+/* Additional custom styles will be added in Phase 5 */

@@ -1,0 +1,30 @@
+{
+  "job_id": "3791234567",
+  "job_url": "https://www.linkedin.com/jobs/view/3791234567",
+  "job_title": "Senior Data Engineer",
+  "company_name": "Tech Corp",
+  "company_url": "https://www.linkedin.com/company/techcorp",
+  "company_logo": "https://media.licdn.com/dms/image/logo.png",
+  "company_id": "12345",
+  "location": "Amsterdam, North Holland, Netherlands",
+  "posted_date": "2025-10-01",
+  "posted_time": "2 weeks ago",
+  "applicants_count": 150,
+  "seniority_level": "Mid-Senior level",
+  "employment_type": "Full-time",
+  "job_function": "Engineering",
+  "industries": "Information Technology & Services",
+  "description": "We are looking for a Senior Data Engineer to join our growing team...",
+  "description_html": "<div>We are looking for a Senior Data Engineer to join our growing team...</div>",
+  "salary": {
+    "min": 70000,
+    "max": 90000,
+    "currency": "EUR",
+    "period": "yearly"
+  },
+  "job_poster": {
+    "name": "Jane Recruiter",
+    "title": "Technical Recruiter",
+    "profile_url": "https://www.linkedin.com/in/janerecruiter"
+  }
+}

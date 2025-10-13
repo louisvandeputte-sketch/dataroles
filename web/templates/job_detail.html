@@ -1,0 +1,419 @@
+{% extends "base.html" %}
+
+{% block title %}Job Detail - DataRoles Admin{% endblock %}
+
+{% block content %}
+<div x-data="jobDetailPage('{{ job_id }}')">
+    <!-- Header -->
+    <div class="mb-6">
+        <div class="flex items-center justify-between mb-4">
+            <a href="/jobs" class="inline-flex items-center text-gray-600 hover:text-gray-900">
+                <i data-lucide="arrow-left" class="w-5 h-5 mr-2"></i>
+                Back to Job Database
+            </a>
+            <div class="flex items-center space-x-2">
+                <button @click="editMode = !editMode" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                    <i data-lucide="edit" class="w-4 h-4 inline mr-2"></i>
+                    <span x-text="editMode ? 'Cancel' : 'Edit'"></span>
+                </button>
+                <div class="relative" x-data="{ open: false }">
+                    <button @click="open = !open" class="p-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                        <i data-lucide="more-vertical" class="w-5 h-5"></i>
+                    </button>
+                    <div x-show="open" @click.away="open = false" x-cloak
+                         class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
+                        <button @click="archiveJob" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                            Archive Job
+                        </button>
+                        <button @click="deleteJob" class="w-full text-left px-4 py-2 text-sm text-red-700 hover:bg-gray-50">
+                            Delete Job
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <template x-if="job">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900 mb-2" x-text="job.title"></h1>
+                <div class="flex items-center space-x-4 text-gray-600">
+                    <div class="flex items-center">
+                        <i data-lucide="building" class="w-5 h-5 mr-2"></i>
+                        <span x-text="job.companies?.name"></span>
+                    </div>
+                    <div class="flex items-center">
+                        <i data-lucide="map-pin" class="w-5 h-5 mr-2"></i>
+                        <span x-text="job.locations?.full_location_string"></span>
+                    </div>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
+                          :class="job.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'">
+                        <span x-text="job.is_active ? 'Active' : 'Inactive'"></span>
+                    </span>
+                </div>
+                <div class="mt-3 text-sm text-gray-600">
+                    Posted <span x-text="formatDate(job.posted_date)"></span> • 
+                    <span x-text="job.applicant_count || 0"></span> applicants • 
+                    LinkedIn Job ID: <span x-text="job.linkedin_job_id"></span>
+                </div>
+                <div class="mt-4 flex space-x-3">
+                    <a :href="job.job_url" target="_blank" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        <i data-lucide="external-link" class="w-4 h-4 mr-2"></i>
+                        View on LinkedIn
+                    </a>
+                    <button @click="copyLink" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                        <i data-lucide="copy" class="w-4 h-4 mr-2"></i>
+                        Copy Link
+                    </button>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <!-- Tabs -->
+    <div class="border-b border-gray-200 mb-6">
+        <nav class="-mb-px flex space-x-8">
+            <button @click="activeTab = 'description'" 
+                    :class="activeTab === 'description' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                Description
+            </button>
+            <button @click="activeTab = 'overview'" 
+                    :class="activeTab === 'overview' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                Overview
+            </button>
+            <button @click="activeTab = 'history'" 
+                    :class="activeTab === 'history' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                History
+            </button>
+            <button @click="activeTab = 'enrichment'" 
+                    :class="activeTab === 'enrichment' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center">
+                Enrichment
+                <span class="ml-2 px-2 py-0.5 bg-gray-200 text-gray-600 text-xs rounded">Soon</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- Overview Tab -->
+    <div x-show="activeTab === 'overview'" x-cloak>
+        <template x-if="job">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Key Details -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Key Details</h3>
+                    <dl class="space-y-4">
+                        <div class="flex justify-between">
+                            <dt class="text-sm font-medium text-gray-500">Seniority Level</dt>
+                            <dd class="text-sm text-gray-900" x-text="job.seniority_level || '-'"></dd>
+                        </div>
+                        <div class="flex justify-between">
+                            <dt class="text-sm font-medium text-gray-500">Employment Type</dt>
+                            <dd class="text-sm text-gray-900" x-text="job.employment_type || '-'"></dd>
+                        </div>
+                        <div class="flex justify-between">
+                            <dt class="text-sm font-medium text-gray-500">Industries</dt>
+                            <dd class="text-sm text-gray-900" x-text="job.industries?.join(', ') || '-'"></dd>
+                        </div>
+                        <div class="flex justify-between">
+                            <dt class="text-sm font-medium text-gray-500">Function Areas</dt>
+                            <dd class="text-sm text-gray-900" x-text="job.function_areas?.join(', ') || '-'"></dd>
+                        </div>
+                        <div class="flex justify-between">
+                            <dt class="text-sm font-medium text-gray-500">Salary Range</dt>
+                            <dd class="text-sm text-gray-900" x-text="formatSalary(job)"></dd>
+                        </div>
+                        <div class="flex justify-between">
+                            <dt class="text-sm font-medium text-gray-500">Currency</dt>
+                            <dd class="text-sm text-gray-900" x-text="job.salary_currency || '-'"></dd>
+                        </div>
+                        <div class="flex justify-between">
+                            <dt class="text-sm font-medium text-gray-500">Applicants</dt>
+                            <dd class="text-sm text-gray-900" x-text="job.applicant_count || 0"></dd>
+                        </div>
+                        <div class="flex justify-between">
+                            <dt class="text-sm font-medium text-gray-500">Application</dt>
+                            <dd class="text-sm text-gray-900" x-text="job.application_available ? 'Available' : 'Not Available'"></dd>
+                        </div>
+                    </dl>
+                </div>
+
+                <!-- Company Info -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Company Information</h3>
+                    <template x-if="job.companies">
+                        <div>
+                            <div class="flex items-center mb-4">
+                                <div class="w-12 h-12 bg-gray-200 rounded flex items-center justify-center text-gray-600 font-semibold text-lg">
+                                    <span x-text="job.companies.name[0]"></span>
+                                </div>
+                                <div class="ml-3">
+                                    <div class="font-semibold text-gray-900" x-text="job.companies.name"></div>
+                                    <div class="text-sm text-gray-600" x-text="job.companies.company_url"></div>
+                                </div>
+                            </div>
+                            <dl class="space-y-3">
+                                <div class="flex justify-between">
+                                    <dt class="text-sm font-medium text-gray-500">Industry</dt>
+                                    <dd class="text-sm text-gray-900" x-text="job.industries?.[0] || '-'"></dd>
+                                </div>
+                                <div class="flex justify-between">
+                                    <dt class="text-sm font-medium text-gray-500">LinkedIn ID</dt>
+                                    <dd class="text-sm text-gray-900" x-text="job.companies.linkedin_company_id || '-'"></dd>
+                                </div>
+                            </dl>
+                            <button class="mt-4 w-full px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50">
+                                View All Jobs from <span x-text="job.companies.name"></span>
+                            </button>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Application Links -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Application Links</h3>
+                    <dl class="space-y-3">
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500 mb-1">Job URL</dt>
+                            <dd class="text-sm text-blue-600 break-all">
+                                <a :href="job.job_url" target="_blank" x-text="job.job_url"></a>
+                            </dd>
+                        </div>
+                        <div x-show="job.apply_url">
+                            <dt class="text-sm font-medium text-gray-500 mb-1">Apply URL</dt>
+                            <dd class="text-sm text-blue-600 break-all">
+                                <a :href="job.apply_url" target="_blank" x-text="job.apply_url"></a>
+                            </dd>
+                        </div>
+                    </dl>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <!-- Description Tab -->
+    <div x-show="activeTab === 'description'" x-cloak>
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">Job Description</h3>
+                <div class="flex items-center space-x-2">
+                    <button @click="descriptionMode = 'formatted'" 
+                            :class="descriptionMode === 'formatted' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'"
+                            class="px-3 py-1 rounded text-sm">
+                        Formatted
+                    </button>
+                    <button @click="descriptionMode = 'raw'" 
+                            :class="descriptionMode === 'raw' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'"
+                            class="px-3 py-1 rounded text-sm">
+                        Raw Text
+                    </button>
+                </div>
+            </div>
+            
+            <template x-if="description">
+                <div>
+                    <div x-show="descriptionMode === 'formatted'" 
+                         class="prose max-w-none" 
+                         x-html="description.full_description_html || description.full_description_text"></div>
+                    <div x-show="descriptionMode === 'raw'" 
+                         class="whitespace-pre-wrap font-mono text-sm text-gray-700"
+                         x-text="description.full_description_text"></div>
+                    
+                    <button @click="copyDescription" class="mt-4 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                        <i data-lucide="copy" class="w-4 h-4 inline mr-2"></i>
+                        Copy Description
+                    </button>
+                </div>
+            </template>
+            <template x-if="!description">
+                <p class="text-gray-500">No description available</p>
+            </template>
+        </div>
+    </div>
+
+    <!-- History Tab -->
+    <div x-show="activeTab === 'history'" x-cloak>
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Scrape History</h3>
+            
+            <template x-if="history.length > 0">
+                <div class="space-y-3">
+                    <div class="text-sm text-gray-600 mb-4">
+                        This job was found in <span class="font-semibold" x-text="history.length"></span> scrape run(s)
+                    </div>
+                    <template x-for="(item, index) in history" :key="item.id">
+                        <div class="border-l-4 pl-4 py-3 rounded-r-lg"
+                             :class="index === 0 ? 'border-green-500 bg-green-50' : 'border-blue-500 bg-blue-50'">
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1">
+                                    <div class="flex items-center space-x-2 mb-1">
+                                        <i :data-lucide="index === 0 ? 'check-circle' : 'clock'" class="w-4 h-4" 
+                                           :class="index === 0 ? 'text-green-600' : 'text-blue-600'"></i>
+                                        <span class="text-sm font-semibold" 
+                                              :class="index === 0 ? 'text-green-900' : 'text-blue-900'"
+                                              x-text="index === 0 ? 'Most Recent' : `${index + 1} scrape(s) ago`"></span>
+                                    </div>
+                                    <div class="text-sm text-gray-900 font-medium" x-text="formatDate(item.detected_at)"></div>
+                                    <div class="text-sm text-gray-700 mt-1">
+                                        Query: "<span class="font-medium" x-text="item.scrape_runs?.search_query"></span>" in 
+                                        <span class="font-medium" x-text="item.scrape_runs?.location_query"></span>
+                                    </div>
+                                    <div class="flex items-center space-x-3 mt-2 text-xs text-gray-600">
+                                        <span class="inline-flex items-center">
+                                            <i data-lucide="hash" class="w-3 h-3 mr-1"></i>
+                                            Run ID: <span class="font-mono ml-1" x-text="item.scrape_run_id?.substring(0, 8)"></span>
+                                        </span>
+                                        <span x-show="item.was_updated" class="inline-flex items-center text-orange-600">
+                                            <i data-lucide="refresh-cw" class="w-3 h-3 mr-1"></i>
+                                            Updated
+                                        </span>
+                                        <span x-show="!item.was_updated" class="inline-flex items-center text-gray-500">
+                                            <i data-lucide="minus" class="w-3 h-3 mr-1"></i>
+                                            No changes
+                                        </span>
+                                    </div>
+                                </div>
+                                <a :href="`/runs/${item.scrape_run_id}`" 
+                                   class="text-blue-600 hover:text-blue-700 text-xs font-medium whitespace-nowrap ml-4">
+                                    View Run →
+                                </a>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </template>
+            <template x-if="history.length === 0">
+                <div class="text-center py-8">
+                    <i data-lucide="clock" class="w-12 h-12 mx-auto text-gray-300 mb-3"></i>
+                    <p class="text-gray-500 text-sm">No scrape history available for this job</p>
+                    <p class="text-gray-400 text-xs mt-1">History is tracked from the moment this job was first discovered</p>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- Enrichment Tab -->
+    <div x-show="activeTab === 'enrichment'" x-cloak>
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="text-center py-12">
+                <i data-lucide="sparkles" class="w-16 h-16 mx-auto text-gray-300 mb-4"></i>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">LLM Enrichment</h3>
+                <p class="text-gray-600 mb-4">Not yet enriched</p>
+                <button disabled class="px-4 py-2 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed">
+                    Run Enrichment (Coming Soon)
+                </button>
+                <div class="mt-6 text-left max-w-md mx-auto">
+                    <p class="text-sm font-medium text-gray-700 mb-2">Fields that will be extracted:</p>
+                    <ul class="text-sm text-gray-600 space-y-1">
+                        <li>• Extracted Skills</li>
+                        <li>• Required Experience (years)</li>
+                        <li>• Education Level</li>
+                        <li>• Remote Work Policy</li>
+                        <li>• Tech Stack</li>
+                        <li>• + 20 more fields</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function jobDetailPage(jobId) {
+    return {
+        jobId: jobId,
+        job: null,
+        description: null,
+        history: [],
+        activeTab: 'description',
+        descriptionMode: 'formatted',
+        editMode: false,
+        
+        async init() {
+            await this.loadJob();
+            await this.loadHistory();
+            this.$nextTick(() => lucide.createIcons());
+        },
+        
+        async loadJob() {
+            try {
+                const response = await fetch(`/api/jobs/${this.jobId}`);
+                this.job = await response.json();
+                
+                // Description is included in job response
+                // Handle both dict (single) and array formats
+                if (this.job.job_descriptions) {
+                    if (Array.isArray(this.job.job_descriptions) && this.job.job_descriptions.length > 0) {
+                        this.description = this.job.job_descriptions[0];
+                    } else if (typeof this.job.job_descriptions === 'object') {
+                        this.description = this.job.job_descriptions;
+                    }
+                }
+                
+                console.log('Description loaded:', this.description ? 'Yes' : 'No');
+            } catch (error) {
+                console.error('Failed to load job:', error);
+            }
+        },
+        
+        async loadHistory() {
+            try {
+                const response = await fetch(`/api/jobs/${this.jobId}/history`);
+                const data = await response.json();
+                this.history = data.history;
+            } catch (error) {
+                console.error('Failed to load history:', error);
+            }
+        },
+        
+        async archiveJob() {
+            if (!confirm('Archive this job?')) return;
+            try {
+                await fetch(`/api/jobs/${this.jobId}/archive`, { method: 'POST' });
+                window.location.href = '/jobs';
+            } catch (error) {
+                console.error('Failed to archive job:', error);
+            }
+        },
+        
+        async deleteJob() {
+            if (!confirm('Permanently delete this job?')) return;
+            try {
+                await fetch(`/api/jobs/${this.jobId}`, { method: 'DELETE' });
+                window.location.href = '/jobs';
+            } catch (error) {
+                console.error('Failed to delete job:', error);
+            }
+        },
+        
+        copyLink() {
+            navigator.clipboard.writeText(this.job.job_url);
+            alert('Link copied to clipboard!');
+        },
+        
+        copyDescription() {
+            navigator.clipboard.writeText(this.description.full_description_text || this.description.summary);
+            alert('Description copied to clipboard!');
+        },
+        
+        formatDate(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            return date.toLocaleString();
+        },
+        
+        formatSalary(job) {
+            if (!job.salary_min && !job.salary_max) return '-';
+            const currency = job.salary_currency || '€';
+            const min = job.salary_min ? `${currency}${(job.salary_min / 1000).toFixed(0)}k` : '';
+            const max = job.salary_max ? `${currency}${(job.salary_max / 1000).toFixed(0)}k` : '';
+            if (min && max) return `${min} - ${max}`;
+            return min || max;
+        }
+    }
+}
+</script>
+{% endblock %}

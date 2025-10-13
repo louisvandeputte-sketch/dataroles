@@ -1,0 +1,33 @@
+# Scrape configuration presets for common search patterns
+
+presets:
+  data_engineer_nl:
+    search_query: "data engineer"
+    location_query: "Netherlands"
+    description: "Data Engineer positions in Netherlands"
+  
+  data_analyst_nl:
+    search_query: "data analyst"
+    location_query: "Netherlands"
+    description: "Data Analyst positions in Netherlands"
+  
+  data_scientist_nl:
+    search_query: "data scientist"
+    location_query: "Netherlands"
+    description: "Data Scientist positions in Netherlands"
+  
+  ml_engineer_nl:
+    search_query: "machine learning engineer"
+    location_query: "Netherlands"
+    description: "ML Engineer positions in Netherlands"
+  
+  analytics_engineer_nl:
+    search_query: "analytics engineer"
+    location_query: "Netherlands"
+    description: "Analytics Engineer positions in Netherlands"
+
+# Default scrape parameters
+defaults:
+  max_results: 1000
+  include_description: true
+  date_range_days: 30

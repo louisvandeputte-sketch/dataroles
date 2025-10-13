@@ -1,0 +1,409 @@
+{% extends "base.html" %}
+
+{% block title %}Search Queries - DataRoles Admin{% endblock %}
+
+{% block content %}
+<div x-data="queriesPage()">
+    <!-- Page Header -->
+    <div class="mb-6 flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Search Queries</h1>
+            <p class="text-gray-600 mt-1">Manage your job search configurations</p>
+        </div>
+        <button @click="showNewQueryModal = true" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
+            <i data-lucide="plus" class="w-5 h-5 mr-2"></i>
+            New Query
+        </button>
+    </div>
+
+    <!-- Quick Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="text-3xl font-bold text-gray-900" x-text="stats.total_queries"></div>
+            <div class="text-sm text-gray-600 mt-1">Total Queries</div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="text-3xl font-bold text-green-600" x-text="stats.active_queries"></div>
+            <div class="text-sm text-gray-600 mt-1">Active Queries</div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="text-3xl font-bold text-blue-600" x-text="stats.total_jobs_found"></div>
+            <div class="text-sm text-gray-600 mt-1">Jobs Found</div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="text-3xl font-bold text-orange-600" x-text="stats.running_now"></div>
+            <div class="text-sm text-gray-600 mt-1">Running Now</div>
+        </div>
+    </div>
+
+    <!-- Bulk Actions Bar -->
+    <div x-show="selectedQueries.length > 0" x-cloak 
+         class="mb-4 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+            <span class="text-sm font-medium text-blue-900">
+                <span x-text="selectedQueries.length"></span> selected
+            </span>
+            <button @click="runSelected" class="text-sm text-blue-700 hover:text-blue-800 font-medium">Run Selected</button>
+            <button @click="pauseSelected" class="text-sm text-blue-700 hover:text-blue-800 font-medium">Pause</button>
+            <button @click="deleteSelected" class="text-sm text-red-700 hover:text-red-800 font-medium">Delete</button>
+        </div>
+        <button @click="selectedQueries = []" class="text-blue-700 hover:text-blue-800">
+            <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+    </div>
+
+    <!-- Main Table -->
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left">
+                        <input type="checkbox" @change="toggleAll" class="rounded border-gray-300">
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Query</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Run</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Jobs</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Next Scheduled</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                <template x-if="queries.length === 0">
+                    <tr>
+                        <td colspan="8" class="px-6 py-12 text-center">
+                            <div class="text-gray-400">
+                                <i data-lucide="search" class="w-12 h-12 mx-auto mb-3"></i>
+                                <p class="text-lg font-medium">No queries yet</p>
+                                <p class="text-sm mt-1">Create your first search query to get started</p>
+                                <button @click="showNewQueryModal = true" class="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                                    <i data-lucide="plus" class="w-4 h-4 mr-2"></i>
+                                    Create Query
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </template>
+                
+                <template x-for="query in queries" :key="query.id">
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4">
+                            <input type="checkbox" :value="query.id" x-model="selectedQueries" class="rounded border-gray-300">
+                        </td>
+                        <td class="px-6 py-4 text-sm font-medium text-gray-900" x-text="query.search_query"></td>
+                        <td class="px-6 py-4 text-sm text-gray-600" x-text="query.location_query"></td>
+                        <td class="px-6 py-4">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                                  :class="{
+                                      'bg-green-100 text-green-800': query.status === 'active',
+                                      'bg-gray-100 text-gray-800': query.status === 'paused',
+                                      'bg-orange-100 text-orange-800': query.status === 'running',
+                                      'bg-red-100 text-red-800': query.status === 'failed'
+                                  }">
+                                <span x-text="query.status"></span>
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-600">
+                            <span x-text="query.last_run || 'Never'"></span>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-900" x-text="query.total_jobs || 0"></td>
+                        <td class="px-6 py-4 text-sm text-gray-400">
+                            <span class="flex items-center">
+                                <i data-lucide="calendar" class="w-4 h-4 mr-1"></i>
+                                Not scheduled
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <div class="relative" x-data="{ open: false }">
+                                <button @click="open = !open" class="text-gray-400 hover:text-gray-600">
+                                    <i data-lucide="more-vertical" class="w-5 h-5"></i>
+                                </button>
+                                <div x-show="open" @click.away="open = false" x-cloak
+                                     class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
+                                    <button @click="runQuery(query.id); open = false" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center">
+                                        <i data-lucide="play" class="w-4 h-4 mr-2"></i>
+                                        Run Now
+                                    </button>
+                                    <button class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center">
+                                        <i data-lucide="edit" class="w-4 h-4 mr-2"></i>
+                                        Edit
+                                    </button>
+                                    <button class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center">
+                                        <i data-lucide="pause" class="w-4 h-4 mr-2"></i>
+                                        Pause
+                                    </button>
+                                    <button class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center">
+                                        <i data-lucide="copy" class="w-4 h-4 mr-2"></i>
+                                        Duplicate
+                                    </button>
+                                    <button class="w-full text-left px-4 py-2 text-sm text-red-700 hover:bg-gray-50 flex items-center">
+                                        <i data-lucide="trash-2" class="w-4 h-4 mr-2"></i>
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </template>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- New Query Modal -->
+    <div x-show="showNewQueryModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="showNewQueryModal = false"></div>
+            
+            <div class="relative bg-white rounded-lg shadow-xl max-w-lg w-full p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900">New Search Query</h3>
+                    <button @click="showNewQueryModal = false" class="text-gray-400 hover:text-gray-600">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                
+                <form @submit.prevent="createQuery">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Query Text *</label>
+                            <input type="text" x-model="newQuery.search_query" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                   placeholder="e.g., Data Engineer">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Location *</label>
+                            <input type="text" x-model="newQuery.location_query" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                   placeholder="e.g., België">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Lookback Days</label>
+                            <input type="number" x-model.number="newQuery.lookback_days" min="1" max="30" value="7"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <p class="text-xs text-gray-500 mt-1">Only fetch jobs posted in last X days</p>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                            <div class="flex items-center space-x-4">
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="radio" name="status" x-model="newQuery.is_active" value="true" checked class="mr-2">
+                                    <span class="text-sm text-gray-700">Active</span>
+                                </label>
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="radio" name="status" x-model="newQuery.is_active" value="false" class="mr-2">
+                                    <span class="text-sm text-gray-700">Paused</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div class="flex items-start">
+                                <i data-lucide="info" class="w-5 h-5 text-blue-600 mr-2 mt-0.5"></i>
+                                <div class="text-sm text-blue-800">
+                                    <p class="font-medium">Scheduling feature coming soon!</p>
+                                    <p class="mt-1">Automatic scheduled runs will be available in a future update.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 flex justify-end space-x-3">
+                        <button type="button" @click="showNewQueryModal = false"
+                                class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                            Cancel
+                        </button>
+                        <button type="submit"
+                                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                            Save Query
+                        </button>
+                        <button type="button" @click="createAndRun"
+                                class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                            Save & Run Now
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function queriesPage() {
+    return {
+        queries: [],
+        selectedQueries: [],
+        showNewQueryModal: false,
+        stats: {
+            total_queries: 0,
+            active_queries: 0,
+            total_jobs_found: 0,
+            running_now: 0
+        },
+        newQuery: {
+            search_query: '',
+            location_query: '',
+            lookback_days: 7,
+            is_active: true
+        },
+        
+        async init() {
+            await this.loadQueries();
+            // Re-initialize icons after Alpine renders
+            this.$nextTick(() => lucide.createIcons());
+        },
+        
+        async loadQueries() {
+            try {
+                const response = await fetch('/api/queries/');
+                const data = await response.json();
+                this.queries = data.queries;
+                this.stats = data.stats;
+            } catch (error) {
+                console.error('Failed to load queries:', error);
+            }
+        },
+        
+        async createQuery() {
+            try {
+                const response = await fetch('/api/queries/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(this.newQuery)
+                });
+                
+                if (response.ok) {
+                    this.showNewQueryModal = false;
+                    await this.loadQueries();
+                    this.resetNewQuery();
+                }
+            } catch (error) {
+                console.error('Failed to create query:', error);
+            }
+        },
+        
+        async createAndRun() {
+            console.log('createAndRun called');
+            console.log('Query data:', this.newQuery);
+            
+            // Validate required fields
+            if (!this.newQuery.search_query || !this.newQuery.location_query) {
+                alert('❌ Please fill in both Query Text and Location');
+                return;
+            }
+            
+            try {
+                console.log('Sending request to /api/queries/run-now');
+                
+                // Call the run-now endpoint directly
+                const response = await fetch('/api/queries/run-now', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(this.newQuery)
+                });
+                
+                console.log('Response status:', response.status);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Success response:', data);
+                    
+                    this.showNewQueryModal = false;
+                    this.resetNewQuery();
+                    
+                    // Show success message
+                    alert(`✅ Scrape started!\n\nQuery: "${data.query.search_query}"\nLocation: "${data.query.location_query}"\nLookback: ${data.query.lookback_days} days\n\nThe scrape is running in the background. Check the "Scrape Runs" page to monitor progress.`);
+                    
+                    // Optionally redirect to runs page
+                    setTimeout(() => {
+                        window.location.href = '/runs';
+                    }, 2000);
+                } else {
+                    const error = await response.json();
+                    console.error('Error response:', error);
+                    alert(`❌ Failed to start scrape: ${error.detail || 'Unknown error'}`);
+                }
+            } catch (error) {
+                console.error('Failed to start scrape:', error);
+                alert(`❌ Failed to start scrape: ${error.message}\n\nCheck browser console for details.`);
+            }
+        },
+        
+        async runQuery(queryId) {
+            try {
+                await fetch(`/api/queries/${queryId}/run`, { method: 'POST' });
+                alert('Scrape started!');
+            } catch (error) {
+                console.error('Failed to run query:', error);
+            }
+        },
+        
+        async runSelected() {
+            try {
+                await fetch('/api/queries/bulk/run', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(this.selectedQueries)
+                });
+                alert(`Started ${this.selectedQueries.length} scrapes`);
+                this.selectedQueries = [];
+            } catch (error) {
+                console.error('Failed to run queries:', error);
+            }
+        },
+        
+        async pauseSelected() {
+            try {
+                await fetch('/api/queries/bulk/pause', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(this.selectedQueries)
+                });
+                await this.loadQueries();
+                this.selectedQueries = [];
+            } catch (error) {
+                console.error('Failed to pause queries:', error);
+            }
+        },
+        
+        async deleteSelected() {
+            if (!confirm(`Delete ${this.selectedQueries.length} queries?`)) return;
+            
+            try {
+                await fetch('/api/queries/bulk/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(this.selectedQueries)
+                });
+                await this.loadQueries();
+                this.selectedQueries = [];
+            } catch (error) {
+                console.error('Failed to delete queries:', error);
+            }
+        },
+        
+        toggleAll(event) {
+            if (event.target.checked) {
+                this.selectedQueries = this.queries.map(q => q.id);
+            } else {
+                this.selectedQueries = [];
+            }
+        },
+        
+        resetNewQuery() {
+            this.newQuery = {
+                search_query: '',
+                location_query: '',
+                lookback_days: 7,
+                is_active: true
+            };
+        }
+    }
+}
+</script>
+{% endblock %}

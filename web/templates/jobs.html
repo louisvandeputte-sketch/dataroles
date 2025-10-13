@@ -1,0 +1,615 @@
+{% extends "base.html" %}
+
+{% block title %}Job Database - DataRoles Admin{% endblock %}
+
+{% block content %}
+<div x-data="jobsPage()">
+    <!-- Page Header -->
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">Job Database</h1>
+        <p class="text-gray-600 mt-1">
+            <span x-text="stats.total_jobs"></span> total jobs • 
+            <span x-text="stats.active_jobs"></span> active • 
+            <span x-text="stats.inactive_jobs"></span> inactive
+        </p>
+    </div>
+
+    <!-- Search & Filter Bar -->
+    <div class="bg-white rounded-lg shadow p-4 mb-6">
+        <div class="flex items-center space-x-4 mb-4">
+            <div class="flex-1">
+                <div class="relative">
+                    <i data-lucide="search" class="absolute left-3 top-3 w-5 h-5 text-gray-400"></i>
+                    <input type="text" x-model="searchQuery" @input="debounceSearch"
+                           placeholder="Search jobs, companies, keywords..."
+                           class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button @click="viewMode = 'table'" 
+                        :class="viewMode === 'table' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'"
+                        class="p-2 rounded-lg hover:bg-blue-50">
+                    <i data-lucide="list" class="w-5 h-5"></i>
+                </button>
+                <button @click="viewMode = 'card'" 
+                        :class="viewMode === 'card' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'"
+                        class="p-2 rounded-lg hover:bg-blue-50">
+                    <i data-lucide="grid" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="flex flex-wrap gap-2">
+            <div class="relative" x-data="{ open: false }">
+                <button @click="open = !open" class="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
+                    <i data-lucide="building" class="w-4 h-4 mr-1"></i>
+                    Company
+                    <i data-lucide="chevron-down" class="w-4 h-4 ml-1"></i>
+                </button>
+                <div x-show="open" @click.away="open = false" x-cloak
+                     class="absolute z-10 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 p-3">
+                    <input type="text" x-model="filters.companySearch" @input="searchCompanies"
+                           placeholder="Search companies..."
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mb-2">
+                    <div class="max-h-48 overflow-y-auto">
+                        <template x-for="company in companyOptions" :key="company.id">
+                            <label class="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+                                <input type="checkbox" :value="company.id" x-model="filters.companies" @change="currentPage = 1; loadJobs()" class="mr-2">
+                                <span class="text-sm" x-text="company.name"></span>
+                            </label>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <div class="relative" x-data="{ open: false }">
+                <button @click="open = !open" class="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
+                    <i data-lucide="map-pin" class="w-4 h-4 mr-1"></i>
+                    Location
+                    <i data-lucide="chevron-down" class="w-4 h-4 ml-1"></i>
+                </button>
+                <div x-show="open" @click.away="open = false" x-cloak
+                     class="absolute z-10 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 p-3">
+                    <input type="text" x-model="filters.locationSearch" @input="searchLocations"
+                           placeholder="Search locations..."
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mb-2">
+                    <div class="max-h-48 overflow-y-auto">
+                        <template x-for="location in locationOptions" :key="location.id">
+                            <label class="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+                                <input type="checkbox" :value="location.id" x-model="filters.locations" @change="currentPage = 1; loadJobs()" class="mr-2">
+                                <span class="text-sm" x-text="location.full_location_string"></span>
+                            </label>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <div class="relative" x-data="{ open: false }">
+                <button @click="open = !open" class="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
+                    <i data-lucide="briefcase" class="w-4 h-4 mr-1"></i>
+                    Seniority
+                    <i data-lucide="chevron-down" class="w-4 h-4 ml-1"></i>
+                </button>
+                <div x-show="open" @click.away="open = false" x-cloak
+                     class="absolute z-10 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 p-3">
+                    <label class="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+                        <input type="checkbox" value="Entry level" x-model="filters.seniority" @change="currentPage = 1; loadJobs()" class="mr-2">
+                        <span class="text-sm">Entry Level</span>
+                    </label>
+                    <label class="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+                        <input type="checkbox" value="Mid-Senior level" x-model="filters.seniority" @change="currentPage = 1; loadJobs()" class="mr-2">
+                        <span class="text-sm">Mid-Senior</span>
+                    </label>
+                    <label class="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+                        <input type="checkbox" value="Director" x-model="filters.seniority" @change="currentPage = 1; loadJobs()" class="mr-2">
+                        <span class="text-sm">Director</span>
+                    </label>
+                    <label class="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+                        <input type="checkbox" value="Executive" x-model="filters.seniority" @change="currentPage = 1; loadJobs()" class="mr-2">
+                        <span class="text-sm">Executive</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="relative" x-data="{ open: false }">
+                <button @click="open = !open" class="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
+                    <i data-lucide="clock" class="w-4 h-4 mr-1"></i>
+                    Employment
+                    <i data-lucide="chevron-down" class="w-4 h-4 ml-1"></i>
+                </button>
+                <div x-show="open" @click.away="open = false" x-cloak
+                     class="absolute z-10 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 p-3">
+                    <label class="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+                        <input type="checkbox" value="Full-time" x-model="filters.employment" @change="currentPage = 1; loadJobs()" class="mr-2">
+                        <span class="text-sm">Full-time</span>
+                    </label>
+                    <label class="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+                        <input type="checkbox" value="Part-time" x-model="filters.employment" @change="currentPage = 1; loadJobs()" class="mr-2">
+                        <span class="text-sm">Part-time</span>
+                    </label>
+                    <label class="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+                        <input type="checkbox" value="Contract" x-model="filters.employment" @change="currentPage = 1; loadJobs()" class="mr-2">
+                        <span class="text-sm">Contract</span>
+                    </label>
+                </div>
+            </div>
+
+            <label class="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 cursor-pointer">
+                <input type="checkbox" x-model="filters.activeOnly" @change="currentPage = 1; loadJobs()" class="mr-2">
+                <span>Active Only</span>
+            </label>
+
+            <button @click="clearFilters" x-show="hasActiveFilters" 
+                    class="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                Clear All
+            </button>
+        </div>
+
+        <!-- Active Filters Display -->
+        <div x-show="hasActiveFilters" class="mt-3 flex flex-wrap gap-2">
+            <span class="text-sm text-gray-600">Active filters:</span>
+            <template x-for="filter in activeFiltersList" :key="filter.type + filter.id">
+                <span class="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm">
+                    <span x-text="filter.label"></span>
+                    <button @click="removeFilter(filter)" class="ml-1 hover:bg-blue-200 rounded">
+                        <i data-lucide="x" class="w-3 h-3"></i>
+                    </button>
+                </span>
+            </template>
+        </div>
+    </div>
+
+    <!-- Bulk Actions Bar -->
+    <div x-show="selectedJobs.length > 0" x-cloak 
+         class="mb-4 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+            <span class="text-sm font-medium text-blue-900">
+                <span x-text="selectedJobs.length"></span> selected
+            </span>
+            <button @click="archiveSelected" class="text-sm text-blue-700 hover:text-blue-800 font-medium">Archive</button>
+            <button @click="exportSelected" class="text-sm text-blue-700 hover:text-blue-800 font-medium">Export CSV</button>
+            <button @click="deleteSelected" class="text-sm text-red-700 hover:text-red-800 font-medium">Delete</button>
+        </div>
+        <button @click="selectedJobs = []" class="text-blue-700 hover:text-blue-800">
+            <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+    </div>
+
+    <!-- Table View -->
+    <div x-show="viewMode === 'table'" class="bg-white rounded-lg shadow overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left">
+                        <input type="checkbox" @change="toggleAll" class="rounded border-gray-300">
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" @click="sortBy('title')">
+                        Job Title
+                        <i data-lucide="chevron-up" class="w-4 h-4 inline" x-show="sortField === 'title' && sortDirection === 'asc'"></i>
+                        <i data-lucide="chevron-down" class="w-4 h-4 inline" x-show="sortField === 'title' && sortDirection === 'desc'"></i>
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Types</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" @click="sortBy('posted_date')">
+                        Posted
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                <template x-if="jobs.length === 0">
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center">
+                            <div class="text-gray-400">
+                                <i data-lucide="briefcase" class="w-12 h-12 mx-auto mb-3"></i>
+                                <p class="text-lg font-medium">No jobs found</p>
+                                <p class="text-sm mt-1">Try adjusting your filters</p>
+                            </div>
+                        </td>
+                    </tr>
+                </template>
+                
+                <template x-for="job in jobs" :key="job.id">
+                    <tr class="hover:bg-gray-50 cursor-pointer" @click="viewJob(job.id)">
+                        <td class="px-6 py-4" @click.stop>
+                            <input type="checkbox" :value="job.id" x-model="selectedJobs" class="rounded border-gray-300">
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-medium text-gray-900" x-text="job.title"></div>
+                            <div class="text-xs text-gray-500" x-text="job.seniority_level"></div>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-900" x-text="job.companies?.name || '-'"></td>
+                        <td class="px-6 py-4 text-sm text-gray-600" x-text="job.locations?.city || '-'"></td>
+                        <td class="px-6 py-4">
+                            <div class="flex flex-wrap gap-1">
+                                <template x-if="job.job_types && job.job_types.length > 0">
+                                    <template x-for="type in job.job_types" :key="type.id">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium text-white"
+                                              :style="`background-color: ${type.color}`"
+                                              x-text="type.name"></span>
+                                    </template>
+                                </template>
+                                <template x-if="!job.job_types || job.job_types.length === 0">
+                                    <span class="text-xs text-gray-400">-</span>
+                                </template>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-600" x-text="formatExactDate(job.posted_date)"></td>
+                        <td class="px-6 py-4">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                                  :class="job.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'">
+                                <span x-text="job.is_active ? 'Active' : 'Inactive'"></span>
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-right" @click.stop>
+                            <button @click="viewJob(job.id)" class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                                View
+                            </button>
+                        </td>
+                    </tr>
+                </template>
+            </tbody>
+        </table>
+
+        <!-- Pagination -->
+        <div class="bg-gray-50 px-6 py-3 flex items-center justify-between border-t border-gray-200">
+            <div class="text-sm text-gray-700">
+                Showing <span x-text="(currentPage - 1) * pageSize + 1"></span> to 
+                <span x-text="Math.min(currentPage * pageSize, stats.total_jobs)"></span> of 
+                <span x-text="stats.total_jobs"></span> jobs
+            </div>
+            <div class="flex space-x-2">
+                <button @click="previousPage" :disabled="currentPage === 1"
+                        class="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed">
+                    Previous
+                </button>
+                <template x-for="page in visiblePages" :key="page">
+                    <button @click="currentPage = page; loadJobs()" 
+                            :class="currentPage === page ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'"
+                            class="px-3 py-1 border border-gray-300 rounded-lg text-sm">
+                        <span x-text="page"></span>
+                    </button>
+                </template>
+                <button @click="nextPage" :disabled="currentPage === totalPages"
+                        class="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed">
+                    Next
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card View -->
+    <div x-show="viewMode === 'card'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <template x-for="job in jobs" :key="job.id">
+            <div class="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow cursor-pointer" @click="viewJob(job.id)">
+                <div class="flex items-start justify-between mb-3">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 bg-gray-200 rounded flex items-center justify-center text-gray-600 font-semibold">
+                            <span x-text="(job.companies?.name || 'C')[0]"></span>
+                        </div>
+                        <div class="ml-3">
+                            <div class="text-sm font-medium text-gray-900" x-text="job.companies?.name || 'Unknown'"></div>
+                        </div>
+                    </div>
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                          :class="job.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'">
+                        <span x-text="job.is_active ? 'Active' : 'Inactive'"></span>
+                    </span>
+                </div>
+                
+                <h3 class="text-lg font-semibold text-gray-900 mb-2" x-text="job.title"></h3>
+                
+                <div class="space-y-2 text-sm text-gray-600 mb-4">
+                    <div class="flex items-center">
+                        <i data-lucide="map-pin" class="w-4 h-4 mr-2"></i>
+                        <span x-text="job.locations?.full_location_string || '-'"></span>
+                    </div>
+                    <div class="flex items-center">
+                        <i data-lucide="briefcase" class="w-4 h-4 mr-2"></i>
+                        <span x-text="job.employment_type || '-'"></span>
+                        <span x-show="job.seniority_level" class="mx-1">•</span>
+                        <span x-text="job.seniority_level"></span>
+                    </div>
+                    <div class="flex items-center" x-show="job.salary_min || job.salary_max">
+                        <i data-lucide="dollar-sign" class="w-4 h-4 mr-2"></i>
+                        <span x-text="formatSalary(job)"></span>
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-between pt-4 border-t border-gray-200">
+                    <div class="text-xs text-gray-500">
+                        Posted <span x-text="formatDate(job.posted_date)"></span>
+                    </div>
+                    <div class="text-xs text-gray-500" x-show="job.applicant_count">
+                        <span x-text="job.applicant_count"></span> applicants
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function jobsPage() {
+    return {
+        jobs: [],
+        selectedJobs: [],
+        viewMode: 'table',
+        searchQuery: '',
+        searchTimeout: null,
+        currentPage: 1,
+        pageSize: 50,
+        sortField: 'posted_date',
+        sortDirection: 'desc',
+        stats: {
+            total_jobs: 0,
+            active_jobs: 0,
+            inactive_jobs: 0
+        },
+        totalCount: 0,
+        filters: {
+            companies: [],
+            locations: [],
+            seniority: [],
+            employment: [],
+            activeOnly: true,
+            companySearch: '',
+            locationSearch: ''
+        },
+        companyOptions: [],
+        locationOptions: [],
+        
+        async init() {
+            await this.loadJobs();
+            this.$nextTick(() => lucide.createIcons());
+        },
+        
+        async loadJobs() {
+            try {
+                const params = new URLSearchParams({
+                    limit: this.pageSize,
+                    offset: (this.currentPage - 1) * this.pageSize,
+                    search: this.searchQuery,
+                    is_active: this.filters.activeOnly
+                });
+                
+                // Add filter parameters
+                if (this.filters.companies.length > 0) {
+                    params.append('company_ids', this.filters.companies.join(','));
+                }
+                if (this.filters.locations.length > 0) {
+                    params.append('location_ids', this.filters.locations.join(','));
+                }
+                if (this.filters.seniority.length > 0) {
+                    this.filters.seniority.forEach(s => params.append('seniority', s));
+                }
+                if (this.filters.employment.length > 0) {
+                    this.filters.employment.forEach(e => params.append('employment', e));
+                }
+                
+                const response = await fetch(`/api/jobs/?${params}`);
+                const data = await response.json();
+                this.jobs = data.jobs;
+                this.stats = data.stats;
+                this.totalCount = data.total || data.stats.total_jobs;
+                
+                this.$nextTick(() => lucide.createIcons());
+            } catch (error) {
+                console.error('Failed to load jobs:', error);
+            }
+        },
+        
+        debounceSearch() {
+            clearTimeout(this.searchTimeout);
+            this.searchTimeout = setTimeout(() => {
+                this.currentPage = 1;
+                this.loadJobs();
+            }, 300);
+        },
+        
+        async searchCompanies() {
+            if (this.filters.companySearch.length < 2) return;
+            try {
+                const response = await fetch(`/api/jobs/companies/autocomplete?q=${this.filters.companySearch}`);
+                const data = await response.json();
+                this.companyOptions = data.companies;
+            } catch (error) {
+                console.error('Failed to search companies:', error);
+            }
+        },
+        
+        async searchLocations() {
+            if (this.filters.locationSearch.length < 2) return;
+            try {
+                const response = await fetch(`/api/jobs/locations/autocomplete?q=${this.filters.locationSearch}`);
+                const data = await response.json();
+                this.locationOptions = data.locations;
+            } catch (error) {
+                console.error('Failed to search locations:', error);
+            }
+        },
+        
+        sortBy(field) {
+            if (this.sortField === field) {
+                this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                this.sortField = field;
+                this.sortDirection = 'asc';
+            }
+            this.loadJobs();
+        },
+        
+        get hasActiveFilters() {
+            return this.filters.companies.length > 0 || 
+                   this.filters.locations.length > 0 || 
+                   this.filters.seniority.length > 0 || 
+                   this.filters.employment.length > 0;
+        },
+        
+        get activeFiltersList() {
+            const filters = [];
+            
+            // Add company names
+            this.filters.companies.forEach(companyId => {
+                const company = this.companyOptions.find(c => c.id === companyId);
+                if (company) {
+                    filters.push({ type: 'company', id: companyId, label: company.name });
+                }
+            });
+            
+            // Add location names
+            this.filters.locations.forEach(locationId => {
+                const location = this.locationOptions.find(l => l.id === locationId);
+                if (location) {
+                    filters.push({ type: 'location', id: locationId, label: location.full_location_string });
+                }
+            });
+            
+            // Add seniority levels
+            this.filters.seniority.forEach(s => {
+                filters.push({ type: 'seniority', id: s, label: s });
+            });
+            
+            // Add employment types
+            this.filters.employment.forEach(e => {
+                filters.push({ type: 'employment', id: e, label: e });
+            });
+            
+            return filters;
+        },
+        
+        clearFilters() {
+            this.filters = {
+                companies: [],
+                locations: [],
+                seniority: [],
+                employment: [],
+                activeOnly: true,
+                companySearch: '',
+                locationSearch: ''
+            };
+            this.currentPage = 1;
+            this.loadJobs();
+        },
+        
+        removeFilter(filter) {
+            // Remove specific filter based on type
+            if (filter.type === 'company') {
+                this.filters.companies = this.filters.companies.filter(id => id !== filter.id);
+            } else if (filter.type === 'location') {
+                this.filters.locations = this.filters.locations.filter(id => id !== filter.id);
+            } else if (filter.type === 'seniority') {
+                this.filters.seniority = this.filters.seniority.filter(s => s !== filter.id);
+            } else if (filter.type === 'employment') {
+                this.filters.employment = this.filters.employment.filter(e => e !== filter.id);
+            }
+            this.currentPage = 1;
+            this.loadJobs();
+        },
+        
+        toggleAll(event) {
+            if (event.target.checked) {
+                this.selectedJobs = this.jobs.map(j => j.id);
+            } else {
+                this.selectedJobs = [];
+            }
+        },
+        
+        async archiveSelected() {
+            if (!confirm(`Archive ${this.selectedJobs.length} jobs?`)) return;
+            try {
+                await fetch('/api/jobs/bulk/archive', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(this.selectedJobs)
+                });
+                await this.loadJobs();
+                this.selectedJobs = [];
+            } catch (error) {
+                console.error('Failed to archive jobs:', error);
+            }
+        },
+        
+        exportSelected() {
+            // TODO: Implement CSV export
+            alert('Export feature coming soon!');
+        },
+        
+        async deleteSelected() {
+            if (!confirm(`Permanently delete ${this.selectedJobs.length} jobs?`)) return;
+            try {
+                await fetch('/api/jobs/bulk/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(this.selectedJobs)
+                });
+                await this.loadJobs();
+                this.selectedJobs = [];
+            } catch (error) {
+                console.error('Failed to delete jobs:', error);
+            }
+        },
+        
+        viewJob(jobId) {
+            window.location.href = `/jobs/${jobId}`;
+        },
+        
+        get totalPages() {
+            return Math.ceil(this.totalCount / this.pageSize);
+        },
+        
+        get visiblePages() {
+            const pages = [];
+            const start = Math.max(1, this.currentPage - 2);
+            const end = Math.min(this.totalPages, this.currentPage + 2);
+            for (let i = start; i <= end; i++) {
+                pages.push(i);
+            }
+            return pages;
+        },
+        
+        previousPage() {
+            if (this.currentPage > 1) {
+                this.currentPage--;
+                this.loadJobs();
+            }
+        },
+        
+        nextPage() {
+            if (this.currentPage < this.totalPages) {
+                this.currentPage++;
+                this.loadJobs();
+            }
+        },
+        
+        formatDate(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            const now = new Date();
+            const diff = now - date;
+            const days = Math.floor(diff / 86400000);
+            
+            if (days === 0) return 'Today';
+            if (days === 1) return 'Yesterday';
+            if (days < 7) return `${days} days ago`;
+            if (days < 30) return `${Math.floor(days / 7)} weeks ago`;
+            return `${Math.floor(days / 30)} months ago`;
+        },
+        
+        formatExactDate(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}-${month}-${year}`;
+        }
+    }
+}
+</script>
+{% endblock %}

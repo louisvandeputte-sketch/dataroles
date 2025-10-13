@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+
+{% block title %}Job Types - DataRoles Admin{% endblock %}
+
+{% block content %}
+<div x-data="jobTypesPage()">
+    <!-- Page Header -->
+    <div class="mb-6 flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Job Types</h1>
+            <p class="text-gray-600 mt-1">Manage job type categories for classification</p>
+        </div>
+        <button @click="showNewTypeModal = true" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
+            <i data-lucide="plus" class="w-5 h-5 mr-2"></i>
+            New Type
+        </button>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="text-3xl font-bold text-gray-900" x-text="jobTypes.length"></div>
+            <div class="text-sm text-gray-600 mt-1">Total Types</div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="text-3xl font-bold text-green-600" x-text="activeTypes"></div>
+            <div class="text-sm text-gray-600 mt-1">Active Types</div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="text-3xl font-bold text-blue-600" x-text="totalJobs"></div>
+            <div class="text-sm text-gray-600 mt-1">Total Jobs Classified</div>
+        </div>
+    </div>
+
+    <!-- Types Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <template x-for="type in jobTypes" :key="type.id">
+            <div class="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6">
+                <div class="flex items-start justify-between mb-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-4 h-4 rounded-full" :style="`background-color: ${type.color}`"></div>
+                        <h3 class="text-lg font-semibold text-gray-900" x-text="type.name"></h3>
+                    </div>
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                          :class="type.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'">
+                        <span x-text="type.is_active ? 'Active' : 'Inactive'"></span>
+                    </span>
+                </div>
+                
+                <p class="text-sm text-gray-600 mb-4 line-clamp-2" x-text="type.description || 'No description'"></p>
+                
+                <div class="flex items-center justify-between pt-4 border-t border-gray-200">
+                    <div class="text-sm text-gray-600">
+                        <i data-lucide="briefcase" class="w-4 h-4 inline mr-1"></i>
+                        <span x-text="type.job_count || 0"></span> jobs
+                    </div>
+                    <div class="flex space-x-2">
+                        <button @click="editType(type)" class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                            Edit
+                        </button>
+                        <button @click="deleteType(type.id)" class="text-red-600 hover:text-red-700 text-sm font-medium">
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </template>
+        
+        <template x-if="jobTypes.length === 0">
+            <div class="col-span-full bg-white rounded-lg shadow p-12 text-center">
+                <i data-lucide="tag" class="w-16 h-16 mx-auto text-gray-300 mb-4"></i>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">No Job Types Yet</h3>
+                <p class="text-gray-600 mb-4">Create your first job type to start classifying jobs</p>
+                <button @click="showNewTypeModal = true" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    <i data-lucide="plus" class="w-4 h-4 mr-2"></i>
+                    Create Type
+                </button>
+            </div>
+        </template>
+    </div>
+
+    <!-- New/Edit Type Modal -->
+    <div x-show="showNewTypeModal || showEditTypeModal" x-cloak class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-gray-900" x-text="showEditTypeModal ? 'Edit Job Type' : 'New Job Type'"></h3>
+                <button @click="closeModal()" class="text-gray-400 hover:text-gray-600">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                    <input type="text" x-model="typeForm.name" placeholder="e.g., Data, Engineering, Marketing" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <textarea x-model="typeForm.description" rows="3" 
+                              placeholder="Brief description of this job type..."
+                              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Color</label>
+                    <div class="flex items-center space-x-2">
+                        <input type="color" x-model="typeForm.color" 
+                               class="w-12 h-10 border border-gray-300 rounded cursor-pointer">
+                        <input type="text" x-model="typeForm.color" 
+                               class="flex-1 px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm">
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Used for badges and visual identification</p>
+                </div>
+                
+                <div x-show="showEditTypeModal">
+                    <label class="flex items-center">
+                        <input type="checkbox" x-model="typeForm.is_active" class="rounded border-gray-300">
+                        <span class="ml-2 text-sm font-medium text-gray-700">Active</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end space-x-3">
+                <button @click="closeModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button @click="saveType()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    <span x-text="showEditTypeModal ? 'Save Changes' : 'Create Type'"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function jobTypesPage() {
+    return {
+        jobTypes: [],
+        showNewTypeModal: false,
+        showEditTypeModal: false,
+        typeForm: {
+            id: null,
+            name: '',
+            description: '',
+            color: '#3B82F6',
+            is_active: true
+        },
+        
+        async init() {
+            await this.loadJobTypes();
+            this.$nextTick(() => lucide.createIcons());
+        },
+        
+        get activeTypes() {
+            return this.jobTypes.filter(t => t.is_active).length;
+        },
+        
+        get totalJobs() {
+            return this.jobTypes.reduce((sum, t) => sum + (t.job_count || 0), 0);
+        },
+        
+        async loadJobTypes() {
+            try {
+                const response = await fetch('/api/job-types/');
+                const data = await response.json();
+                this.jobTypes = data.job_types || [];
+                this.$nextTick(() => lucide.createIcons());
+            } catch (error) {
+                console.error('Failed to load job types:', error);
+            }
+        },
+        
+        editType(type) {
+            this.typeForm = {
+                id: type.id,
+                name: type.name,
+                description: type.description || '',
+                color: type.color,
+                is_active: type.is_active
+            };
+            this.showEditTypeModal = true;
+            this.$nextTick(() => lucide.createIcons());
+        },
+        
+        async saveType() {
+            if (!this.typeForm.name.trim()) {
+                alert('Please enter a name');
+                return;
+            }
+            
+            try {
+                const url = this.showEditTypeModal 
+                    ? `/api/job-types/${this.typeForm.id}`
+                    : '/api/job-types/';
+                
+                const method = this.showEditTypeModal ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: this.typeForm.name,
+                        description: this.typeForm.description,
+                        color: this.typeForm.color,
+                        is_active: this.typeForm.is_active
+                    })
+                });
+                
+                if (response.ok) {
+                    await this.loadJobTypes();
+                    this.closeModal();
+                    alert(this.showEditTypeModal ? 'Type updated!' : 'Type created!');
+                } else {
+                    const error = await response.json();
+                    alert(error.detail || 'Failed to save type');
+                }
+            } catch (error) {
+                console.error('Failed to save type:', error);
+                alert('Failed to save type');
+            }
+        },
+        
+        async deleteType(typeId) {
+            if (!confirm('Delete this job type? This will deactivate it if used in queries.')) return;
+            
+            try {
+                const response = await fetch(`/api/job-types/${typeId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    await this.loadJobTypes();
+                    alert('Type deleted/deactivated');
+                }
+            } catch (error) {
+                console.error('Failed to delete type:', error);
+                alert('Failed to delete type');
+            }
+        },
+        
+        closeModal() {
+            this.showNewTypeModal = false;
+            this.showEditTypeModal = false;
+            this.typeForm = {
+                id: null,
+                name: '',
+                description: '',
+                color: '#3B82F6',
+                is_active: true
+            };
+        }
+    }
+}
+</script>
+{% endblock %}

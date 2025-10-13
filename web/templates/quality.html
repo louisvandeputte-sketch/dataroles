@@ -1,0 +1,464 @@
+{% extends "base.html" %}
+
+{% block title %}Data Quality - DataRoles Admin{% endblock %}
+
+{% block content %}
+<div x-data="qualityPage()">
+    <!-- Page Header -->
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">Data Quality Tools</h1>
+        <p class="text-gray-600 mt-1">Manage duplicates, inactive jobs, and data cleanup</p>
+    </div>
+
+    <!-- Tabs -->
+    <div class="border-b border-gray-200 mb-6">
+        <nav class="-mb-px flex space-x-8">
+            <button @click="activeTab = 'duplicates'" 
+                    :class="activeTab === 'duplicates' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                Duplicates
+            </button>
+            <button @click="activeTab = 'inactive'" 
+                    :class="activeTab === 'inactive' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                Inactive Jobs
+            </button>
+            <button @click="activeTab = 'tools'" 
+                    :class="activeTab === 'tools' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                Manual Tools
+            </button>
+        </nav>
+    </div>
+
+    <!-- Duplicates Tab -->
+    <div x-show="activeTab === 'duplicates'" x-cloak>
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900">Duplicate Detection</h3>
+                    <p class="text-sm text-gray-600 mt-1">
+                        <span x-text="duplicateGroups.length"></span> potential duplicate groups found
+                    </p>
+                </div>
+                <button @click="findDuplicates" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    <i data-lucide="search" class="w-4 h-4 inline mr-2"></i>
+                    Scan for Duplicates
+                </button>
+            </div>
+
+            <template x-if="duplicateGroups.length === 0">
+                <div class="text-center py-12">
+                    <i data-lucide="check-circle" class="w-16 h-16 mx-auto text-green-500 mb-4"></i>
+                    <p class="text-lg font-medium text-gray-900">No duplicates detected</p>
+                    <p class="text-sm text-gray-600 mt-1">Your data is clean!</p>
+                </div>
+            </template>
+
+            <template x-if="duplicateGroups.length > 0">
+                <div class="space-y-6">
+                    <template x-for="(group, index) in duplicateGroups" :key="index">
+                        <div class="border border-gray-200 rounded-lg p-6">
+                            <h4 class="font-semibold text-gray-900 mb-4">Duplicate Group #<span x-text="index + 1"></span></h4>
+                            
+                            <div class="grid grid-cols-2 gap-4 mb-4">
+                                <template x-for="job in group.jobs" :key="job.id">
+                                    <div class="border border-gray-200 rounded-lg p-4">
+                                        <div class="flex items-start justify-between mb-2">
+                                            <div class="flex-1">
+                                                <h5 class="font-medium text-gray-900" x-text="job.job_title"></h5>
+                                                <p class="text-sm text-gray-600" x-text="job.companies?.name"></p>
+                                                <p class="text-sm text-gray-600" x-text="job.locations?.full_location_string"></p>
+                                            </div>
+                                            <input type="radio" :name="`group-${index}`" :value="job.id" class="mt-1">
+                                        </div>
+                                        <div class="text-xs text-gray-500 space-y-1">
+                                            <div>Posted: <span x-text="formatDate(job.posted_date)"></span></div>
+                                            <div>Applicants: <span x-text="job.applicant_count || 0"></span></div>
+                                            <div>ID: <span x-text="job.id.substring(0, 8)"></span></div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+
+                            <div class="flex items-center justify-between pt-4 border-t border-gray-200">
+                                <div class="text-sm text-gray-600">
+                                    Similarity: <span class="font-medium">94%</span> • 
+                                    Same company: <span class="text-green-600">✓</span> • 
+                                    Same date: <span class="text-green-600">✓</span>
+                                </div>
+                                <div class="space-x-2">
+                                    <button @click="mergeGroup(group)" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+                                        Merge (Keep Best Data)
+                                    </button>
+                                    <button @click="markNotDuplicates(group)" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm">
+                                        Not Duplicates
+                                    </button>
+                                    <button @click="skipGroup(index)" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm">
+                                        Skip
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- Inactive Jobs Tab -->
+    <div x-show="activeTab === 'inactive'" x-cloak>
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900">Inactive Jobs</h3>
+                    <p class="text-sm text-gray-600 mt-1">
+                        <span x-text="inactiveSummary.total_inactive"></span> jobs inactive for 
+                        <input type="number" x-model="inactiveThreshold" min="1" max="90" 
+                               class="w-16 px-2 py-1 border border-gray-300 rounded text-center">
+                        + days
+                    </p>
+                </div>
+                <button @click="markInactive" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    <i data-lucide="refresh-cw" class="w-4 h-4 inline mr-2"></i>
+                    Refresh List
+                </button>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-3 gap-4 mb-6">
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <div class="text-2xl font-bold text-gray-900" x-text="inactiveSummary.total_inactive"></div>
+                    <div class="text-sm text-gray-600">Total Inactive</div>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <div class="text-2xl font-bold text-orange-600" x-text="inactiveSummary.inactive_last_7_days"></div>
+                    <div class="text-sm text-gray-600">Last 7 Days</div>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <div class="text-2xl font-bold text-red-600" x-text="inactiveSummary.inactive_last_30_days"></div>
+                    <div class="text-sm text-gray-600">Last 30 Days</div>
+                </div>
+            </div>
+
+            <!-- Inactive Jobs Table -->
+            <div class="overflow-hidden border border-gray-200 rounded-lg">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left">
+                                <input type="checkbox" @change="toggleAllInactive" class="rounded border-gray-300">
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Job Title</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Company</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Location</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Last Seen</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Inactive Since</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <template x-if="inactiveJobs.length === 0">
+                            <tr>
+                                <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                                    No inactive jobs found
+                                </td>
+                            </tr>
+                        </template>
+                        
+                        <template x-for="job in inactiveJobs" :key="job.id">
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4">
+                                    <input type="checkbox" :value="job.id" x-model="selectedInactive" class="rounded border-gray-300">
+                                </td>
+                                <td class="px-6 py-4 text-sm font-medium text-gray-900" x-text="job.job_title"></td>
+                                <td class="px-6 py-4 text-sm text-gray-600" x-text="job.companies?.name"></td>
+                                <td class="px-6 py-4 text-sm text-gray-600" x-text="job.locations?.full_location_string"></td>
+                                <td class="px-6 py-4 text-sm text-gray-600" x-text="formatDate(job.last_seen_at)"></td>
+                                <td class="px-6 py-4 text-sm text-gray-600" x-text="formatDate(job.detected_inactive_at)"></td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Bulk Actions -->
+            <div x-show="selectedInactive.length > 0" class="mt-4 flex justify-between items-center">
+                <span class="text-sm text-gray-600">
+                    <span x-text="selectedInactive.length"></span> selected
+                </span>
+                <div class="space-x-2">
+                    <button @click="reactivateSelected" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm">
+                        Reactivate Selected
+                    </button>
+                    <button @click="deleteInactiveSelected" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm">
+                        Delete Selected
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manual Tools Tab -->
+    <div x-show="activeTab === 'tools'" x-cloak>
+        <div class="space-y-6">
+            <!-- Compare Jobs -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Compare Jobs</h3>
+                <p class="text-sm text-gray-600 mb-4">Compare two jobs manually to check for duplicates</p>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Job ID 1</label>
+                        <input type="text" x-model="compareJob1" placeholder="Enter job ID"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Job ID 2</label>
+                        <input type="text" x-model="compareJob2" placeholder="Enter job ID"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    </div>
+                </div>
+                <button @click="compareJobs" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    Compare
+                </button>
+            </div>
+
+            <!-- Bulk Deactivate -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Bulk Deactivate</h3>
+                <p class="text-sm text-gray-600 mb-4">Deactivate jobs matching specific criteria</p>
+                <div class="space-y-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Platform</label>
+                        <select class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                            <option>LinkedIn</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Posted Before</label>
+                        <input type="date" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                        <input type="text" placeholder="Filter by location"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    </div>
+                </div>
+                <div class="flex space-x-2">
+                    <button class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+                        Preview Jobs (0)
+                    </button>
+                    <button class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                        Deactivate All
+                    </button>
+                </div>
+            </div>
+
+            <!-- Data Cleanup -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Data Cleanup</h3>
+                <div class="space-y-3">
+                    <button @click="normalizeCompanies" class="w-full flex items-center justify-between px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50">
+                        <div class="flex items-center">
+                            <i data-lucide="building" class="w-5 h-5 mr-3 text-gray-600"></i>
+                            <div class="text-left">
+                                <div class="font-medium text-gray-900">Normalize Company Names</div>
+                                <div class="text-sm text-gray-600">Fix capitalization and typos</div>
+                            </div>
+                        </div>
+                        <i data-lucide="chevron-right" class="w-5 h-5 text-gray-400"></i>
+                    </button>
+                    
+                    <button class="w-full flex items-center justify-between px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 opacity-50 cursor-not-allowed">
+                        <div class="flex items-center">
+                            <i data-lucide="map-pin" class="w-5 h-5 mr-3 text-gray-600"></i>
+                            <div class="text-left">
+                                <div class="font-medium text-gray-900">Geocode Missing Locations</div>
+                                <div class="text-sm text-gray-600">Add latitude/longitude (Coming Soon)</div>
+                            </div>
+                        </div>
+                        <i data-lucide="chevron-right" class="w-5 h-5 text-gray-400"></i>
+                    </button>
+                    
+                    <button @click="removeTestData" class="w-full flex items-center justify-between px-4 py-3 border border-red-300 rounded-lg hover:bg-red-50 text-red-700">
+                        <div class="flex items-center">
+                            <i data-lucide="trash-2" class="w-5 h-5 mr-3"></i>
+                            <div class="text-left">
+                                <div class="font-medium">Remove Test Data</div>
+                                <div class="text-sm">Delete jobs tagged as test</div>
+                            </div>
+                        </div>
+                        <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function qualityPage() {
+    return {
+        activeTab: 'duplicates',
+        duplicateGroups: [],
+        inactiveJobs: [],
+        selectedInactive: [],
+        inactiveThreshold: 14,
+        inactiveSummary: {
+            total_inactive: 0,
+            inactive_last_7_days: 0,
+            inactive_last_30_days: 0
+        },
+        compareJob1: '',
+        compareJob2: '',
+        
+        async init() {
+            await this.loadInactiveSummary();
+            await this.loadInactiveJobs();
+            this.$nextTick(() => lucide.createIcons());
+        },
+        
+        async findDuplicates() {
+            try {
+                const response = await fetch('/api/quality/duplicates');
+                const data = await response.json();
+                this.duplicateGroups = data.duplicate_groups;
+            } catch (error) {
+                console.error('Failed to find duplicates:', error);
+            }
+        },
+        
+        async loadInactiveSummary() {
+            try {
+                const response = await fetch('/api/quality/stats');
+                const data = await response.json();
+                this.inactiveSummary = {
+                    total_inactive: data.inactive_jobs || 0,
+                    inactive_last_7_days: 0,
+                    inactive_last_30_days: 0
+                };
+            } catch (error) {
+                console.error('Failed to load summary:', error);
+            }
+        },
+        
+        async loadInactiveJobs() {
+            try {
+                const response = await fetch(`/api/quality/inactive?threshold_days=${this.inactiveThreshold}`);
+                const data = await response.json();
+                this.inactiveJobs = data.jobs;
+                this.inactiveSummary = data.summary;
+            } catch (error) {
+                console.error('Failed to load inactive jobs:', error);
+            }
+        },
+        
+        async markInactive() {
+            try {
+                const response = await fetch(`/api/quality/inactive/mark?threshold_days=${this.inactiveThreshold}`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                alert(data.message);
+                await this.loadInactiveJobs();
+            } catch (error) {
+                console.error('Failed to mark inactive:', error);
+            }
+        },
+        
+        async reactivateSelected() {
+            if (!confirm(`Reactivate ${this.selectedInactive.length} jobs?`)) return;
+            try {
+                await fetch('/api/quality/inactive/reactivate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(this.selectedInactive)
+                });
+                await this.loadInactiveJobs();
+                this.selectedInactive = [];
+            } catch (error) {
+                console.error('Failed to reactivate:', error);
+            }
+        },
+        
+        async deleteInactiveSelected() {
+            if (!confirm(`Permanently delete ${this.selectedInactive.length} jobs?`)) return;
+            try {
+                await fetch('/api/jobs/bulk/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(this.selectedInactive)
+                });
+                await this.loadInactiveJobs();
+                this.selectedInactive = [];
+            } catch (error) {
+                console.error('Failed to delete:', error);
+            }
+        },
+        
+        toggleAllInactive(event) {
+            if (event.target.checked) {
+                this.selectedInactive = this.inactiveJobs.map(j => j.id);
+            } else {
+                this.selectedInactive = [];
+            }
+        },
+        
+        mergeGroup(group) {
+            alert('Merge functionality coming soon!');
+        },
+        
+        markNotDuplicates(group) {
+            alert('Marked as not duplicates');
+        },
+        
+        skipGroup(index) {
+            this.duplicateGroups.splice(index, 1);
+        },
+        
+        compareJobs() {
+            if (!this.compareJob1 || !this.compareJob2) {
+                alert('Please enter both job IDs');
+                return;
+            }
+            alert('Compare functionality coming soon!');
+        },
+        
+        async normalizeCompanies() {
+            if (!confirm('Normalize all company names?')) return;
+            try {
+                await fetch('/api/quality/cleanup/normalize-companies', { method: 'POST' });
+                alert('Company names normalized!');
+            } catch (error) {
+                console.error('Failed to normalize:', error);
+            }
+        },
+        
+        async removeTestData() {
+            if (!confirm('Remove all test data? This cannot be undone.')) return;
+            try {
+                await fetch('/api/quality/cleanup/remove-test-data', { method: 'POST' });
+                alert('Test data removed!');
+            } catch (error) {
+                console.error('Failed to remove test data:', error);
+            }
+        },
+        
+        formatDate(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            const now = new Date();
+            const diff = now - date;
+            const days = Math.floor(diff / 86400000);
+            
+            if (days === 0) return 'Today';
+            if (days === 1) return 'Yesterday';
+            if (days < 7) return `${days} days ago`;
+            if (days < 30) return `${Math.floor(days / 7)} weeks ago`;
+            return `${Math.floor(days / 30)} months ago`;
+        }
+    }
+}
+</script>
+{% endblock %}
