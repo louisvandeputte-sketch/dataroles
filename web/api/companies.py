@@ -1,8 +1,11 @@
 """API endpoints for company master data management."""
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi.responses import StreamingResponse
 from typing import Optional, List
 from pydantic import BaseModel
+import csv
+import io
 
 from database import db
 
@@ -32,6 +35,8 @@ class CompanyMasterDataCreate(BaseModel):
     data_source: Optional[str] = "Manual"
     verified: Optional[bool] = False
     notes: Optional[str] = None
+    jobs_page_url: Optional[str] = None
+    contact_email: Optional[str] = None
 
 
 class CompanyMasterDataUpdate(BaseModel):
@@ -56,6 +61,8 @@ class CompanyMasterDataUpdate(BaseModel):
     data_source: Optional[str] = None
     verified: Optional[bool] = None
     notes: Optional[str] = None
+    jobs_page_url: Optional[str] = None
+    contact_email: Optional[str] = None
 
 
 @router.get("/")
@@ -187,6 +194,11 @@ async def create_master_data(company_id: str, data: CompanyMasterDataCreate):
 async def update_master_data(company_id: str, data: CompanyMasterDataUpdate):
     """Update master data for a company."""
     
+    print(f"[DEBUG] PUT request for company_id: {company_id}")
+    print(f"[DEBUG] Received data type: {type(data)}")
+    print(f"[DEBUG] Data dict: {data.dict()}")
+    print(f"[DEBUG] Data dict (exclude_none): {data.dict(exclude_none=True)}")
+    
     # Check if master data exists
     existing = db.client.table("company_master_data")\
         .select("id")\
@@ -204,11 +216,14 @@ async def update_master_data(company_id: str, data: CompanyMasterDataUpdate):
         from datetime import datetime
         update_data["last_verified_at"] = datetime.utcnow().isoformat()
     
+    print(f"[DEBUG] Sending to database: {update_data}")
+    
     result = db.client.table("company_master_data")\
         .update(update_data)\
         .eq("company_id", company_id)\
         .execute()
     
+    print(f"[DEBUG] Update successful")
     return result.data[0]
 
 
@@ -241,3 +256,339 @@ async def list_industries():
     industries.sort()
     
     return {"industries": industries}
+
+
+@router.get("/export/csv")
+async def export_companies_csv(
+    search: Optional[str] = None,
+    industry: Optional[str] = None,
+    verified: Optional[bool] = None
+):
+    """Export companies with master data to CSV."""
+    
+    try:
+        # Build query to get all companies (no pagination for export)
+        query = db.client.table("companies").select(
+            "id, linkedin_company_id, name, logo_url, company_master_data(*)"
+        )
+        
+        # Apply search filter
+        if search:
+            query = query.ilike("name", f"%{search}%")
+        
+        # Order by name
+        query = query.order("name")
+        
+        result = query.execute()
+        
+        if not result.data:
+            # Return empty CSV with headers
+            companies = []
+        else:
+            companies = result.data
+        
+        # Create CSV in memory
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # Write header
+        writer.writerow([
+            'LinkedIn Company ID',
+            'Company Name',
+            'Company Number (KBO/VAT)',
+            'Description',
+            'Industry',
+            'Employee Count',
+            'Revenue (EUR)',
+            'Growth Trend',
+            'Jobs Page URL',
+            'Contact Email',
+            'Verified'
+        ])
+        
+        # Write data rows
+        for company in companies:
+            master_data = company.get("company_master_data")
+            
+            # Handle master_data format (could be list or dict)
+            if isinstance(master_data, list):
+                master_data = master_data[0] if master_data else None
+            
+            # Extract fields
+            linkedin_company_id = company.get("linkedin_company_id", "")
+            company_name = company.get("name", "")
+            company_number = master_data.get("company_number", "") if master_data else ""
+            description = master_data.get("description", "") if master_data else ""
+            industry = master_data.get("industry", "") if master_data else ""
+            employee_count = master_data.get("employee_count", "") if master_data else ""
+            revenue_eur = master_data.get("revenue_eur", "") if master_data else ""
+            growth_trend = master_data.get("growth_trend", "") if master_data else ""
+            jobs_page_url = master_data.get("jobs_page_url", "") if master_data else ""
+            contact_email = master_data.get("contact_email", "") if master_data else ""
+            verified = "Yes" if (master_data and master_data.get("verified")) else "No"
+            
+            writer.writerow([
+                linkedin_company_id,
+                company_name,
+                company_number,
+                description,
+                industry,
+                employee_count,
+                revenue_eur,
+                growth_trend,
+                jobs_page_url,
+                contact_email,
+                verified
+            ])
+        
+        # Prepare response
+        output.seek(0)
+        
+        return StreamingResponse(
+            iter([output.getvalue()]),
+            media_type="text/csv",
+            headers={
+                "Content-Disposition": "attachment; filename=companies_export.csv"
+            }
+        )
+    
+    except Exception as e:
+        print(f"Error in export_companies_csv: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to export companies: {str(e)}")
+
+
+@router.post("/import/csv")
+async def import_companies_csv(file: UploadFile = File(...)):
+    """Import companies master data from CSV file. Matches companies by LinkedIn Company ID (first column)."""
+    
+    try:
+        # Validate file type
+        if not file.filename.endswith('.csv'):
+            raise HTTPException(status_code=400, detail="File must be a CSV")
+        
+        # Read file content
+        content = await file.read()
+        
+        # Try different encodings
+        content_str = None
+        for encoding in ['utf-8', 'utf-8-sig', 'latin-1', 'cp1252']:
+            try:
+                content_str = content.decode(encoding)
+                break
+            except UnicodeDecodeError:
+                continue
+        
+        if content_str is None:
+            raise HTTPException(status_code=400, detail="Unable to decode CSV file. Please ensure it's a valid CSV.")
+        
+        # Detect delimiter (comma or semicolon)
+        sniffer = csv.Sniffer()
+        try:
+            # Sample first 1024 bytes to detect delimiter
+            sample = content_str[:1024]
+            dialect = sniffer.sniff(sample, delimiters=',;\t')
+            delimiter = dialect.delimiter
+        except csv.Error:
+            # Default to comma if detection fails
+            delimiter = ','
+        
+        # Parse CSV with detected delimiter
+        csv_reader = csv.reader(io.StringIO(content_str), delimiter=delimiter)
+        
+        # Read header
+        try:
+            headers = next(csv_reader)
+            headers = [h.strip() for h in headers]
+        except StopIteration:
+            raise HTTPException(status_code=400, detail="CSV file is empty")
+        
+        # Validate that first column is LinkedIn Company ID (be flexible with naming)
+        first_header_lower = headers[0].lower().strip() if headers else ''
+        if not first_header_lower or ('linkedin' not in first_header_lower and 'company' not in first_header_lower and 'id' not in first_header_lower):
+            # Check if it looks like a valid header at all
+            if not first_header_lower or len(first_header_lower) < 3:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"First column must be 'LinkedIn Company ID'. Found: '{headers[0] if headers else 'empty'}'. Make sure your CSV has proper headers."
+                )
+        
+        # Map headers to indices (case-insensitive)
+        header_map = {}
+        for idx, header in enumerate(headers):
+            header_lower = header.lower().strip()
+            if 'linkedin' in header_lower and 'company' in header_lower and 'id' in header_lower:
+                header_map['linkedin_company_id'] = idx
+            elif 'company' in header_lower and 'name' in header_lower:
+                header_map['company_name'] = idx
+            elif 'company' in header_lower and 'number' in header_lower:
+                header_map['company_number'] = idx
+            elif 'description' in header_lower:
+                header_map['description'] = idx
+            elif 'industry' in header_lower:
+                header_map['industry'] = idx
+            elif 'employee' in header_lower and 'count' in header_lower:
+                header_map['employee_count'] = idx
+            elif 'revenue' in header_lower:
+                header_map['revenue_eur'] = idx
+            elif 'growth' in header_lower and 'trend' in header_lower:
+                header_map['growth_trend'] = idx
+            elif 'jobs' in header_lower and 'page' in header_lower:
+                header_map['jobs_page_url'] = idx
+            elif 'contact' in header_lower and 'email' in header_lower:
+                header_map['contact_email'] = idx
+            elif 'verified' in header_lower:
+                header_map['verified'] = idx
+        
+        stats = {
+            'total_rows': 0,
+            'skipped_rows': 0,
+            'companies_found': 0,
+            'companies_not_found': 0,
+            'master_data_created': 0,
+            'master_data_updated': 0,
+            'errors': []
+        }
+        
+        # Process each row
+        for row_num, row in enumerate(csv_reader, start=2):  # Start at 2 (header is row 1)
+            stats['total_rows'] += 1
+            
+            try:
+                # Get LinkedIn Company ID from first column
+                if not row or len(row) == 0:
+                    stats['skipped_rows'] += 1
+                    continue
+                
+                linkedin_company_id = row[0].strip() if row[0] else ''
+                
+                # Skip empty rows or rows without LinkedIn Company ID
+                if not linkedin_company_id:
+                    stats['skipped_rows'] += 1
+                    continue
+                
+                # Convert to string and remove any decimal points (Excel formatting issue)
+                linkedin_company_id = str(linkedin_company_id).split('.')[0]
+                
+                # Find company by linkedin_company_id
+                result = db.client.table("companies")\
+                    .select("id, name")\
+                    .eq("linkedin_company_id", linkedin_company_id)\
+                    .execute()
+                
+                if not result.data:
+                    stats['companies_not_found'] += 1
+                    # Get company name from row for better error message
+                    company_name = row[header_map.get('company_name', 1)] if 'company_name' in header_map and len(row) > header_map.get('company_name', 1) else 'Unknown'
+                    stats['errors'].append({
+                        'row': row_num,
+                        'linkedin_id': linkedin_company_id,
+                        'company_name': company_name,
+                        'error': 'Company not found in database'
+                    })
+                    continue
+                
+                company = result.data[0]
+                stats['companies_found'] += 1
+                company_id = company['id']
+                
+                # Helper function to safely get value from row
+                def get_value(key):
+                    if key not in header_map:
+                        return None
+                    idx = header_map[key]
+                    if idx >= len(row):
+                        return None
+                    value = row[idx].strip() if row[idx] else ''
+                    return value if value else None
+                
+                # Prepare master data - only include fields that have values
+                master_data = {'data_source': 'CSV Import'}
+                
+                # String fields
+                if get_value('company_number'):
+                    master_data['company_number'] = get_value('company_number')
+                if get_value('description'):
+                    master_data['description'] = get_value('description')
+                if get_value('industry'):
+                    master_data['industry'] = get_value('industry')
+                if get_value('growth_trend'):
+                    master_data['growth_trend'] = get_value('growth_trend')
+                if get_value('jobs_page_url'):
+                    master_data['jobs_page_url'] = get_value('jobs_page_url')
+                if get_value('contact_email'):
+                    master_data['contact_email'] = get_value('contact_email')
+                
+                # Parse employee count
+                employee_count_str = get_value('employee_count')
+                if employee_count_str:
+                    try:
+                        # Remove any non-digit characters except decimal point
+                        clean_str = ''.join(c for c in employee_count_str if c.isdigit())
+                        if clean_str:
+                            master_data['employee_count'] = int(clean_str)
+                    except ValueError:
+                        pass
+                
+                # Parse revenue
+                revenue_str = get_value('revenue_eur')
+                if revenue_str:
+                    try:
+                        # Remove any non-digit characters except decimal point
+                        clean_str = ''.join(c for c in revenue_str if c.isdigit() or c == '.')
+                        if clean_str:
+                            master_data['revenue_eur'] = int(float(clean_str))
+                    except ValueError:
+                        pass
+                
+                # Parse verified
+                verified_str = get_value('verified')
+                if verified_str:
+                    master_data['verified'] = verified_str.lower() in ['yes', 'true', '1', 'y']
+                
+                # Check if master data exists
+                existing = db.client.table("company_master_data")\
+                    .select("id")\
+                    .eq("company_id", company_id)\
+                    .execute()
+                
+                if existing.data:
+                    # Update existing master data
+                    if master_data.get('verified'):
+                        from datetime import datetime
+                        master_data['last_verified_at'] = datetime.utcnow().isoformat()
+                    
+                    db.client.table("company_master_data")\
+                        .update(master_data)\
+                        .eq("company_id", company_id)\
+                        .execute()
+                    stats['master_data_updated'] += 1
+                else:
+                    # Create new master data
+                    master_data['company_id'] = company_id
+                    db.client.table("company_master_data")\
+                        .insert(master_data)\
+                        .execute()
+                    stats['master_data_created'] += 1
+                    
+            except Exception as e:
+                stats['errors'].append({
+                    'row': row_num,
+                    'linkedin_id': row[0] if row else 'Unknown',
+                    'error': str(e)
+                })
+        
+        return {
+            'success': True,
+            'message': f"Import completed: {stats['master_data_created']} created, {stats['master_data_updated']} updated",
+            'stats': stats
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error in import_companies_csv: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to import CSV: {str(e)}")

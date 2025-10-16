@@ -267,7 +267,7 @@ class SupabaseClient:
             .range(offset, offset + limit - 1)\
             .execute()
         
-        # Enrich jobs with their types
+        # Enrich jobs with their types and AI enrichment status
         jobs_with_types = []
         for job in result.data:
             # Get job types for this job
@@ -284,6 +284,21 @@ class SupabaseClient:
                         job_types.append(assignment["job_types"])
             
             job["job_types"] = job_types
+            
+            # Get AI enrichment status
+            enrichment_result = self.client.table("llm_enrichment")\
+                .select("enrichment_completed_at, type_datarol, rolniveau")\
+                .eq("job_posting_id", job["id"])\
+                .single()\
+                .execute()
+            
+            if enrichment_result.data:
+                job["ai_enriched"] = enrichment_result.data.get("enrichment_completed_at") is not None
+                job["ai_data"] = enrichment_result.data if job["ai_enriched"] else None
+            else:
+                job["ai_enriched"] = False
+                job["ai_data"] = None
+            
             jobs_with_types.append(job)
         
         return jobs_with_types, result.count

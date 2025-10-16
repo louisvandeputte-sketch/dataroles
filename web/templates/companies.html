@@ -11,6 +11,18 @@
                 <h1 class="text-3xl font-bold text-gray-900">Companies</h1>
                 <p class="text-gray-600 mt-1">Manage company master data</p>
             </div>
+            <div class="flex items-center space-x-3">
+                <button @click="showImportModal = true" 
+                        class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
+                    <i data-lucide="upload" class="w-4 h-4 mr-2"></i>
+                    Import CSV
+                </button>
+                <button @click="exportToCSV" 
+                        class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">
+                    <i data-lucide="download" class="w-4 h-4 mr-2"></i>
+                    Export to CSV
+                </button>
+            </div>
         </div>
 
         <!-- Stats Cards -->
@@ -76,6 +88,8 @@
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employees</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Growth</th>
+                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">URL</th>
+                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                             <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
@@ -129,6 +143,31 @@
                                       x-text="company.company_master_data?.growth_trend"></span>
                                 <span x-show="!company.company_master_data?.growth_trend" class="text-sm text-gray-400">-</span>
                             </td>
+                            <!-- Jobs Page URL -->
+                            <td class="px-4 py-3 text-center">
+                                <a x-show="company.company_master_data?.jobs_page_url" 
+                                   :href="company.company_master_data?.jobs_page_url" 
+                                   target="_blank"
+                                   class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200"
+                                   title="Jobs Page URL">
+                                    <i data-lucide="external-link" class="w-4 h-4"></i>
+                                </a>
+                                <span x-show="!company.company_master_data?.jobs_page_url" class="text-gray-300">
+                                    <i data-lucide="external-link" class="w-4 h-4"></i>
+                                </span>
+                            </td>
+                            <!-- Contact Email -->
+                            <td class="px-4 py-3 text-center">
+                                <a x-show="company.company_master_data?.contact_email" 
+                                   :href="'mailto:' + company.company_master_data?.contact_email" 
+                                   class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-green-100 text-green-600 hover:bg-green-200"
+                                   :title="company.company_master_data?.contact_email">
+                                    <i data-lucide="mail" class="w-4 h-4"></i>
+                                </a>
+                                <span x-show="!company.company_master_data?.contact_email" class="text-gray-300">
+                                    <i data-lucide="mail" class="w-4 h-4"></i>
+                                </span>
+                            </td>
                             <!-- Actions -->
                             <td class="px-4 py-3 text-right">
                                 <div class="flex items-center justify-end space-x-1">
@@ -166,6 +205,110 @@
                     <button @click="nextPage" :disabled="currentPage >= totalPages"
                             class="px-3 py-1 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
                         Next
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Modal -->
+    <div x-show="showImportModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75" @click="showImportModal = false"></div>
+            
+            <div class="relative bg-white rounded-lg max-w-2xl w-full p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-medium text-gray-900">Import Company Master Data</h3>
+                    <button @click="showImportModal = false" class="text-gray-400 hover:text-gray-500">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div class="flex items-start">
+                            <i data-lucide="info" class="w-5 h-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0"></i>
+                            <div class="text-sm text-blue-800">
+                                <p class="font-medium mb-1">Import Instructions:</p>
+                                <ul class="list-disc list-inside space-y-1">
+                                    <li>Upload a CSV file with the same format as the export</li>
+                                    <li><strong>First column MUST be LinkedIn Company ID</strong> - this is used to match companies</li>
+                                    <li>Existing master data will be <strong>updated</strong>, new data will be <strong>created</strong></li>
+                                    <li>Companies not found in the database will be skipped</li>
+                                    <li>Empty rows and rows without LinkedIn Company ID are automatically skipped</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Select CSV File</label>
+                        <input type="file" 
+                               @change="handleFileSelect" 
+                               accept=".csv"
+                               class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none">
+                    </div>
+
+                    <div x-show="importFile" class="bg-gray-50 rounded-lg p-3">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <i data-lucide="file-text" class="w-5 h-5 text-gray-500 mr-2"></i>
+                                <span class="text-sm text-gray-700" x-text="importFile?.name"></span>
+                            </div>
+                            <button @click="importFile = null" class="text-red-600 hover:text-red-700">
+                                <i data-lucide="x" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div x-show="importResult" class="border rounded-lg p-4" :class="{
+                        'bg-green-50 border-green-200': importResult?.success,
+                        'bg-red-50 border-red-200': importResult && !importResult.success
+                    }">
+                        <div class="flex items-start">
+                            <i :data-lucide="importResult?.success ? 'check-circle' : 'alert-circle'" 
+                               class="w-5 h-5 mr-2 mt-0.5" 
+                               :class="importResult?.success ? 'text-green-600' : 'text-red-600'"></i>
+                            <div class="flex-1">
+                                <p class="font-medium" :class="importResult?.success ? 'text-green-800' : 'text-red-800'" 
+                                   x-text="importResult?.message"></p>
+                                <div x-show="importResult?.stats" class="mt-2 text-sm" 
+                                     :class="importResult?.success ? 'text-green-700' : 'text-red-700'">
+                                    <p>Total rows: <span class="font-semibold" x-text="importResult?.stats?.total_rows"></span></p>
+                                    <p>Skipped rows: <span class="font-semibold" x-text="importResult?.stats?.skipped_rows || 0"></span></p>
+                                    <p>Companies found: <span class="font-semibold" x-text="importResult?.stats?.companies_found"></span></p>
+                                    <p>Companies not found: <span class="font-semibold" x-text="importResult?.stats?.companies_not_found"></span></p>
+                                    <p>Master data created: <span class="font-semibold text-green-700" x-text="importResult?.stats?.master_data_created"></span></p>
+                                    <p>Master data updated: <span class="font-semibold text-blue-700" x-text="importResult?.stats?.master_data_updated"></span></p>
+                                    <div x-show="importResult?.stats?.errors?.length > 0" class="mt-2">
+                                        <p class="font-medium">Errors:</p>
+                                        <ul class="list-disc list-inside">
+                                            <template x-for="error in importResult.stats.errors.slice(0, 5)" :key="error.row">
+                                                <li x-text="`Row ${error.row} - ${error.company_name || error.company || 'Unknown'} (ID: ${error.linkedin_id}): ${error.error}`"></li>
+                                            </template>
+                                            <li x-show="importResult.stats.errors.length > 5" 
+                                                x-text="`... and ${importResult.stats.errors.length - 5} more errors`"></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button @click="showImportModal = false" 
+                            class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                        Close
+                    </button>
+                    <button @click="importCSV" 
+                            :disabled="!importFile || importing"
+                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span x-show="!importing">Import</span>
+                        <span x-show="importing" class="flex items-center">
+                            <i data-lucide="loader" class="w-4 h-4 mr-2 animate-spin"></i>
+                            Importing...
+                        </span>
                     </button>
                 </div>
             </div>
@@ -226,6 +369,20 @@
                             </select>
                         </div>
                     </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Jobs Page URL</label>
+                            <input type="url" x-model="formData.jobs_page_url" 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                   placeholder="https://company.com/careers">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Contact Email</label>
+                            <input type="email" x-model="formData.contact_email" 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                   placeholder="hr@company.com">
+                        </div>
+                    </div>
                     <div class="flex items-center">
                         <input type="checkbox" x-model="formData.verified" id="verified" class="mr-2">
                         <label for="verified" class="text-sm text-gray-700">Mark as verified</label>
@@ -259,11 +416,15 @@ function companiesPage() {
         withMasterData: 0,
         verified: 0,
         showModal: false,
+        showImportModal: false,
         editingCompany: null,
         formData: {},
         currentPage: 1,
         pageSize: 100,
         totalPages: 1,
+        importFile: null,
+        importing: false,
+        importResult: null,
         
         async init() {
             await this.loadCompanies();
@@ -348,6 +509,8 @@ function companiesPage() {
                 employee_count: company.company_master_data?.employee_count || '',
                 revenue_eur: company.company_master_data?.revenue_eur || '',
                 growth_trend: company.company_master_data?.growth_trend || '',
+                jobs_page_url: company.company_master_data?.jobs_page_url || '',
+                contact_email: company.company_master_data?.contact_email || '',
                 verified: company.company_master_data?.verified || false
             };
             this.showModal = true;
@@ -357,7 +520,28 @@ function companiesPage() {
         async saveMasterData() {
             try {
                 const companyId = this.editingCompany.id;
-                const hasMasterData = this.editingCompany.company_master_data;
+                const masterData = this.editingCompany.company_master_data;
+                const hasMasterData = masterData && (Array.isArray(masterData) ? masterData.length > 0 : true);
+                
+                // Clean the data: remove empty strings and convert string numbers to integers
+                const cleanedData = {};
+                for (const [key, value] of Object.entries(this.formData)) {
+                    // Skip empty/null/undefined
+                    if (value === '' || value === null || value === undefined) {
+                        continue;
+                    }
+                    // Convert string numbers to integers for numeric fields
+                    if ((key === 'employee_count' || key === 'revenue_eur') && typeof value === 'string') {
+                        const numValue = parseInt(value, 10);
+                        if (!isNaN(numValue)) {
+                            cleanedData[key] = numValue;
+                        }
+                    } else {
+                        cleanedData[key] = value;
+                    }
+                }
+                
+                console.log('Cleaned data to send:', cleanedData);
                 
                 const url = `/api/companies/${companyId}/master-data`;
                 const method = hasMasterData ? 'PUT' : 'POST';
@@ -365,17 +549,104 @@ function companiesPage() {
                 const response = await fetch(url, {
                     method: method,
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(this.formData)
+                    body: JSON.stringify(cleanedData)
                 });
                 
-                if (!response.ok) throw new Error('Failed to save');
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
+                    console.error('API Error:', response.status, errorData);
+                    throw new Error(errorData.detail || `HTTP ${response.status}`);
+                }
                 
                 this.showModal = false;
                 await this.loadCompanies();
                 alert('Master data saved successfully!');
             } catch (error) {
                 console.error('Failed to save:', error);
-                alert('Failed to save master data');
+                alert('Failed to save master data: ' + error.message);
+            }
+        },
+        
+        async exportToCSV() {
+            try {
+                const params = new URLSearchParams();
+                if (this.search) params.append('search', this.search);
+                
+                const response = await fetch(`/api/companies/export/csv?${params}`);
+                
+                if (!response.ok) {
+                    throw new Error('Failed to export data');
+                }
+                
+                // Get the blob from response
+                const blob = await response.blob();
+                
+                // Create download link
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `companies_export_${new Date().toISOString().split('T')[0]}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                
+                // Cleanup
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+                alert('Export completed successfully!');
+            } catch (error) {
+                console.error('Failed to export:', error);
+                alert('Failed to export data: ' + error.message);
+            }
+        },
+        
+        handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                this.importFile = file;
+                this.importResult = null;
+            }
+        },
+        
+        async importCSV() {
+            if (!this.importFile) return;
+            
+            this.importing = true;
+            this.importResult = null;
+            
+            try {
+                const formData = new FormData();
+                formData.append('file', this.importFile);
+                
+                const response = await fetch('/api/companies/import/csv', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.detail || 'Import failed');
+                }
+                
+                this.importResult = result;
+                this.importFile = null;
+                
+                // Reload companies after successful import
+                if (result.success) {
+                    await this.loadCompanies();
+                }
+                
+                this.$nextTick(() => lucide.createIcons());
+            } catch (error) {
+                console.error('Failed to import:', error);
+                this.importResult = {
+                    success: false,
+                    message: 'Import failed: ' + error.message
+                };
+                this.$nextTick(() => lucide.createIcons());
+            } finally {
+                this.importing = false;
             }
         }
     }

@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     brightdata_timeout: int = 1800
     brightdata_daily_quota: int = 10000
     
+    # OpenAI
+    openai_api_key: Optional[str] = None
+    
     # Application
     environment: str = "development"
     use_mock_api: bool = False

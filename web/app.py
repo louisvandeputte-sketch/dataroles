@@ -1,6 +1,8 @@
 """FastAPI application for DataRoles admin panel."""
 
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
@@ -38,6 +40,25 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+
+# Add validation error handler
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Log and return detailed validation errors."""
+    errors = exc.errors()
+    body = await request.body()
+    logger.error(f"Validation error for {request.method} {request.url}")
+    logger.error(f"Request body: {body.decode('utf-8')}")
+    logger.error(f"Validation errors: {errors}")
+    
+    return JSONResponse(
+        status_code=422,
+        content={
+            "detail": errors,
+            "body": body.decode('utf-8')
+        }
+    )
 
 # Setup templates
 templates = Jinja2Templates(directory="web/templates")

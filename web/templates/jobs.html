@@ -6,12 +6,34 @@
 <div x-data="jobsPage()">
     <!-- Page Header -->
     <div class="mb-6">
-        <h1 class="text-2xl font-bold text-gray-900">Job Database</h1>
-        <p class="text-gray-600 mt-1">
-            <span x-text="stats.total_jobs"></span> total jobs • 
-            <span x-text="stats.active_jobs"></span> active • 
-            <span x-text="stats.inactive_jobs"></span> inactive
-        </p>
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Job Database</h1>
+                <p class="text-gray-600 mt-1">
+                    <span x-text="stats.total_jobs"></span> total jobs • 
+                    <span x-text="stats.active_jobs"></span> active • 
+                    <span x-text="stats.inactive_jobs"></span> inactive
+                </p>
+            </div>
+            <div class="flex items-center space-x-3">
+                <!-- AI Stats -->
+                <div class="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
+                    <div class="text-sm text-blue-900">
+                        <span class="font-semibold">AI Enriched:</span>
+                        <span x-text="aiStats.enriched"></span> / <span x-text="aiStats.total"></span>
+                        (<span x-text="aiStats.percentage_enriched"></span>%)
+                    </div>
+                </div>
+                <!-- Enrich All Button -->
+                <button @click="enrichAllUnenriched" 
+                        :disabled="enriching || aiStats.unenriched === 0"
+                        class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i data-lucide="sparkles" class="w-4 h-4 mr-2"></i>
+                    <span x-show="!enriching">Enrich All (<span x-text="aiStats.unenriched"></span>)</span>
+                    <span x-show="enriching">Enriching...</span>
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Search & Filter Bar -->
@@ -196,6 +218,7 @@
                         Posted
                     </th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">AI</th>
                     <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
             </thead>
@@ -243,6 +266,15 @@
                                   :class="job.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'">
                                 <span x-text="job.is_active ? 'Active' : 'Inactive'"></span>
                             </span>
+                        </td>
+                        <td class="px-6 py-4 text-center" @click.stop>
+                            <button @click="enrichJob(job.id, job.ai_enriched)" 
+                                    class="inline-flex flex-col items-center px-2 py-1 hover:bg-blue-50 rounded text-xs group"
+                                    :title="job.ai_enriched ? 'Re-enrich with AI' : 'Enrich with AI'">
+                                <i data-lucide="sparkles" 
+                                   :class="job.ai_enriched ? 'w-5 h-5 text-blue-600' : 'w-4 h-4 text-gray-400 group-hover:text-blue-600'"></i>
+                                <span x-show="job.ai_enriched" class="text-xs text-gray-500 mt-1" x-text="job.ai_data?.type_datarol"></span>
+                            </button>
                         </td>
                         <td class="px-6 py-4 text-right" @click.stop>
                             <button @click="viewJob(job.id)" class="text-blue-600 hover:text-blue-700 text-sm font-medium">
@@ -351,6 +383,13 @@ function jobsPage() {
             active_jobs: 0,
             inactive_jobs: 0
         },
+        aiStats: {
+            total: 0,
+            enriched: 0,
+            unenriched: 0,
+            percentage_enriched: 0
+        },
+        enriching: false,
         totalCount: 0,
         filters: {
             companies: [],
@@ -365,8 +404,94 @@ function jobsPage() {
         locationOptions: [],
         
         async init() {
+            // Check for company_id in URL params
+            const urlParams = new URLSearchParams(window.location.search);
+            const companyId = urlParams.get('company_id');
+            if (companyId) {
+                this.filters.companies = [companyId];
+            }
+            
             await this.loadJobs();
+            await this.loadAIStats();
             this.$nextTick(() => lucide.createIcons());
+        },
+        
+        async loadAIStats() {
+            try {
+                const response = await fetch('/api/jobs/enrich/stats');
+                const data = await response.json();
+                this.aiStats = data;
+            } catch (error) {
+                console.error('Failed to load AI stats:', error);
+            }
+        },
+        
+        async enrichJob(jobId, isAlreadyEnriched = false) {
+            // Confirm if re-enriching
+            if (isAlreadyEnriched) {
+                if (!confirm('This job is already enriched. Re-enrich with AI?')) {
+                    return;
+                }
+            }
+            
+            try {
+                const url = `/api/jobs/${jobId}/enrich${isAlreadyEnriched ? '?force=true' : ''}`;
+                const response = await fetch(url, {
+                    method: 'POST'
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Enrichment failed');
+                }
+                
+                alert(isAlreadyEnriched ? 'Job re-enriched successfully!' : 'Job enriched successfully!');
+                await this.loadJobs();
+                await this.loadAIStats();
+                this.$nextTick(() => lucide.createIcons());
+            } catch (error) {
+                console.error('Failed to enrich job:', error);
+                alert('Failed to enrich job: ' + error.message);
+            }
+        },
+        
+        async enrichAllUnenriched() {
+            if (!confirm(`Enrich all ${this.aiStats.unenriched} unenriched jobs? This may take several minutes.`)) {
+                return;
+            }
+            
+            this.enriching = true;
+            
+            try {
+                // Get unenriched job IDs
+                const response = await fetch('/api/jobs/enrich/unenriched?limit=1000');
+                const data = await response.json();
+                
+                if (data.job_ids.length === 0) {
+                    alert('No unenriched jobs found');
+                    return;
+                }
+                
+                // Enrich in batch
+                const enrichResponse = await fetch('/api/jobs/enrich/batch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data.job_ids)
+                });
+                
+                const result = await enrichResponse.json();
+                
+                alert(`Enrichment complete!\nSuccessful: ${result.stats.successful}\nFailed: ${result.stats.failed}`);
+                
+                await this.loadJobs();
+                await this.loadAIStats();
+                this.$nextTick(() => lucide.createIcons());
+            } catch (error) {
+                console.error('Failed to enrich jobs:', error);
+                alert('Failed to enrich jobs: ' + error.message);
+            } finally {
+                this.enriching = false;
+            }
         },
         
         async loadJobs() {

@@ -98,9 +98,9 @@ async def list_jobs(
 @router.get("/{job_id}")
 async def get_job_detail(job_id: str):
     """Get detailed information about a specific job."""
-    # Get job with all related data
+    # Get job with all related data including LLM enrichment
     job = db.client.table("job_postings")\
-        .select("*, companies(*), locations(*), job_descriptions(*), job_posters(*)")\
+        .select("*, companies(*), locations(*), job_descriptions(*), job_posters(*), llm_enrichment(*)")\
         .eq("id", job_id)\
         .single()\
         .execute()
@@ -194,3 +194,88 @@ async def autocomplete_locations(q: str = Query(..., min_length=2)):
         .execute()
     
     return {"locations": result.data if result.data else []}
+
+
+# LLM Enrichment endpoints
+@router.post("/{job_id}/enrich")
+async def enrich_single_job(job_id: str, force: bool = False):
+    """Enrich a single job with LLM analysis. Use force=True to re-enrich."""
+    from ingestion.llm_enrichment import process_job_enrichment
+    
+    try:
+        result = process_job_enrichment(job_id, force=force)
+        
+        if result["success"]:
+            return {
+                "success": True,
+                "message": "Job enriched successfully",
+                "data": result.get("data")
+            }
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail=result.get("error", "Enrichment failed")
+            )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/enrich/batch")
+async def enrich_batch_jobs(job_ids: List[str]):
+    """Enrich multiple jobs in batch."""
+    from ingestion.llm_enrichment import batch_enrich_jobs
+    
+    try:
+        stats = batch_enrich_jobs(job_ids)
+        return {
+            "success": True,
+            "message": f"Enriched {stats['successful']} of {stats['total']} jobs",
+            "stats": stats
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/enrich/unenriched")
+async def get_unenriched_jobs_list(limit: int = 100):
+    """Get list of jobs that need enrichment."""
+    from ingestion.llm_enrichment import get_unenriched_jobs
+    
+    try:
+        job_ids = get_unenriched_jobs(limit=limit)
+        return {
+            "count": len(job_ids),
+            "job_ids": job_ids
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/enrich/stats")
+async def get_enrichment_stats():
+    """Get enrichment statistics."""
+    try:
+        # Total jobs
+        total_result = db.client.table("llm_enrichment")\
+            .select("id", count="exact")\
+            .execute()
+        total = total_result.count or 0
+        
+        # Enriched jobs
+        enriched_result = db.client.table("llm_enrichment")\
+            .select("id", count="exact")\
+            .not_.is_("enrichment_completed_at", "null")\
+            .execute()
+        enriched = enriched_result.count or 0
+        
+        # Unenriched jobs
+        unenriched = total - enriched
+        
+        return {
+            "total": total,
+            "enriched": enriched,
+            "unenriched": unenriched,
+            "percentage_enriched": round((enriched / total * 100) if total > 0 else 0, 1)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
