@@ -1,7 +1,7 @@
 """API endpoints for company master data management."""
 
 from fastapi import APIRouter, HTTPException, UploadFile, File
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, Response
 from typing import Optional, List
 from pydantic import BaseModel
 import csv
@@ -10,6 +10,12 @@ import io
 from database import db
 
 router = APIRouter()
+
+# Allowed image types for logo upload
+ALLOWED_MIME_TYPES = {
+    'image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml', 'image/webp'
+}
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 
 
 # Pydantic models for request/response
@@ -591,4 +597,85 @@ async def import_companies_csv(file: UploadFile = File(...)):
         print(f"Error in import_companies_csv: {e}")
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Failed to import CSV: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to import companies: {str(e)}")
+
+
+# ==================== LOGO UPLOAD ====================
+
+@router.post("/{company_id}/logo")
+async def upload_company_logo(company_id: str, file: UploadFile = File(...)):
+    """Upload a logo for a company."""
+    try:
+        # Validate file type
+        if file.content_type not in ALLOWED_MIME_TYPES:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Invalid file type. Allowed: {', '.join(ALLOWED_MIME_TYPES)}"
+            )
+        
+        # Read file data
+        logo_data = await file.read()
+        
+        # Validate file size
+        if len(logo_data) > MAX_FILE_SIZE:
+            raise HTTPException(
+                status_code=400,
+                detail=f"File too large. Maximum size: {MAX_FILE_SIZE / 1024 / 1024}MB"
+            )
+        
+        # Update database with binary data
+        db.client.table("companies")\
+            .update({
+                "logo_data": logo_data,
+                "logo_filename": file.filename,
+                "logo_content_type": file.content_type
+            })\
+            .eq("id", company_id)\
+            .execute()
+        
+        return {"message": "Logo uploaded successfully", "filename": file.filename}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{company_id}/logo")
+async def get_company_logo(company_id: str):
+    """Get the logo for a company."""
+    try:
+        result = db.client.table("companies")\
+            .select("logo_data, logo_content_type, logo_filename")\
+            .eq("id", company_id)\
+            .single()\
+            .execute()
+        
+        if not result.data or not result.data.get("logo_data"):
+            raise HTTPException(status_code=404, detail="Logo not found")
+        
+        return Response(
+            content=bytes(result.data["logo_data"]),
+            media_type=result.data.get("logo_content_type", "image/png")
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/{company_id}/logo")
+async def delete_company_logo(company_id: str):
+    """Delete the logo for a company."""
+    try:
+        db.client.table("companies")\
+            .update({
+                "logo_data": None,
+                "logo_filename": None,
+                "logo_content_type": None
+            })\
+            .eq("id", company_id)\
+            .execute()
+        
+        return {"message": "Logo deleted successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
