@@ -68,6 +68,114 @@ class SupabaseClient:
         result = self.client.table("locations").insert(data).execute()
         return UUID(result.data[0]["id"])
     
+    # ==================== PROGRAMMING LANGUAGES ====================
+    
+    def get_programming_language_by_name(self, name: str) -> Optional[Dict]:
+        """Get programming language by canonical name."""
+        result = self.client.table("programming_languages")\
+            .select("*")\
+            .eq("name", name)\
+            .eq("is_active", True)\
+            .maybe_single()\
+            .execute()
+        return result.data if result else None
+    
+    def insert_programming_language(self, data: Dict[str, Any]) -> UUID:
+        """Insert a new programming language, return UUID."""
+        result = self.client.table("programming_languages").insert(data).execute()
+        return UUID(result.data[0]["id"])
+    
+    def upsert_programming_language(self, data: Dict[str, Any]) -> UUID:
+        """Insert or update programming language, return UUID."""
+        result = self.client.table("programming_languages")\
+            .upsert(data, on_conflict="name")\
+            .execute()
+        return UUID(result.data[0]["id"])
+    
+    def get_all_programming_languages(self, active_only: bool = True) -> List[Dict]:
+        """Get all programming languages."""
+        query = self.client.table("programming_languages").select("*")
+        if active_only:
+            query = query.eq("is_active", True)
+        result = query.order("name").execute()
+        return result.data if result.data else []
+    
+    # ==================== ECOSYSTEMS ====================
+    
+    def get_ecosystem_by_name(self, name: str) -> Optional[Dict]:
+        """Get ecosystem by canonical name."""
+        result = self.client.table("ecosystems")\
+            .select("*")\
+            .eq("name", name)\
+            .eq("is_active", True)\
+            .maybe_single()\
+            .execute()
+        return result.data if result else None
+    
+    def insert_ecosystem(self, data: Dict[str, Any]) -> UUID:
+        """Insert a new ecosystem, return UUID."""
+        result = self.client.table("ecosystems").insert(data).execute()
+        return UUID(result.data[0]["id"])
+    
+    def upsert_ecosystem(self, data: Dict[str, Any]) -> UUID:
+        """Insert or update ecosystem, return UUID."""
+        result = self.client.table("ecosystems")\
+            .upsert(data, on_conflict="name")\
+            .execute()
+        return UUID(result.data[0]["id"])
+    
+    def get_all_ecosystems(self, active_only: bool = True) -> List[Dict]:
+        """Get all ecosystems."""
+        query = self.client.table("ecosystems").select("*")
+        if active_only:
+            query = query.eq("is_active", True)
+        result = query.order("name").execute()
+        return result.data if result.data else []
+    
+    # ==================== JOB TECH STACK ASSIGNMENTS ====================
+    
+    def assign_programming_language_to_job(
+        self, 
+        job_id: UUID, 
+        language_id: UUID, 
+        requirement_level: str
+    ) -> None:
+        """Assign a programming language to a job."""
+        self.client.table("job_programming_languages").insert({
+            "job_posting_id": str(job_id),
+            "programming_language_id": str(language_id),
+            "requirement_level": requirement_level
+        }).execute()
+    
+    def assign_ecosystem_to_job(
+        self, 
+        job_id: UUID, 
+        ecosystem_id: UUID, 
+        requirement_level: str
+    ) -> None:
+        """Assign an ecosystem to a job."""
+        self.client.table("job_ecosystems").insert({
+            "job_posting_id": str(job_id),
+            "ecosystem_id": str(ecosystem_id),
+            "requirement_level": requirement_level
+        }).execute()
+    
+    def get_job_programming_languages(self, job_id: UUID) -> List[Dict]:
+        """Get all programming languages for a job with requirement levels."""
+        result = self.client.table("job_programming_languages")\
+            .select("*, programming_languages(*)")\
+            .eq("job_posting_id", str(job_id))\
+            .execute()
+        return result.data if result.data else []
+    
+    def get_job_ecosystems(self, job_id: UUID) -> List[Dict]:
+        """Get all ecosystems for a job with requirement levels."""
+        result = self.client.table("job_ecosystems")\
+            .select("*, ecosystems(*)")\
+            .eq("job_posting_id", str(job_id))\
+            .execute()
+        return result.data if result.data else []
+    
     # ==================== JOB POSTINGS ====================
     
     def get_job_by_linkedin_id(self, linkedin_job_id: str) -> Optional[Dict]:

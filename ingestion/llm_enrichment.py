@@ -247,6 +247,15 @@ def process_job_enrichment(job_id: str, force: bool = False) -> Dict[str, Any]:
         success = save_enrichment_to_db(job_id, enrichment_data)
         
         if success:
+            # Process tech stack (programming languages and ecosystems)
+            try:
+                from ingestion.tech_stack_processor import process_tech_stack_for_job
+                from uuid import UUID
+                process_tech_stack_for_job(UUID(job_id), enrichment_data)
+            except Exception as e:
+                logger.warning(f"Failed to process tech stack for job {job_id}: {e}")
+                # Don't fail the entire enrichment if tech stack processing fails
+            
             return {
                 "success": True,
                 "job_id": job_id,

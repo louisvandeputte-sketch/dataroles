@@ -1,0 +1,437 @@
+{% extends "base.html" %}
+
+{% block title %}Tech Stack - DataRoles Admin{% endblock %}
+
+{% block content %}
+<div x-data="techStackPage()">
+    <!-- Header -->
+    <div class="mb-6">
+        <h1 class="text-3xl font-bold text-gray-900">Tech Stack Masterdata</h1>
+        <p class="mt-2 text-gray-600">Manage programming languages and ecosystems with logos and display names</p>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 bg-blue-100 rounded-lg p-3">
+                    <i data-lucide="code-2" class="w-6 h-6 text-blue-600"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Programming Languages</p>
+                    <p class="text-2xl font-bold text-gray-900" x-text="stats.programming_languages?.active || 0"></p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 bg-green-100 rounded-lg p-3">
+                    <i data-lucide="package" class="w-6 h-6 text-green-600"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Ecosystems</p>
+                    <p class="text-2xl font-bold text-gray-900" x-text="stats.ecosystems?.active || 0"></p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 bg-purple-100 rounded-lg p-3">
+                    <i data-lucide="link" class="w-6 h-6 text-purple-600"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Language Assignments</p>
+                    <p class="text-2xl font-bold text-gray-900" x-text="stats.assignments?.job_languages || 0"></p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 bg-orange-100 rounded-lg p-3">
+                    <i data-lucide="link" class="w-6 h-6 text-orange-600"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Ecosystem Assignments</p>
+                    <p class="text-2xl font-bold text-gray-900" x-text="stats.assignments?.job_ecosystems || 0"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="border-b border-gray-200 mb-6">
+        <nav class="-mb-px flex space-x-8">
+            <button @click="activeTab = 'languages'" 
+                    :class="activeTab === 'languages' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                Programming Languages
+            </button>
+            <button @click="activeTab = 'ecosystems'" 
+                    :class="activeTab === 'ecosystems' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                Ecosystems
+            </button>
+        </nav>
+    </div>
+
+    <!-- Programming Languages Tab -->
+    <div x-show="activeTab === 'languages'" x-cloak>
+        <div class="bg-white rounded-lg shadow">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold text-gray-900">Programming Languages</h2>
+                    <div class="flex items-center space-x-3">
+                        <input type="text" x-model="languageSearch" @input="filterLanguages" 
+                               placeholder="Search languages..."
+                               class="px-4 py-2 border border-gray-300 rounded-lg text-sm">
+                        <button @click="showAddLanguageModal = true" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+                            <i data-lucide="plus" class="w-4 h-4 inline mr-1"></i>
+                            Add Language
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Logo</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Display Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <template x-for="lang in filteredLanguages" :key="lang.id">
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <template x-if="lang.logo_url">
+                                            <img :src="lang.logo_url" :alt="lang.name" class="w-8 h-8 object-contain">
+                                        </template>
+                                        <template x-if="!lang.logo_url">
+                                            <div class="w-8 h-8 bg-gray-200 rounded flex items-center justify-center">
+                                                <i data-lucide="code-2" class="w-4 h-4 text-gray-400"></i>
+                                            </div>
+                                        </template>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" x-text="lang.name"></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" x-text="lang.display_name"></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="lang.category || '-'"></td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span :class="lang.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'" 
+                                              class="px-2 py-1 text-xs font-medium rounded-full">
+                                            <span x-text="lang.is_active ? 'Active' : 'Inactive'"></span>
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <button @click="editLanguage(lang)" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i data-lucide="edit" class="w-4 h-4"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ecosystems Tab -->
+    <div x-show="activeTab === 'ecosystems'" x-cloak>
+        <div class="bg-white rounded-lg shadow">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold text-gray-900">Ecosystems</h2>
+                    <div class="flex items-center space-x-3">
+                        <input type="text" x-model="ecosystemSearch" @input="filterEcosystems" 
+                               placeholder="Search ecosystems..."
+                               class="px-4 py-2 border border-gray-300 rounded-lg text-sm">
+                        <button @click="showAddEcosystemModal = true" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+                            <i data-lucide="plus" class="w-4 h-4 inline mr-1"></i>
+                            Add Ecosystem
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Logo</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Display Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <template x-for="eco in filteredEcosystems" :key="eco.id">
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <template x-if="eco.logo_url">
+                                            <img :src="eco.logo_url" :alt="eco.name" class="w-8 h-8 object-contain">
+                                        </template>
+                                        <template x-if="!eco.logo_url">
+                                            <div class="w-8 h-8 bg-gray-200 rounded flex items-center justify-center">
+                                                <i data-lucide="package" class="w-4 h-4 text-gray-400"></i>
+                                            </div>
+                                        </template>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" x-text="eco.name"></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" x-text="eco.display_name"></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="eco.category || '-'"></td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span :class="eco.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'" 
+                                              class="px-2 py-1 text-xs font-medium rounded-full">
+                                            <span x-text="eco.is_active ? 'Active' : 'Inactive'"></span>
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <button @click="editEcosystem(eco)" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i data-lucide="edit" class="w-4 h-4"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Language Modal -->
+    <div x-show="showEditLanguageModal" x-cloak class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Edit Programming Language</h3>
+            <template x-if="editingLanguage">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Canonical Name</label>
+                        <input type="text" x-model="editingLanguage.name" disabled
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500">
+                        <p class="text-xs text-gray-500 mt-1">Cannot be changed (used for matching)</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
+                        <input type="text" x-model="editingLanguage.display_name"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Logo URL</label>
+                        <input type="text" x-model="editingLanguage.logo_url"
+                               placeholder="https://..."
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        <p class="text-xs text-gray-500 mt-1">Try: https://skillicons.dev/icons?i=python</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                        <input type="text" x-model="editingLanguage.category"
+                               placeholder="e.g., General Purpose, Query Language"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    </div>
+                    <div class="flex items-center justify-end space-x-3 pt-4">
+                        <button @click="showEditLanguageModal = false" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                            Cancel
+                        </button>
+                        <button @click="saveLanguage" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- Edit Ecosystem Modal -->
+    <div x-show="showEditEcosystemModal" x-cloak class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Edit Ecosystem</h3>
+            <template x-if="editingEcosystem">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Canonical Name</label>
+                        <input type="text" x-model="editingEcosystem.name" disabled
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500">
+                        <p class="text-xs text-gray-500 mt-1">Cannot be changed (used for matching)</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
+                        <input type="text" x-model="editingEcosystem.display_name"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Logo URL</label>
+                        <input type="text" x-model="editingEcosystem.logo_url"
+                               placeholder="https://..."
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        <p class="text-xs text-gray-500 mt-1">Try: https://skillicons.dev/icons?i=azure</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                        <input type="text" x-model="editingEcosystem.category"
+                               placeholder="e.g., Cloud Platform, Data Tool"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    </div>
+                    <div class="flex items-center justify-end space-x-3 pt-4">
+                        <button @click="showEditEcosystemModal = false" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                            Cancel
+                        </button>
+                        <button @click="saveEcosystem" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function techStackPage() {
+    return {
+        activeTab: 'languages',
+        stats: {},
+        languages: [],
+        ecosystems: [],
+        filteredLanguages: [],
+        filteredEcosystems: [],
+        languageSearch: '',
+        ecosystemSearch: '',
+        showEditLanguageModal: false,
+        showEditEcosystemModal: false,
+        showAddLanguageModal: false,
+        showAddEcosystemModal: false,
+        editingLanguage: null,
+        editingEcosystem: null,
+        
+        async init() {
+            await this.loadStats();
+            await this.loadLanguages();
+            await this.loadEcosystems();
+            this.$nextTick(() => lucide.createIcons());
+        },
+        
+        async loadStats() {
+            try {
+                const response = await fetch('/api/tech-stack/stats');
+                this.stats = await response.json();
+            } catch (error) {
+                console.error('Failed to load stats:', error);
+            }
+        },
+        
+        async loadLanguages() {
+            try {
+                const response = await fetch('/api/tech-stack/programming-languages');
+                const data = await response.json();
+                this.languages = data.languages || [];
+                this.filteredLanguages = this.languages;
+            } catch (error) {
+                console.error('Failed to load languages:', error);
+            }
+        },
+        
+        async loadEcosystems() {
+            try {
+                const response = await fetch('/api/tech-stack/ecosystems');
+                const data = await response.json();
+                this.ecosystems = data.ecosystems || [];
+                this.filteredEcosystems = this.ecosystems;
+            } catch (error) {
+                console.error('Failed to load ecosystems:', error);
+            }
+        },
+        
+        filterLanguages() {
+            const search = this.languageSearch.toLowerCase();
+            this.filteredLanguages = this.languages.filter(lang => 
+                lang.name.toLowerCase().includes(search) ||
+                lang.display_name.toLowerCase().includes(search) ||
+                (lang.category && lang.category.toLowerCase().includes(search))
+            );
+        },
+        
+        filterEcosystems() {
+            const search = this.ecosystemSearch.toLowerCase();
+            this.filteredEcosystems = this.ecosystems.filter(eco => 
+                eco.name.toLowerCase().includes(search) ||
+                eco.display_name.toLowerCase().includes(search) ||
+                (eco.category && eco.category.toLowerCase().includes(search))
+            );
+        },
+        
+        editLanguage(lang) {
+            this.editingLanguage = { ...lang };
+            this.showEditLanguageModal = true;
+            this.$nextTick(() => lucide.createIcons());
+        },
+        
+        editEcosystem(eco) {
+            this.editingEcosystem = { ...eco };
+            this.showEditEcosystemModal = true;
+            this.$nextTick(() => lucide.createIcons());
+        },
+        
+        async saveLanguage() {
+            try {
+                const response = await fetch(`/api/tech-stack/programming-languages/${this.editingLanguage.id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        display_name: this.editingLanguage.display_name,
+                        logo_url: this.editingLanguage.logo_url || null,
+                        category: this.editingLanguage.category || null
+                    })
+                });
+                
+                if (response.ok) {
+                    this.showEditLanguageModal = false;
+                    await this.loadLanguages();
+                    this.$nextTick(() => lucide.createIcons());
+                } else {
+                    alert('Failed to save changes');
+                }
+            } catch (error) {
+                console.error('Failed to save language:', error);
+                alert('Failed to save changes');
+            }
+        },
+        
+        async saveEcosystem() {
+            try {
+                const response = await fetch(`/api/tech-stack/ecosystems/${this.editingEcosystem.id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        display_name: this.editingEcosystem.display_name,
+                        logo_url: this.editingEcosystem.logo_url || null,
+                        category: this.editingEcosystem.category || null
+                    })
+                });
+                
+                if (response.ok) {
+                    this.showEditEcosystemModal = false;
+                    await this.loadEcosystems();
+                    this.$nextTick(() => lucide.createIcons());
+                } else {
+                    alert('Failed to save changes');
+                }
+            } catch (error) {
+                console.error('Failed to save ecosystem:', error);
+                alert('Failed to save changes');
+            }
+        }
+    };
+}
+</script>
+{% endblock %}
