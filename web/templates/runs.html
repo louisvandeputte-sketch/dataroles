@@ -10,32 +10,22 @@
         
         <div class="border-b border-gray-200">
             <nav class="-mb-px flex space-x-8">
-                <button @click="activeTab = 'active'" 
-                        :class="activeTab === 'active' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                <button @click="activeTab = 'all'" 
+                        :class="activeTab === 'all' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
                         class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
-                    Active (<span x-text="activeRuns.length"></span>)
+                    All Runs
                 </button>
-                <button @click="activeTab = 'recent'" 
-                        :class="activeTab === 'recent' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                <button @click="activeTab = 'archived'" 
+                        :class="activeTab === 'archived' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
                         class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
-                    Recent (24h)
-                </button>
-                <button @click="activeTab = 'success'" 
-                        :class="activeTab === 'success' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
-                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
-                    Success
-                </button>
-                <button @click="activeTab = 'failed'" 
-                        :class="activeTab === 'failed' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
-                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
-                    Failed
+                    Archived
                 </button>
             </nav>
         </div>
     </div>
 
-    <!-- Active Runs Section -->
-    <div x-show="activeTab === 'active'" class="space-y-4 mb-6">
+    <!-- Active Runs Section (shown at top of All Runs tab) -->
+    <div x-show="activeTab === 'all' && activeRuns.length > 0" class="space-y-4 mb-6">
         <template x-if="activeRuns.length === 0">
             <div class="bg-white rounded-lg shadow p-8 text-center text-gray-500">
                 <i data-lucide="zap" class="w-12 h-12 mx-auto mb-3 text-gray-300"></i>
@@ -113,7 +103,7 @@
     </div>
 
     <!-- History Table -->
-    <div x-show="activeTab !== 'active'" class="bg-white rounded-lg shadow overflow-hidden">
+    <div x-show="activeTab === 'all' || activeTab === 'archived'" class="bg-white rounded-lg shadow overflow-hidden">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
@@ -125,7 +115,7 @@
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Started</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Results</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16"></th>
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
@@ -176,9 +166,11 @@
                         <td class="px-6 py-4 text-sm text-gray-900">
                             <span x-text="`${run.jobs_new || 0} new / ${run.jobs_updated || 0} updated`"></span>
                         </td>
-                        <td class="px-6 py-4 text-right">
-                            <button @click.stop="viewRunDetail(run.id)" class="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                                View Details
+                        <td class="px-6 py-4 text-center">
+                            <button @click.stop="toggleArchive(run.id, run.archived)" 
+                                    class="text-gray-400 hover:text-gray-600 transition-colors"
+                                    :title="run.archived ? 'Unarchive' : 'Archive'">
+                                <i :data-lucide="run.archived ? 'archive-restore' : 'archive'" class="w-5 h-5"></i>
                             </button>
                         </td>
                     </tr>
@@ -334,7 +326,7 @@
 <script>
 function runsPage() {
     return {
-        activeTab: 'recent',  // Start with recent instead of active
+        activeTab: 'all',  // Start with all runs
         runs: [],
         activeRuns: [],
         showDetailModal: false,
@@ -361,6 +353,10 @@ function runsPage() {
                 const data = await response.json();
                 this.runs = data.runs;
                 console.log('Runs loaded:', this.runs.length, 'runs');
+                console.log('Archived runs:', this.runs.filter(r => r.archived).length);
+                
+                // Refresh icons after data load
+                this.$nextTick(() => lucide.createIcons());
             } catch (error) {
                 console.error('Failed to load runs:', error);
             }
@@ -379,16 +375,37 @@ function runsPage() {
         },
         
         get filteredRuns() {
-            if (this.activeTab === 'recent') {
-                // Filter last 24 hours
-                const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-                return this.runs.filter(r => new Date(r.created_at) > oneDayAgo);
-            } else if (this.activeTab === 'success') {
-                return this.runs.filter(r => r.status === 'completed');
-            } else if (this.activeTab === 'failed') {
-                return this.runs.filter(r => r.status === 'failed');
+            const filtered = this.activeTab === 'all' 
+                ? this.runs.filter(r => !r.archived)
+                : this.activeTab === 'archived'
+                ? this.runs.filter(r => r.archived)
+                : this.runs;
+            
+            console.log(`Filtered runs (${this.activeTab}):`, filtered.length);
+            return filtered;
+        },
+        
+        async toggleArchive(runId, currentlyArchived) {
+            try {
+                const response = await fetch(`/api/runs/${runId}/archive`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ archived: !currentlyArchived })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to toggle archive');
+                }
+                
+                // Reload runs and refresh icons
+                await this.loadRuns();
+                this.$nextTick(() => lucide.createIcons());
+                console.log('Run archive status toggled');
+            } catch (error) {
+                console.error('Failed to toggle archive:', error);
+                alert('Failed to update archive status: ' + error.message);
             }
-            return this.runs;
         },
         
         formatDate(dateString) {
@@ -451,7 +468,7 @@ function runsPage() {
         async stopScrape(runId) {
             console.log('Stopping scrape:', runId);
             
-            if (!confirm('Mark this scrape as stopped?\n\nNote: The actual Bright Data collection cannot be stopped and will continue until completion. This will only mark it as cancelled in the UI.')) {
+            if (!confirm('Stop this scrape immediately?\n\nThis will mark the run as failed and stop tracking it.')) {
                 return;
             }
             
@@ -476,7 +493,7 @@ function runsPage() {
                 await this.loadActiveRuns();
                 await this.loadRuns();
                 
-                alert('Scrape marked as stopped in the UI.\n\nNote: The Bright Data collection will continue until completion on their side.');
+                alert('Scrape stopped successfully!');
                 console.log('Scrape stopped successfully');
             } catch (error) {
                 console.error('Failed to stop scrape:', error);

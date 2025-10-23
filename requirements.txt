@@ -37,3 +37,6 @@ apscheduler==3.10.4
 
 # HTTP requests
 requests==2.32.5
+
+# OpenAI SDK
+openai>=1.55.0

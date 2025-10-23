@@ -131,7 +131,27 @@ async def execute_scrape_run(
         # Step 6: Process jobs through ingestion pipeline
         batch_result = await process_jobs_batch(jobs_data, run_id)
         
-        # Step 7: Update scrape_run with results
+        # Step 7: Assign job types to all jobs found in this run (BEFORE updating scrape_run)
+        if job_type_id and batch_result.job_ids:
+            logger.info(f"Assigning job type {job_type_id} to {len(batch_result.job_ids)} jobs")
+            assignment_count = 0
+            for job_id in batch_result.job_ids:
+                try:
+                    # Insert job_type_assignment (ON CONFLICT DO NOTHING handles duplicates)
+                    db.client.table("job_type_assignments").insert({
+                        "job_posting_id": job_id,
+                        "job_type_id": job_type_id,
+                        "assigned_via": "scrape"
+                    }).execute()
+                    assignment_count += 1
+                except Exception as e:
+                    # Ignore duplicate key errors
+                    if "duplicate key" not in str(e).lower():
+                        logger.warning(f"Failed to assign type to job {job_id}: {e}")
+            
+            logger.info(f"✅ Created {assignment_count} job type assignments")
+        
+        # Step 8: Update scrape_run with results
         end_time = datetime.utcnow()
         duration = (end_time - start_time).total_seconds()
         
@@ -149,24 +169,6 @@ async def execute_scrape_run(
                 "batch_summary": batch_result.summary()
             }
         })
-        
-        # Step 7: Assign job types to all jobs found in this run
-        if job_type_id and batch_result.job_ids:
-            logger.info(f"Assigning job type {job_type_id} to {len(batch_result.job_ids)} jobs")
-            for job_id in batch_result.job_ids:
-                try:
-                    # Insert job_type_assignment (ON CONFLICT DO NOTHING handles duplicates)
-                    db.client.table("job_type_assignments").insert({
-                        "job_posting_id": job_id,
-                        "job_type_id": job_type_id,
-                        "assigned_via": "scrape"
-                    }).execute()
-                except Exception as e:
-                    # Ignore duplicate key errors
-                    if "duplicate key" not in str(e).lower():
-                        logger.warning(f"Failed to assign type to job {job_id}: {e}")
-            
-            logger.info(f"✅ Job type assignments completed")
         
         # Clean up
         await brightdata.close()
@@ -188,17 +190,33 @@ async def execute_scrape_run(
         return result
         
     except Exception as e:
-        # Handle errors gracefully
-        logger.exception(f"Scrape run failed: {e}")
+        # Handle errors gracefully with detailed logging
+        error_type = type(e).__name__
+        error_msg = str(e)
+        
+        logger.exception(f"Scrape run failed with {error_type}: {error_msg}")
         
         end_time = datetime.utcnow()
         duration = (end_time - start_time).total_seconds()
         
+        # Create detailed error message
+        detailed_error = f"{error_type}: {error_msg}"
+        if not error_msg:
+            detailed_error = f"{error_type}: Unknown error occurred"
+        
         db.update_scrape_run(run_id, {
             "status": "failed",
             "completed_at": end_time.isoformat(),
-            "error_message": str(e)
+            "error_message": detailed_error,
+            "metadata": {
+                "date_range": date_range,
+                "lookback_days": expected_lookback,
+                "error_type": error_type,
+                "duration_seconds": duration
+            }
         })
+        
+        logger.error(f"Run {run_id} failed after {duration:.1f}s: {detailed_error}")
         
         return ScrapeRunResult(
             run_id=run_id,
@@ -209,5 +227,5 @@ async def execute_scrape_run(
             jobs_new=0,
             jobs_updated=0,
             duration_seconds=duration,
-            error=str(e)
+            error=detailed_error
         )

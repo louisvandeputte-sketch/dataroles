@@ -3,6 +3,7 @@
 from fastapi import APIRouter, HTTPException
 from typing import Optional, List
 from datetime import datetime, timedelta
+from loguru import logger
 
 from database import db
 
@@ -48,6 +49,7 @@ async def list_runs(
             "jobs_found": run.get("jobs_found", 0),
             "jobs_new": run.get("jobs_new", 0),
             "jobs_updated": run.get("jobs_updated", 0),
+            "archived": run.get("archived", False),
             "metadata": run.get("metadata", {})
         })
     
@@ -118,6 +120,8 @@ async def get_active_runs():
             "jobs_found": run.get("jobs_found", 0),
             "jobs_new": run.get("jobs_new", 0),
             "jobs_updated": run.get("jobs_updated", 0),
+            "archived": run.get("archived", False),
+            "trigger_type": run.get("trigger_type", "manual"),
             "metadata": run.get("metadata", {})
         })
     
@@ -183,59 +187,83 @@ async def get_run_logs(run_id: str):
 @router.post("/{run_id}/stop")
 async def stop_run(run_id: str):
     """
-    Mark a scrape as stopped by user.
+    Hard stop a scrape run immediately.
     
-    Note: Bright Data scrapes cannot be stopped mid-execution via API.
-    This endpoint marks the run as cancelled in our database, but the 
-    actual scrape will continue until completion on Bright Data's side.
+    This will mark the run as failed in the database. The Bright Data 
+    collection may continue on their side, but we stop tracking it.
     """
     try:
-        # Get current run
+        # Get current run (don't check status - allow stopping any run)
         current = db.client.table("scrape_runs")\
             .select("*")\
             .eq("id", run_id)\
-            .eq("status", "running")\
             .execute()
         
         if not current.data:
-            raise HTTPException(status_code=404, detail="Run not found or not running")
+            raise HTTPException(status_code=404, detail="Run not found")
         
         run = current.data[0]
         
-        # Update metadata to include stopped flag
-        metadata = run.get("metadata", {})
-        metadata["stopped_by_user"] = True
-        metadata["stopped_at"] = datetime.utcnow().isoformat()
+        # Check if already stopped
+        if run.get("status") in ["completed", "failed"]:
+            return {
+                "message": f"Run already {run.get('status')}",
+                "run_id": run_id
+            }
         
-        # Get snapshot_id if available
-        snapshot_id = metadata.get("snapshot_id")
-        
-        # Note: We cannot actually stop the Bright Data collection via API
-        # The scrape will continue on their side, but we mark it as cancelled here
-        
-        # Update the run status to failed with stopped reason
+        # Hard stop: update status immediately
         result = db.client.table("scrape_runs")\
             .update({
                 "status": "failed",
                 "completed_at": datetime.utcnow().isoformat(),
-                "error_message": "Stopped by user",
-                "metadata": metadata
+                "error_message": "Manually stopped by user (hard stop)"
             })\
             .eq("id", run_id)\
             .execute()
         
-        logger.info(f"Run {run_id} marked as stopped by user")
+        logger.info(f"Run {run_id} hard stopped by user")
         
         return {
-            "message": "Scrape marked as stopped. Note: The actual Bright Data collection cannot be stopped and will continue until completion.",
-            "run_id": run_id,
-            "snapshot_id": snapshot_id
+            "message": "Scrape stopped successfully",
+            "run_id": run_id
         }
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Failed to stop run {run_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to stop scrape: {str(e)}")
+
+
+from pydantic import BaseModel
+
+class ArchiveRequest(BaseModel):
+    archived: bool
+
+@router.post("/{run_id}/archive")
+async def archive_run(run_id: str, body: ArchiveRequest):
+    """Archive or unarchive a scrape run."""
+    try:
+        # Update the archived status
+        result = db.client.table("scrape_runs")\
+            .update({"archived": body.archived})\
+            .eq("id", run_id)\
+            .execute()
+        
+        if not result.data:
+            raise HTTPException(status_code=404, detail="Run not found")
+        
+        logger.info(f"Run {run_id} {'archived' if body.archived else 'unarchived'}")
+        
+        return {
+            "message": f"Run {'archived' if body.archived else 'unarchived'} successfully",
+            "run_id": run_id,
+            "archived": body.archived
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to archive run {run_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to archive run: {str(e)}")
 
 
 @router.delete("/{run_id}")

@@ -81,7 +81,7 @@ async def list_companies(
     try:
         # Build base query with LEFT JOIN to master data
         query = db.client.table("companies").select(
-            "id, name, logo_url, company_master_data(*)",
+            "id, name, logo_url, industry, company_master_data(*)",
             count="exact"
         )
         

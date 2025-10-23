@@ -218,10 +218,13 @@ class SupabaseClient:
         location: Optional[str] = None,
         company_ids: Optional[List[str]] = None,
         location_ids: Optional[List[str]] = None,
+        type_ids: Optional[List[str]] = None,
         seniority: Optional[List[str]] = None,
         employment: Optional[List[str]] = None,
+        posted_date: Optional[str] = None,
+        ai_enriched: Optional[bool] = None,
         active_only: bool = True,
-        job_ids: Optional[List[str]] = None,  # NEW: Filter by specific job IDs
+        job_ids: Optional[List[str]] = None,
         limit: int = 50,
         offset: int = 0
     ) -> tuple[List[Dict], int]:
@@ -262,6 +265,22 @@ class SupabaseClient:
         if employment and len(employment) > 0:
             query = query.in_("employment_type", employment)
         
+        # Filter by posted date
+        if posted_date and posted_date != 'all':
+            from datetime import datetime, timedelta
+            now = datetime.now()
+            if posted_date == 'today':
+                date_threshold = now - timedelta(days=1)
+            elif posted_date == 'week':
+                date_threshold = now - timedelta(days=7)
+            elif posted_date == 'month':
+                date_threshold = now - timedelta(days=30)
+            else:
+                date_threshold = None
+            
+            if date_threshold:
+                query = query.gte("posted_date", date_threshold.isoformat())
+        
         # Execute with pagination
         result = query.order("posted_date", desc=True)\
             .range(offset, offset + limit - 1)\
@@ -285,6 +304,13 @@ class SupabaseClient:
             
             job["job_types"] = job_types
             
+            # Filter by type_ids if specified
+            if type_ids and len(type_ids) > 0:
+                job_type_ids = [jt["id"] for jt in job_types]
+                # Check if any of the job's types match the filter
+                if not any(type_id in job_type_ids for type_id in type_ids):
+                    continue  # Skip this job
+            
             # Get AI enrichment status
             enrichment_result = self.client.table("llm_enrichment")\
                 .select("enrichment_completed_at, type_datarol, rolniveau")\
@@ -298,6 +324,13 @@ class SupabaseClient:
             else:
                 job["ai_enriched"] = False
                 job["ai_data"] = None
+            
+            # Filter by AI enrichment status if specified
+            if ai_enriched is not None:
+                if ai_enriched and not job["ai_enriched"]:
+                    continue  # Skip unenriched jobs
+                if not ai_enriched and job["ai_enriched"]:
+                    continue  # Skip enriched jobs
             
             jobs_with_types.append(job)
         

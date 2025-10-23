@@ -1,18 +1,20 @@
 """LLM enrichment service using OpenAI Responses API for job posting analysis."""
 
 import json
-import requests
 from typing import Dict, Any, Optional, List
 from datetime import datetime
 from loguru import logger
+from openai import OpenAI
 
 from config.settings import settings
 from database.client import db
 
 # OpenAI Responses API configuration
-OPENAI_API_URL = "https://api.openai.com/v1/responses"
 PROMPT_TEMPLATE_ID = "pmpt_68ee0e7890788197b06ced94ab8af4d50759bbe1e2c42f88"
-PROMPT_VERSION = "7"
+PROMPT_VERSION = "12"
+
+# Initialize OpenAI client
+client = OpenAI(api_key=settings.openai_api_key)
 
 
 def enrich_job_with_llm(job_id: str, job_description: str) -> Optional[Dict[str, Any]]:
@@ -29,45 +31,24 @@ def enrich_job_with_llm(job_id: str, job_description: str) -> Optional[Dict[str,
     try:
         logger.info(f"Enriching job {job_id} with LLM")
         
-        # Prepare API request
-        url = "https://api.openai.com/v1/responses"
-        headers = {
-            "Authorization": f"Bearer {settings.openai_api_key}",
-            "Content-Type": "application/json"
-        }
-        
-        payload = {
-            "prompt": {
+        # Call OpenAI Responses API using the new SDK
+        response = client.responses.create(
+            prompt={
                 "id": PROMPT_TEMPLATE_ID,
                 "version": PROMPT_VERSION
             },
-            "input": job_description  # Version 7 expects string directly, not object
-        }
-        
-        # Call OpenAI Responses API
-        response = requests.post(
-            url,
-            headers=headers,
-            json=payload,
-            timeout=30
+            input=job_description
         )
-        
-        # Log response for debugging
-        if response.status_code != 200:
-            logger.error(f"OpenAI API error: {response.status_code} - {response.text}")
-        
-        response.raise_for_status()
-        data = response.json()
         
         # Extract structured output from response
         enrichment_data = None
-        if 'output' in data:
-            for item in data['output']:
-                if item.get('type') == 'message' and 'content' in item:
-                    for content in item['content']:
-                        if content.get('type') == 'output_text':
+        if hasattr(response, 'output') and response.output:
+            for item in response.output:
+                if hasattr(item, 'type') and item.type == 'message' and hasattr(item, 'content'):
+                    for content in item.content:
+                        if hasattr(content, 'type') and content.type == 'output_text':
                             # Parse JSON from text output
-                            enrichment_data = json.loads(content['text'])
+                            enrichment_data = json.loads(content.text)
                             break
                 if enrichment_data:
                     break
@@ -87,29 +68,102 @@ def enrich_job_with_llm(job_id: str, job_description: str) -> Optional[Dict[str,
         return None
 
 
+def _format_array_for_postgres(arr: List[str]) -> str:
+    """
+    Format a Python list as a PostgreSQL array string.
+    Supabase Python client doesn't handle TEXT[] arrays correctly, so we format manually.
+    """
+    if not arr:
+        return "{}"
+    # Escape quotes and format as PostgreSQL array
+    escaped = [item.replace('"', '\\"') for item in arr]
+    return "{" + ",".join(f'"{item}"' for item in escaped) + "}"
+
+
 def save_enrichment_to_db(job_id: str, enrichment_data: Dict[str, Any]) -> bool:
     """
     Save enrichment data to database.
     
     Args:
         job_id: UUID of the job posting
-        enrichment_data: Parsed enrichment data from LLM
+        enrichment_data: Parsed enrichment data from LLM (v18 format: English root + i18n translations)
     
     Returns:
         True if successful, False otherwise
     """
     try:
-        # Prepare data for database
+        # New format (v18): English fields at root level, translations in i18n
+        # Root level fields (English canonical values)
+        data_role_type = enrichment_data.get("data_role_type")
+        role_level = enrichment_data.get("role_level", [])
+        seniority = enrichment_data.get("seniority", [])
+        contract = enrichment_data.get("contract", [])
+        sourcing_type = enrichment_data.get("sourcing_type")
+        summary_short_en = enrichment_data.get("summary_short")
+        summary_long_en = enrichment_data.get("summary_long")
+        must_have_languages = enrichment_data.get("must_have_languages", [])
+        nice_to_have_languages = enrichment_data.get("nice_to_have_languages", [])
+        must_have_ecosystems = enrichment_data.get("must_have_ecosystems", [])
+        nice_to_have_ecosystems = enrichment_data.get("nice_to_have_ecosystems", [])
+        must_have_spoken = enrichment_data.get("must_have_spoken_languages", [])
+        nice_to_have_spoken = enrichment_data.get("nice_to_have_spoken_languages", [])
+        
+        # Extract i18n translations
+        i18n = enrichment_data.get("i18n", {})
+        nl_data = i18n.get("nl", {})
+        fr_data = i18n.get("fr", {})
+        
+        # Log for debugging
+        logger.debug(f"i18n keys: {list(i18n.keys())}")
+        logger.debug(f"nl_data keys: {list(nl_data.keys()) if nl_data else 'None'}")
+        logger.debug(f"fr_data keys: {list(fr_data.keys()) if fr_data else 'None'}")
+        
+        # Prepare data for database (multilingual schema)
         db_data = {
-            "type_datarol": enrichment_data.get("type_datarol"),
-            "rolniveau": enrichment_data.get("rolniveau"),
-            "contract": enrichment_data.get("contract", []),
-            "must_have_programmeertalen": enrichment_data.get("must_have_programmeertalen", []),
-            "nice_to_have_programmeertalen": enrichment_data.get("nice_to_have_programmeertalen", []),
-            "must_have_ecosystemen": enrichment_data.get("must_have_ecosystemen", []),
-            "nice_to_have_ecosystemen": enrichment_data.get("nice_to_have_ecosystemen", []),
-            "must_have_talen": enrichment_data.get("must_have_talen", []),
-            "nice_to_have_talen": enrichment_data.get("nice_to_have_talen", []),
+            # English summaries (canonical)
+            "samenvatting_kort_en": summary_short_en,
+            "samenvatting_lang_en": summary_long_en,
+            
+            # Dutch translations
+            "samenvatting_kort_nl": nl_data.get("summary_short"),
+            "samenvatting_lang_nl": nl_data.get("summary_long"),
+            
+            # French translations
+            "samenvatting_kort_fr": fr_data.get("summary_short"),
+            "samenvatting_lang_fr": fr_data.get("summary_long"),
+            
+            # Labels as JSONB (contains all language-specific label translations)
+            "labels": json.dumps({
+                "en": {
+                    "data_role_type": data_role_type,
+                    "role_level": role_level,
+                    "seniority": seniority,
+                    "contract": contract,
+                    "sourcing_type": sourcing_type
+                },
+                "nl": nl_data,  # Contains translated labels
+                "fr": fr_data   # Contains translated labels
+            }),
+            
+            # Legacy fields for backward compatibility (use English canonical values)
+            "type_datarol": data_role_type,
+            "rolniveau": _format_array_for_postgres(role_level),
+            "seniority": _format_array_for_postgres(seniority),
+            "contract": _format_array_for_postgres(contract),
+            "sourcing_type": sourcing_type,
+            "samenvatting_kort": summary_short_en,  # Legacy: use English
+            "samenvatting_lang": summary_long_en,   # Legacy: use English
+            
+            # Programming languages and ecosystems (language-agnostic)
+            "must_have_programmeertalen": _format_array_for_postgres(must_have_languages),
+            "nice_to_have_programmeertalen": _format_array_for_postgres(nice_to_have_languages),
+            "must_have_ecosystemen": _format_array_for_postgres(must_have_ecosystems),
+            "nice_to_have_ecosystemen": _format_array_for_postgres(nice_to_have_ecosystems),
+            
+            # Spoken/written languages
+            "must_have_talen": _format_array_for_postgres(must_have_spoken),
+            "nice_to_have_talen": _format_array_for_postgres(nice_to_have_spoken),
+            
             "enrichment_completed_at": datetime.utcnow().isoformat(),
             "enrichment_model_version": f"prompt-{PROMPT_TEMPLATE_ID}-v{PROMPT_VERSION}"
         }
@@ -129,6 +183,8 @@ def save_enrichment_to_db(job_id: str, enrichment_data: Dict[str, Any]) -> bool:
             
     except Exception as e:
         logger.error(f"Failed to save enrichment for job {job_id}: {e}")
+        logger.error(f"Enrichment data keys: {list(enrichment_data.keys())}")
+        logger.error(f"DB data keys: {list(db_data.keys()) if 'db_data' in locals() else 'db_data not created'}")
         import traceback
         traceback.print_exc()
         return False

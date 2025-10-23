@@ -51,6 +51,11 @@ class BatchResult:
     def summary(self) -> str:
         """Get summary string of batch results."""
         return f"New: {self.new_count}, Updated: {self.updated_count}, Skipped: {self.skipped_count}, Errors: {self.error_count}"
+    
+    @property
+    def job_ids(self) -> List[UUID]:
+        """Get list of all successfully processed job IDs."""
+        return [r.job_id for r in self.results if r.job_id is not None]
 
 
 def process_job_posting(raw_job: Dict[str, Any], scrape_run_id: UUID) -> ProcessingResult:

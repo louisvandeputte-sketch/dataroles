@@ -16,26 +16,6 @@
         </button>
     </div>
 
-    <!-- Quick Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div class="bg-white rounded-lg shadow p-6">
-            <div class="text-3xl font-bold text-gray-900" x-text="stats.total_queries"></div>
-            <div class="text-sm text-gray-600 mt-1">Total Queries</div>
-        </div>
-        <div class="bg-white rounded-lg shadow p-6">
-            <div class="text-3xl font-bold text-green-600" x-text="stats.active_queries"></div>
-            <div class="text-sm text-gray-600 mt-1">Active Queries</div>
-        </div>
-        <div class="bg-white rounded-lg shadow p-6">
-            <div class="text-3xl font-bold text-blue-600" x-text="stats.scheduled_queries || 0"></div>
-            <div class="text-sm text-gray-600 mt-1">Scheduled</div>
-        </div>
-        <div class="bg-white rounded-lg shadow p-6">
-            <div class="text-3xl font-bold text-orange-600" x-text="stats.total_jobs_found || 0"></div>
-            <div class="text-sm text-gray-600 mt-1">Total Jobs Found</div>
-        </div>
-    </div>
-
     <!-- Bulk Actions Bar -->
     <div x-show="selectedQueries.length > 0" x-cloak 
          class="mb-4 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 flex items-center justify-between">

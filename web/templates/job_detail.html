@@ -330,6 +330,27 @@
                         </div>
                     </div>
                     
+                    <!-- Language Tabs -->
+                    <div class="border-b border-gray-200 mb-6">
+                        <nav class="-mb-px flex space-x-4">
+                            <button @click="enrichmentLang = 'nl'" 
+                                    :class="enrichmentLang === 'nl' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                                    class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
+                                🇳🇱 Nederlands
+                            </button>
+                            <button @click="enrichmentLang = 'fr'" 
+                                    :class="enrichmentLang === 'fr' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                                    class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
+                                🇫🇷 Français
+                            </button>
+                            <button @click="enrichmentLang = 'en'" 
+                                    :class="enrichmentLang === 'en' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                                    class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
+                                🇬🇧 English
+                            </button>
+                        </nav>
+                    </div>
+                    
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <!-- Role Classification -->
                         <div class="bg-blue-50 rounded-lg p-4">
@@ -337,11 +358,37 @@
                             <div class="space-y-2">
                                 <div>
                                     <span class="text-xs text-blue-700">Type</span>
-                                    <p class="text-sm font-medium text-blue-900" x-text="enrichment.type_datarol || '-'"></p>
+                                    <p class="text-sm font-medium text-blue-900" x-text="getCurrentLabel('data_role_type')"></p>
                                 </div>
                                 <div>
-                                    <span class="text-xs text-blue-700">Level</span>
-                                    <p class="text-sm font-medium text-blue-900" x-text="enrichment.rolniveau || '-'"></p>
+                                    <span class="text-xs text-blue-700">Role Level</span>
+                                    <div class="flex flex-wrap gap-1 mt-1">
+                                        <template x-if="getCurrentLabel('role_level') && getCurrentLabel('role_level').length > 0">
+                                            <template x-for="level in getCurrentLabel('role_level')" :key="level">
+                                                <span class="px-2 py-0.5 bg-blue-200 text-blue-800 rounded text-xs font-medium" x-text="level"></span>
+                                            </template>
+                                        </template>
+                                        <template x-if="!getCurrentLabel('role_level') || getCurrentLabel('role_level').length === 0">
+                                            <span class="text-xs text-gray-500">-</span>
+                                        </template>
+                                    </div>
+                                </div>
+                                <div>
+                                    <span class="text-xs text-blue-700">Seniority</span>
+                                    <div class="flex flex-wrap gap-1 mt-1">
+                                        <template x-if="getCurrentLabel('seniority') && getCurrentLabel('seniority').length > 0">
+                                            <template x-for="sen in getCurrentLabel('seniority')" :key="sen">
+                                                <span class="px-2 py-0.5 bg-blue-200 text-blue-800 rounded text-xs font-medium" x-text="sen"></span>
+                                            </template>
+                                        </template>
+                                        <template x-if="!getCurrentLabel('seniority') || getCurrentLabel('seniority').length === 0">
+                                            <span class="text-xs text-gray-500">-</span>
+                                        </template>
+                                    </div>
+                                </div>
+                                <div>
+                                    <span class="text-xs text-blue-700">Sourcing</span>
+                                    <p class="text-sm font-medium text-blue-900" x-text="getCurrentLabel('sourcing_type')"></p>
                                 </div>
                             </div>
                         </div>
@@ -350,12 +397,12 @@
                         <div class="bg-green-50 rounded-lg p-4">
                             <h4 class="text-sm font-semibold text-green-900 mb-3">Contract Types</h4>
                             <div class="flex flex-wrap gap-2">
-                                <template x-if="enrichment.contract && enrichment.contract.length > 0">
-                                    <template x-for="contract in enrichment.contract" :key="contract">
+                                <template x-if="getCurrentLabel('contract') && getCurrentLabel('contract').length > 0">
+                                    <template x-for="contract in getCurrentLabel('contract')" :key="contract">
                                         <span class="px-2 py-1 bg-green-200 text-green-800 rounded text-xs font-medium" x-text="contract"></span>
                                     </template>
                                 </template>
-                                <template x-if="!enrichment.contract || enrichment.contract.length === 0">
+                                <template x-if="!getCurrentLabel('contract') || getCurrentLabel('contract').length === 0">
                                     <span class="text-sm text-gray-500">Not specified</span>
                                 </template>
                             </div>
@@ -427,6 +474,21 @@
                             </div>
                         </div>
                         
+                        <!-- Summaries -->
+                        <div class="bg-gray-50 rounded-lg p-4 md:col-span-2">
+                            <h4 class="text-sm font-semibold text-gray-900 mb-3">AI Summaries</h4>
+                            <div class="space-y-4">
+                                <div>
+                                    <span class="text-xs font-medium text-gray-700">Short Summary</span>
+                                    <p class="text-sm text-gray-900 mt-1" x-text="getCurrentSummary('kort')"></p>
+                                </div>
+                                <div>
+                                    <span class="text-xs font-medium text-gray-700">Detailed Summary</span>
+                                    <p class="text-sm text-gray-900 mt-1" x-text="getCurrentSummary('lang')"></p>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <!-- Languages -->
                         <div class="bg-indigo-50 rounded-lg p-4 md:col-span-2">
                             <h4 class="text-sm font-semibold text-indigo-900 mb-3">Spoken Languages</h4>
@@ -478,6 +540,7 @@ function jobDetailPage(jobId) {
         enrichment: null,
         enriching: false,
         activeTab: 'description',
+        enrichmentLang: 'nl',  // Default language for enrichment tab
         descriptionMode: 'formatted',
         editMode: false,
         
@@ -488,6 +551,82 @@ function jobDetailPage(jobId) {
             this.$nextTick(() => lucide.createIcons());
         },
         
+        parsePostgresArray(value) {
+            // Parse PostgreSQL array format: {"item1","item2"} or {item1,item2}
+            if (!value) return [];
+            if (Array.isArray(value)) return value;
+            if (typeof value !== 'string') return [];
+            
+            // Remove outer braces and split by comma
+            const cleaned = value.replace(/^\{|\}$/g, '');
+            if (!cleaned) return [];
+            
+            // Split and clean quotes
+            return cleaned.split(',').map(item => item.replace(/^"|"$/g, '').trim());
+        },
+        
+        getCurrentSummary(type) {
+            // Get summary in current language (kort or lang)
+            if (!this.enrichment) return 'Not available';
+            
+            const field = `samenvatting_${type}_${this.enrichmentLang}`;
+            const summary = this.enrichment[field];
+            
+            // Fallback to legacy field if new field not available
+            if (!summary && type === 'kort') {
+                return this.enrichment.samenvatting_kort || 'Not available';
+            }
+            if (!summary && type === 'lang') {
+                return this.enrichment.samenvatting_lang || 'Not available';
+            }
+            
+            return summary || 'Not available';
+        },
+        
+        getCurrentLabel(field) {
+            // Get label in current language from JSONB labels field
+            if (!this.enrichment) return '-';
+            
+            // Try to parse labels JSONB field
+            let labels = null;
+            if (this.enrichment.labels) {
+                try {
+                    labels = typeof this.enrichment.labels === 'string' 
+                        ? JSON.parse(this.enrichment.labels) 
+                        : this.enrichment.labels;
+                } catch (e) {
+                    console.error('Failed to parse labels:', e);
+                }
+            }
+            
+            // Get label for current language
+            if (labels && labels[this.enrichmentLang]) {
+                const value = labels[this.enrichmentLang][field];
+                if (value !== undefined && value !== null) {
+                    return value;
+                }
+            }
+            
+            // Fallback to legacy fields (English canonical values)
+            if (field === 'data_role_type') {
+                return this.enrichment.type_datarol || '-';
+            }
+            if (field === 'role_level') {
+                return this.enrichment.rolniveau || [];
+            }
+            if (field === 'seniority') {
+                return this.enrichment.seniority || [];
+            }
+            if (field === 'contract') {
+                return this.enrichment.contract || [];
+            }
+            if (field === 'sourcing_type') {
+                return this.enrichment.sourcing_type || '-';
+            }
+            
+            return '-';
+        },
+        
         async loadEnrichment() {
             try {
                 const response = await fetch(`/api/jobs/${this.jobId}`);
@@ -495,7 +634,20 @@ function jobDetailPage(jobId) {
                 
                 // Get enrichment data from llm_enrichment join
                 if (data.llm_enrichment) {
-                    this.enrichment = data.llm_enrichment;
+                    const enr = data.llm_enrichment;
+                    
+                    // Parse PostgreSQL arrays that come as strings
+                    enr.rolniveau = this.parsePostgresArray(enr.rolniveau);
+                    enr.seniority = this.parsePostgresArray(enr.seniority);
+                    enr.contract = this.parsePostgresArray(enr.contract);
+                    enr.must_have_programmeertalen = this.parsePostgresArray(enr.must_have_programmeertalen);
+                    enr.nice_to_have_programmeertalen = this.parsePostgresArray(enr.nice_to_have_programmeertalen);
+                    enr.must_have_ecosystemen = this.parsePostgresArray(enr.must_have_ecosystemen);
+                    enr.nice_to_have_ecosystemen = this.parsePostgresArray(enr.nice_to_have_ecosystemen);
+                    enr.must_have_talen = this.parsePostgresArray(enr.must_have_talen);
+                    enr.nice_to_have_talen = this.parsePostgresArray(enr.nice_to_have_talen);
+                    
+                    this.enrichment = enr;
                 }
             } catch (error) {
                 console.error('Failed to load enrichment:', error);

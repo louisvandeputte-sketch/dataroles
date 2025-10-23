@@ -48,7 +48,12 @@ class BrightDataLinkedInClient:
                 "Authorization": f"Bearer {api_token}",
                 "Content-Type": "application/json"
             },
-            timeout=httpx.Timeout(300.0)
+            timeout=httpx.Timeout(
+                connect=30.0,  # 30s to establish connection
+                read=300.0,    # 5min to read response
+                write=30.0,    # 30s to send request
+                pool=30.0      # 30s to get connection from pool
+            )
         )
         
         logger.info(f"Bright Data client initialized for dataset {dataset_id}")
@@ -137,22 +142,36 @@ class BrightDataLinkedInClient:
                 "discover_by": "keyword"
             }
             
+            logger.debug(f"POST {url} with params: {params}")
+            logger.debug(f"Payload: {payload}")
+            
             response = await self.client.post(
                 url,
                 json=payload,
                 params=params
             )
             
+            logger.debug(f"Response status: {response.status_code}")
+            
             response.raise_for_status()
             data = response.json()
+            
+            logger.debug(f"Response data: {data}")
             
             # Trigger returns snapshot_id for polling
             snapshot_id = data.get("snapshot_id")
             
-            logger.info(f"Collection triggered: snapshot_id={snapshot_id}")
+            if not snapshot_id:
+                raise BrightDataError(f"No snapshot_id in response: {data}")
+            
+            logger.success(f"Collection triggered successfully: snapshot_id={snapshot_id}")
             return snapshot_id
             
+        except httpx.TimeoutException as e:
+            logger.error(f"Timeout triggering collection: {e}")
+            raise BrightDataError(f"Bright Data API timeout: {e}")
         except httpx.HTTPStatusError as e:
+            logger.error(f"HTTP error triggering collection: {e.response.status_code} - {e.response.text}")
             if e.response.status_code == 429:
                 raise QuotaExceededError("Rate limit exceeded")
             elif e.response.status_code == 402:
@@ -160,7 +179,10 @@ class BrightDataLinkedInClient:
             elif e.response.status_code == 401:
                 raise BrightDataError("Invalid API token")
             else:
-                raise BrightDataError(f"API error: {e}")
+                raise BrightDataError(f"API error {e.response.status_code}: {e.response.text}")
+        except Exception as e:
+            logger.exception(f"Unexpected error triggering collection: {e}")
+            raise BrightDataError(f"Failed to trigger collection: {e}")
     
     async def get_snapshot_status(self, snapshot_id: str) -> Dict:
         """
@@ -196,6 +218,17 @@ class BrightDataLinkedInClient:
             response.raise_for_status()
             data = response.json()
             
+            # Validate that we got a list, not a status dict
+            if isinstance(data, dict):
+                # Sometimes Bright Data returns {"status": "building"} even after status check
+                if data.get("status") == "building":
+                    raise BrightDataError(f"Snapshot still building (race condition): {data}")
+                else:
+                    raise BrightDataError(f"Expected list of jobs, got dict: {data}")
+            
+            if not isinstance(data, list):
+                raise BrightDataError(f"Expected list of jobs, got {type(data).__name__}")
+            
             logger.info(f"Downloaded {len(data)} jobs from snapshot {snapshot_id}")
             return data
             
@@ -225,23 +258,36 @@ class BrightDataLinkedInClient:
         
         logger.info(f"Waiting for snapshot {snapshot_id} to complete (timeout: {timeout}s)")
         
+        poll_count = 0
         while time.time() - start_time < timeout:
-            status_data = await self.get_snapshot_status(snapshot_id)
-            status = status_data.get("status")
-            progress = status_data.get("progress", 0)
+            poll_count += 1
+            elapsed = time.time() - start_time
             
-            if status == "ready":
-                logger.success(f"Snapshot {snapshot_id} completed successfully")
-                return await self.download_results(snapshot_id)
-            
-            elif status == "failed":
-                error_msg = status_data.get("error", "Unknown error")
-                raise BrightDataError(f"Snapshot failed: {error_msg}")
-            
-            logger.info(f"Snapshot {snapshot_id}: {progress}% complete (status: {status})")
-            await asyncio.sleep(poll_interval)
+            try:
+                status_data = await self.get_snapshot_status(snapshot_id)
+                status = status_data.get("status")
+                progress = status_data.get("progress", 0)
+                
+                if status == "ready":
+                    logger.success(f"Snapshot {snapshot_id} completed successfully after {elapsed:.0f}s")
+                    return await self.download_results(snapshot_id)
+                
+                elif status == "failed":
+                    error_msg = status_data.get("error", "Unknown error")
+                    raise BrightDataError(f"Snapshot failed: {error_msg}")
+                
+                logger.info(f"Snapshot {snapshot_id}: {progress}% complete (status: {status}) - Poll #{poll_count}, elapsed: {elapsed:.0f}s")
+                await asyncio.sleep(poll_interval)
+                
+            except BrightDataError:
+                raise
+            except Exception as e:
+                logger.error(f"Error polling snapshot status: {e}")
+                # Continue polling unless we hit timeout
+                await asyncio.sleep(poll_interval)
         
-        raise SnapshotTimeoutError(f"Snapshot {snapshot_id} did not complete in {timeout}s")
+        elapsed = time.time() - start_time
+        raise SnapshotTimeoutError(f"Snapshot {snapshot_id} did not complete in {timeout}s (elapsed: {elapsed:.0f}s, polls: {poll_count})")
     
     async def close(self):
         """Close the HTTP client."""

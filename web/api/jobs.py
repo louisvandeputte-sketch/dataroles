@@ -14,13 +14,16 @@ async def list_jobs(
     search: Optional[str] = None,
     company: Optional[str] = None,
     location: Optional[str] = None,
-    company_ids: Optional[str] = None,  # NEW: Comma-separated company IDs
-    location_ids: Optional[str] = None,  # NEW: Comma-separated location IDs
+    company_ids: Optional[str] = None,  # Comma-separated company IDs
+    location_ids: Optional[str] = None,  # Comma-separated location IDs
+    type_ids: Optional[str] = None,  # Comma-separated type IDs
     seniority: Optional[List[str]] = None,  # Can be multiple
     employment: Optional[List[str]] = None,  # Can be multiple
     employment_type: Optional[str] = None,
+    posted_date: Optional[str] = None,  # today, week, month, all
+    ai_enriched: Optional[str] = None,  # true, false, or None for all
     is_active: Optional[bool] = None,
-    run_id: Optional[str] = None,  # NEW: Filter by scrape run
+    run_id: Optional[str] = None,  # Filter by scrape run
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
     limit: int = 50,
@@ -56,6 +59,14 @@ async def list_jobs(
     # Parse comma-separated IDs
     company_id_list = company_ids.split(',') if company_ids else None
     location_id_list = location_ids.split(',') if location_ids else None
+    type_id_list = type_ids.split(',') if type_ids else None
+    
+    # Parse AI enrichment filter
+    ai_enriched_bool = None
+    if ai_enriched == 'true':
+        ai_enriched_bool = True
+    elif ai_enriched == 'false':
+        ai_enriched_bool = False
     
     # Build search query
     jobs, total = db.search_jobs(
@@ -63,10 +74,13 @@ async def list_jobs(
         location=location,
         company_ids=company_id_list,
         location_ids=location_id_list,
+        type_ids=type_id_list,
         seniority=seniority,
         employment=employment,
+        posted_date=posted_date,
+        ai_enriched=ai_enriched_bool,
         active_only=is_active if is_active is not None else True,
-        job_ids=job_ids_filter,  # NEW: Filter by job IDs from run
+        job_ids=job_ids_filter,
         limit=limit,
         offset=offset
     )
@@ -194,6 +208,18 @@ async def autocomplete_locations(q: str = Query(..., min_length=2)):
         .execute()
     
     return {"locations": result.data if result.data else []}
+
+
+@router.get("/types")
+async def get_job_types():
+    """Get all job types."""
+    result = db.client.table("job_types")\
+        .select("id, name, description, color")\
+        .eq("is_active", True)\
+        .order("name")\
+        .execute()
+    
+    return {"types": result.data if result.data else []}
 
 
 # LLM Enrichment endpoints
