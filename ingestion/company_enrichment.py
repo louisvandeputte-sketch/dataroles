@@ -5,11 +5,12 @@ from datetime import datetime
 from loguru import logger
 from openai import OpenAI
 
+from config.settings import settings
 from database.client import db
 
 
 # Initialize OpenAI client
-client = OpenAI()
+client = OpenAI(api_key=settings.openai_api_key)
 
 # Prompt ID for company enrichment
 COMPANY_ENRICHMENT_PROMPT_ID = "pmpt_68fd06175d7c8190bd8767fddcb5486a0e87d16aa5f38bc2"
