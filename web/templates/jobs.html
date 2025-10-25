@@ -24,6 +24,15 @@
                         (<span x-text="aiStats.percentage_enriched"></span>%)
                     </div>
                 </div>
+                <!-- Enrich Selected Button -->
+                <button @click="enrichSelected" 
+                        :disabled="enriching || selectedJobs.length === 0"
+                        x-show="selectedJobs.length > 0"
+                        class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i data-lucide="zap" class="w-4 h-4 mr-2"></i>
+                    <span x-show="!enriching">Enrich Selected (<span x-text="selectedJobs.length"></span>)</span>
+                    <span x-show="enriching">Enriching...</span>
+                </button>
                 <!-- Enrich All Button -->
                 <button @click="enrichAllUnenriched" 
                         :disabled="enriching || aiStats.unenriched === 0"
@@ -649,6 +658,45 @@ function jobsPage() {
             } catch (error) {
                 console.error('Failed to enrich job:', error);
                 alert('Failed to enrich job: ' + error.message);
+            }
+        },
+        
+        async enrichSelected() {
+            if (this.selectedJobs.length === 0) {
+                alert('No jobs selected');
+                return;
+            }
+            
+            if (!confirm(`Enrich ${this.selectedJobs.length} selected job(s)? This may take a few minutes.`)) {
+                return;
+            }
+            
+            this.enriching = true;
+            
+            try {
+                // Enrich selected jobs in batch
+                const enrichResponse = await fetch('/api/jobs/enrich/batch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(this.selectedJobs)
+                });
+                
+                const result = await enrichResponse.json();
+                
+                alert(`Enrichment complete!\nSuccessful: ${result.stats.successful}\nFailed: ${result.stats.failed}`);
+                
+                // Clear selection
+                this.selectedJobs = [];
+                
+                // Reload data
+                await this.loadJobs();
+                await this.loadAIStats();
+                this.$nextTick(() => lucide.createIcons());
+            } catch (error) {
+                console.error('Failed to enrich selected jobs:', error);
+                alert('Failed to enrich jobs: ' + error.message);
+            } finally {
+                this.enriching = false;
             }
         },
         
