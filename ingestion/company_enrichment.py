@@ -38,6 +38,8 @@ def enrich_company(company_id: str, company_name: str, company_url: Optional[str
             company_info += f"\nWebsite: {company_url}"
         
         # Call OpenAI with the prompt
+        logger.debug(f"Calling OpenAI API with input: {company_info}")
+        
         response = client.responses.create(
             prompt={
                 "id": COMPANY_ENRICHMENT_PROMPT_ID,
@@ -46,12 +48,25 @@ def enrich_company(company_id: str, company_name: str, company_url: Optional[str
             input=company_info
         )
         
+        logger.debug(f"OpenAI response: {response}")
+        
         # Extract the enrichment data from response
-        enrichment_data = response.output if hasattr(response, 'output') else {}
+        # Try different response formats
+        if hasattr(response, 'output'):
+            enrichment_data = response.output
+        elif hasattr(response, 'data'):
+            enrichment_data = response.data
+        elif isinstance(response, dict):
+            enrichment_data = response
+        else:
+            logger.error(f"Unexpected response format: {type(response)}")
+            raise ValueError(f"Unexpected response format: {type(response)}")
+        
+        logger.debug(f"Extracted enrichment data: {enrichment_data}")
         
         # Validate required fields
         if not isinstance(enrichment_data, dict):
-            raise ValueError("LLM response is not a valid dictionary")
+            raise ValueError(f"LLM response is not a valid dictionary, got: {type(enrichment_data)}")
         
         # Save enrichment data to database
         success = save_enrichment_to_db(company_id, enrichment_data)
