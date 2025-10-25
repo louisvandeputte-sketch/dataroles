@@ -666,9 +666,18 @@ function companiesPage() {
                     body: JSON.stringify(this.selectedCompanies)
                 });
                 
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Enrichment failed');
+                }
+                
                 const result = await response.json();
                 
-                alert(`Enrichment complete!\nSuccessful: ${result.stats.successful}\nFailed: ${result.stats.failed}`);
+                if (result.stats) {
+                    alert(`Enrichment complete!\nSuccessful: ${result.stats.successful}\nFailed: ${result.stats.failed}`);
+                } else {
+                    alert('Enrichment completed!');
+                }
                 
                 // Clear selection
                 this.selectedCompanies = [];
@@ -709,9 +718,18 @@ function companiesPage() {
                     body: JSON.stringify(data.company_ids)
                 });
                 
+                if (!enrichResponse.ok) {
+                    const error = await enrichResponse.json();
+                    throw new Error(error.detail || 'Enrichment failed');
+                }
+                
                 const result = await enrichResponse.json();
                 
-                alert(`Enrichment complete!\nSuccessful: ${result.stats.successful}\nFailed: ${result.stats.failed}`);
+                if (result.stats) {
+                    alert(`Enrichment complete!\nSuccessful: ${result.stats.successful}\nFailed: ${result.stats.failed}`);
+                } else {
+                    alert('Enrichment completed!');
+                }
                 
                 await this.loadCompanies();
                 await this.loadAIStats();
