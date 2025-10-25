@@ -37,16 +37,6 @@
                     <span x-show="!enriching">Enrich All (<span x-text="aiStats.unenriched"></span>)</span>
                     <span x-show="enriching">Enriching...</span>
                 </button>
-                <button @click="showImportModal = true" 
-                        class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
-                    <i data-lucide="upload" class="w-4 h-4 mr-2"></i>
-                    Import CSV
-                </button>
-                <button @click="exportToCSV" 
-                        class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">
-                    <i data-lucide="download" class="w-4 h-4 mr-2"></i>
-                    Export to CSV
-                </button>
             </div>
         </div>
 
@@ -110,11 +100,12 @@
                                 <input type="checkbox" @change="toggleAll" class="rounded border-gray-300">
                             </th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Industry</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Founded</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Website</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jobs Page</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bedrijfswebsite</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jobspagina</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email HR</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email HR Bron</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email Algemeen</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Omschrijving</th>
                             <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">AI Status</th>
                             <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
@@ -140,46 +131,62 @@
                                     <div class="text-sm font-medium text-gray-900 truncate" x-text="company.name"></div>
                                 </div>
                             </td>
-                            <!-- Industry -->
+                            <!-- Bedrijfswebsite -->
                             <td class="px-4 py-3">
-                                <span class="text-sm text-gray-900" x-text="company.industry || company.company_master_data?.industry || '-'"></span>
-                            </td>
-                            <!-- Founded Year -->
-                            <td class="px-4 py-3">
-                                <span class="text-sm text-gray-900" x-text="company.company_master_data?.founded_year || '-'"></span>
-                            </td>
-                            <!-- Website -->
-                            <td class="px-4 py-3">
-                                <a x-show="company.company_master_data?.website" 
-                                   :href="company.company_master_data?.website" 
+                                <a x-show="company.company_master_data?.bedrijfswebsite" 
+                                   :href="company.company_master_data?.bedrijfswebsite" 
                                    target="_blank"
-                                   class="text-sm text-blue-600 hover:text-blue-800 hover:underline truncate max-w-[150px] inline-block"
-                                   x-text="company.company_master_data?.website?.replace('https://', '').replace('http://', '').split('/')[0]"></a>
-                                <span x-show="!company.company_master_data?.website" class="text-sm text-gray-400">-</span>
+                                   class="text-sm text-blue-600 hover:text-blue-800 hover:underline truncate max-w-[200px] inline-block"
+                                   x-text="company.company_master_data?.bedrijfswebsite?.replace('https://', '').replace('http://', '')"></a>
+                                <span x-show="!company.company_master_data?.bedrijfswebsite" class="text-sm text-gray-400">-</span>
                             </td>
-                            <!-- Jobs Page -->
+                            <!-- Jobspagina -->
                             <td class="px-4 py-3">
-                                <a x-show="company.company_master_data?.jobs_page_url || company.company_master_data?.jobspagina" 
-                                   :href="company.company_master_data?.jobspagina || company.company_master_data?.jobs_page_url" 
+                                <a x-show="company.company_master_data?.jobspagina" 
+                                   :href="company.company_master_data?.jobspagina" 
                                    target="_blank"
-                                   class="inline-flex items-center text-sm text-blue-600 hover:text-blue-800">
+                                   class="inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
+                                   title="Jobs pagina">
                                     <i data-lucide="external-link" class="w-4 h-4"></i>
                                 </a>
-                                <span x-show="!company.company_master_data?.jobs_page_url && !company.company_master_data?.jobspagina" class="text-gray-300">
+                                <span x-show="!company.company_master_data?.jobspagina" class="text-gray-300">
                                     <i data-lucide="external-link" class="w-4 h-4"></i>
                                 </span>
                             </td>
-                            <!-- Contact Email -->
+                            <!-- Email HR -->
                             <td class="px-4 py-3">
-                                <a x-show="company.company_master_data?.email_hr || company.company_master_data?.contact_email" 
-                                   :href="'mailto:' + (company.company_master_data?.email_hr || company.company_master_data?.contact_email)" 
-                                   class="inline-flex items-center text-sm text-green-600 hover:text-green-800"
-                                   :title="company.company_master_data?.email_hr || company.company_master_data?.contact_email">
-                                    <i data-lucide="mail" class="w-4 h-4"></i>
+                                <a x-show="company.company_master_data?.email_hr" 
+                                   :href="'mailto:' + company.company_master_data?.email_hr" 
+                                   class="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                                   x-text="company.company_master_data?.email_hr"></a>
+                                <span x-show="!company.company_master_data?.email_hr" class="text-sm text-gray-400">-</span>
+                            </td>
+                            <!-- Email HR Bron -->
+                            <td class="px-4 py-3">
+                                <a x-show="company.company_master_data?.email_hr_bron" 
+                                   :href="company.company_master_data?.email_hr_bron" 
+                                   target="_blank"
+                                   class="inline-flex items-center text-sm text-gray-600 hover:text-gray-800"
+                                   title="Bron van HR email">
+                                    <i data-lucide="link" class="w-4 h-4"></i>
                                 </a>
-                                <span x-show="!company.company_master_data?.email_hr && !company.company_master_data?.contact_email" class="text-gray-300">
-                                    <i data-lucide="mail" class="w-4 h-4"></i>
+                                <span x-show="!company.company_master_data?.email_hr_bron" class="text-gray-300">
+                                    <i data-lucide="link" class="w-4 h-4"></i>
                                 </span>
+                            </td>
+                            <!-- Email Algemeen -->
+                            <td class="px-4 py-3">
+                                <a x-show="company.company_master_data?.email_algemeen" 
+                                   :href="'mailto:' + company.company_master_data?.email_algemeen" 
+                                   class="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                                   x-text="company.company_master_data?.email_algemeen"></a>
+                                <span x-show="!company.company_master_data?.email_algemeen" class="text-sm text-gray-400">-</span>
+                            </td>
+                            <!-- Bedrijfsomschrijving -->
+                            <td class="px-4 py-3">
+                                <div class="text-sm text-gray-600 max-w-xs truncate" 
+                                     :title="company.company_master_data?.bedrijfsomschrijving"
+                                     x-text="company.company_master_data?.bedrijfsomschrijving || '-'"></div>
                             </td>
                             <!-- AI Status -->
                             <td class="px-4 py-3 text-center">
@@ -238,110 +245,6 @@
         </div>
     </div>
 
-    <!-- Import Modal -->
-    <div x-show="showImportModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
-        <div class="flex items-center justify-center min-h-screen px-4">
-            <div class="fixed inset-0 bg-gray-500 bg-opacity-75" @click="showImportModal = false"></div>
-            
-            <div class="relative bg-white rounded-lg max-w-2xl w-full p-6">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-medium text-gray-900">Import Company Master Data</h3>
-                    <button @click="showImportModal = false" class="text-gray-400 hover:text-gray-500">
-                        <i data-lucide="x" class="w-6 h-6"></i>
-                    </button>
-                </div>
-
-                <div class="space-y-4">
-                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                        <div class="flex items-start">
-                            <i data-lucide="info" class="w-5 h-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0"></i>
-                            <div class="text-sm text-blue-800">
-                                <p class="font-medium mb-1">Import Instructions:</p>
-                                <ul class="list-disc list-inside space-y-1">
-                                    <li>Upload a CSV file with the same format as the export</li>
-                                    <li><strong>First column MUST be LinkedIn Company ID</strong> - this is used to match companies</li>
-                                    <li>Existing master data will be <strong>updated</strong>, new data will be <strong>created</strong></li>
-                                    <li>Companies not found in the database will be skipped</li>
-                                    <li>Empty rows and rows without LinkedIn Company ID are automatically skipped</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Select CSV File</label>
-                        <input type="file" 
-                               @change="handleFileSelect" 
-                               accept=".csv"
-                               class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none">
-                    </div>
-
-                    <div x-show="importFile" class="bg-gray-50 rounded-lg p-3">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center">
-                                <i data-lucide="file-text" class="w-5 h-5 text-gray-500 mr-2"></i>
-                                <span class="text-sm text-gray-700" x-text="importFile?.name"></span>
-                            </div>
-                            <button @click="importFile = null" class="text-red-600 hover:text-red-700">
-                                <i data-lucide="x" class="w-4 h-4"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div x-show="importResult" class="border rounded-lg p-4" :class="{
-                        'bg-green-50 border-green-200': importResult?.success,
-                        'bg-red-50 border-red-200': importResult && !importResult.success
-                    }">
-                        <div class="flex items-start">
-                            <i :data-lucide="importResult?.success ? 'check-circle' : 'alert-circle'" 
-                               class="w-5 h-5 mr-2 mt-0.5" 
-                               :class="importResult?.success ? 'text-green-600' : 'text-red-600'"></i>
-                            <div class="flex-1">
-                                <p class="font-medium" :class="importResult?.success ? 'text-green-800' : 'text-red-800'" 
-                                   x-text="importResult?.message"></p>
-                                <div x-show="importResult?.stats" class="mt-2 text-sm" 
-                                     :class="importResult?.success ? 'text-green-700' : 'text-red-700'">
-                                    <p>Total rows: <span class="font-semibold" x-text="importResult?.stats?.total_rows"></span></p>
-                                    <p>Skipped rows: <span class="font-semibold" x-text="importResult?.stats?.skipped_rows || 0"></span></p>
-                                    <p>Companies found: <span class="font-semibold" x-text="importResult?.stats?.companies_found"></span></p>
-                                    <p>Companies not found: <span class="font-semibold" x-text="importResult?.stats?.companies_not_found"></span></p>
-                                    <p>Master data created: <span class="font-semibold text-green-700" x-text="importResult?.stats?.master_data_created"></span></p>
-                                    <p>Master data updated: <span class="font-semibold text-blue-700" x-text="importResult?.stats?.master_data_updated"></span></p>
-                                    <div x-show="importResult?.stats?.errors?.length > 0" class="mt-2">
-                                        <p class="font-medium">Errors:</p>
-                                        <ul class="list-disc list-inside">
-                                            <template x-for="error in importResult.stats.errors.slice(0, 5)" :key="error.row">
-                                                <li x-text="`Row ${error.row} - ${error.company_name || error.company || 'Unknown'} (ID: ${error.linkedin_id}): ${error.error}`"></li>
-                                            </template>
-                                            <li x-show="importResult.stats.errors.length > 5" 
-                                                x-text="`... and ${importResult.stats.errors.length - 5} more errors`"></li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mt-6 flex justify-end space-x-3">
-                    <button @click="showImportModal = false" 
-                            class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
-                        Close
-                    </button>
-                    <button @click="importCSV" 
-                            :disabled="!importFile || importing"
-                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
-                        <span x-show="!importing">Import</span>
-                        <span x-show="importing" class="flex items-center">
-                            <i data-lucide="loader" class="w-4 h-4 mr-2 animate-spin"></i>
-                            Importing...
-                        </span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Simple Edit Modal -->
     <div x-show="showModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
         <div class="flex items-center justify-center min-h-screen px-4">
@@ -356,63 +259,52 @@
                 </div>
 
                 <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Company Number (KBO/VAT)</label>
-                        <input type="text" x-model="formData.company_number" 
-                               class="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                               placeholder="e.g., BE0123456789">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                        <textarea x-model="formData.description" rows="3" 
-                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg"></textarea>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Industry</label>
-                            <input type="text" x-model="formData.industry" 
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    <!-- AI Enriched Fields -->
+                    <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
+                        <h4 class="text-sm font-semibold text-purple-900 mb-3 flex items-center">
+                            <i data-lucide="sparkles" class="w-4 h-4 mr-2"></i>
+                            AI Enriched Fields
+                        </h4>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Bedrijfswebsite</label>
+                                <input type="url" x-model="formData.bedrijfswebsite" 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                       placeholder="https://voorbeeldbedrijf.be">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Jobspagina</label>
+                                <input type="url" x-model="formData.jobspagina" 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                       placeholder="https://voorbeeldbedrijf.be/werken-bij">
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Email HR</label>
+                                    <input type="email" x-model="formData.email_hr" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                           placeholder="hr@voorbeeldbedrijf.be">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Email HR Bron</label>
+                                    <input type="url" x-model="formData.email_hr_bron" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                           placeholder="https://voorbeeldbedrijf.be/contact">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Email Algemeen</label>
+                                <input type="email" x-model="formData.email_algemeen" 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                       placeholder="info@voorbeeldbedrijf.be">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Bedrijfsomschrijving</label>
+                                <textarea x-model="formData.bedrijfsomschrijving" rows="4" 
+                                          class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                          placeholder="Voorbeeldbedrijf is een toonaangevende speler in de [sector]..."></textarea>
+                            </div>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Employee Count</label>
-                            <input type="number" x-model="formData.employee_count" 
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Revenue (EUR)</label>
-                            <input type="number" x-model="formData.revenue_eur" 
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Growth Trend</label>
-                            <select x-model="formData.growth_trend" 
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                                <option value="">Select...</option>
-                                <option value="Growing">Growing</option>
-                                <option value="Stable">Stable</option>
-                                <option value="Declining">Declining</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Jobs Page URL</label>
-                            <input type="url" x-model="formData.jobs_page_url" 
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                                   placeholder="https://company.com/careers">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Contact Email</label>
-                            <input type="email" x-model="formData.contact_email" 
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                                   placeholder="hr@company.com">
-                        </div>
-                    </div>
-                    <div class="flex items-center">
-                        <input type="checkbox" x-model="formData.verified" id="verified" class="mr-2">
-                        <label for="verified" class="text-sm text-gray-700">Mark as verified</label>
                     </div>
                 </div>
 
@@ -443,15 +335,11 @@ function companiesPage() {
         withMasterData: 0,
         verified: 0,
         showModal: false,
-        showImportModal: false,
         editingCompany: null,
         formData: {},
         currentPage: 1,
         pageSize: 100,
         totalPages: 1,
-        importFile: null,
-        importing: false,
-        importResult: null,
         companiesCache: {},
         cacheTimestamp: {},
         cacheDuration: 10 * 60 * 1000, // 10 minutes
@@ -475,7 +363,7 @@ function companiesPage() {
         },
         
         checkAndClearCache() {
-            const SCHEMA_VERSION = '2'; // Increment this when schema changes
+            const SCHEMA_VERSION = '3'; // Increment this when schema changes
             const currentVersion = localStorage.getItem('companiesSchemaVersion');
             
             if (currentVersion !== SCHEMA_VERSION) {
@@ -670,15 +558,13 @@ function companiesPage() {
         editCompany(company) {
             this.editingCompany = company;
             this.formData = {
-                company_number: company.company_master_data?.company_number || '',
-                description: company.company_master_data?.description || '',
-                industry: company.company_master_data?.industry || '',
-                employee_count: company.company_master_data?.employee_count || '',
-                revenue_eur: company.company_master_data?.revenue_eur || '',
-                growth_trend: company.company_master_data?.growth_trend || '',
-                jobs_page_url: company.company_master_data?.jobs_page_url || '',
-                contact_email: company.company_master_data?.contact_email || '',
-                verified: company.company_master_data?.verified || false
+                // AI Enriched fields only
+                bedrijfswebsite: company.company_master_data?.bedrijfswebsite || '',
+                jobspagina: company.company_master_data?.jobspagina || '',
+                email_hr: company.company_master_data?.email_hr || '',
+                email_hr_bron: company.company_master_data?.email_hr_bron || '',
+                email_algemeen: company.company_master_data?.email_algemeen || '',
+                bedrijfsomschrijving: company.company_master_data?.bedrijfsomschrijving || ''
             };
             this.showModal = true;
             this.$nextTick(() => lucide.createIcons());
@@ -734,88 +620,6 @@ function companiesPage() {
             }
         },
         
-        async exportToCSV() {
-            try {
-                const params = new URLSearchParams();
-                if (this.search) params.append('search', this.search);
-                
-                const response = await fetch(`/api/companies/export/csv?${params}`);
-                
-                if (!response.ok) {
-                    throw new Error('Failed to export data');
-                }
-                
-                // Get the blob from response
-                const blob = await response.blob();
-                
-                // Create download link
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `companies_export_${new Date().toISOString().split('T')[0]}.csv`;
-                document.body.appendChild(a);
-                a.click();
-                
-                // Cleanup
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
-                
-                alert('Export completed successfully!');
-            } catch (error) {
-                console.error('Failed to export:', error);
-                alert('Failed to export data: ' + error.message);
-            }
-        },
-        
-        handleFileSelect(event) {
-            const file = event.target.files[0];
-            if (file) {
-                this.importFile = file;
-                this.importResult = null;
-            }
-        },
-        
-        async importCSV() {
-            if (!this.importFile) return;
-            
-            this.importing = true;
-            this.importResult = null;
-            
-            try {
-                const formData = new FormData();
-                formData.append('file', this.importFile);
-                
-                const response = await fetch('/api/companies/import/csv', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const result = await response.json();
-                
-                if (!response.ok) {
-                    throw new Error(result.detail || 'Import failed');
-                }
-                
-                this.importResult = result;
-                this.importFile = null;
-                
-                // Reload companies after successful import
-                if (result.success) {
-                    await this.loadCompanies();
-                }
-                
-                this.$nextTick(() => lucide.createIcons());
-            } catch (error) {
-                console.error('Failed to import:', error);
-                this.importResult = {
-                    success: false,
-                    message: 'Import failed: ' + error.message
-                };
-                this.$nextTick(() => lucide.createIcons());
-            } finally {
-                this.importing = false;
-            }
-        },
         
         async loadAIStats() {
             try {
