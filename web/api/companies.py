@@ -25,6 +25,13 @@ class CompanyMasterDataCreate(BaseModel):
     website: Optional[str] = None
     jobs_page_url: Optional[str] = None
     contact_email: Optional[str] = None
+    # AI enrichment fields
+    bedrijfswebsite: Optional[str] = None
+    jobspagina: Optional[str] = None
+    email_hr: Optional[str] = None
+    email_hr_bron: Optional[str] = None
+    email_algemeen: Optional[str] = None
+    bedrijfsomschrijving: Optional[str] = None
 
 
 class CompanyMasterDataUpdate(BaseModel):
@@ -33,6 +40,13 @@ class CompanyMasterDataUpdate(BaseModel):
     website: Optional[str] = None
     jobs_page_url: Optional[str] = None
     contact_email: Optional[str] = None
+    # AI enrichment fields
+    bedrijfswebsite: Optional[str] = None
+    jobspagina: Optional[str] = None
+    email_hr: Optional[str] = None
+    email_hr_bron: Optional[str] = None
+    email_algemeen: Optional[str] = None
+    bedrijfsomschrijving: Optional[str] = None
 
 
 @router.get("/")
@@ -269,7 +283,14 @@ async def export_companies_csv(
             'Founded Year',
             'Website',
             'Jobs Page URL',
-            'Contact Email'
+            'Contact Email',
+            'Bedrijfswebsite (AI)',
+            'Jobspagina (AI)',
+            'Email HR (AI)',
+            'Email HR Bron (AI)',
+            'Email Algemeen (AI)',
+            'Bedrijfsomschrijving (AI)',
+            'AI Enriched'
         ])
         
         # Write data rows
@@ -288,6 +309,13 @@ async def export_companies_csv(
             website = master_data.get("website", "") if master_data else ""
             jobs_page_url = master_data.get("jobs_page_url", "") if master_data else ""
             contact_email = master_data.get("contact_email", "") if master_data else ""
+            bedrijfswebsite = master_data.get("bedrijfswebsite", "") if master_data else ""
+            jobspagina = master_data.get("jobspagina", "") if master_data else ""
+            email_hr = master_data.get("email_hr", "") if master_data else ""
+            email_hr_bron = master_data.get("email_hr_bron", "") if master_data else ""
+            email_algemeen = master_data.get("email_algemeen", "") if master_data else ""
+            bedrijfsomschrijving = master_data.get("bedrijfsomschrijving", "") if master_data else ""
+            ai_enriched = "Yes" if (master_data and master_data.get("ai_enriched")) else "No"
             
             writer.writerow([
                 linkedin_company_id,
@@ -296,7 +324,14 @@ async def export_companies_csv(
                 founded_year,
                 website,
                 jobs_page_url,
-                contact_email
+                contact_email,
+                bedrijfswebsite,
+                jobspagina,
+                email_hr,
+                email_hr_bron,
+                email_algemeen,
+                bedrijfsomschrijving,
+                ai_enriched
             ])
         
         # Prepare response
@@ -602,5 +637,94 @@ async def delete_company_logo(company_id: str):
             .execute()
         
         return {"message": "Logo deleted successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== COMPANY ENRICHMENT ====================
+
+@router.post("/{company_id}/enrich")
+async def enrich_single_company(company_id: str):
+    """Enrich a single company with AI."""
+    try:
+        from ingestion.company_enrichment import enrich_company
+        
+        # Get company details
+        company = db.client.table("companies")\
+            .select("id, name, logo_url")\
+            .eq("id", company_id)\
+            .single()\
+            .execute()
+        
+        if not company.data:
+            raise HTTPException(status_code=404, detail="Company not found")
+        
+        company_data = company.data
+        result = enrich_company(
+            company_id,
+            company_data.get("name", "Unknown"),
+            company_data.get("logo_url")
+        )
+        
+        if result["success"]:
+            return {"message": "Company enriched successfully", "data": result["data"]}
+        else:
+            raise HTTPException(status_code=500, detail=result.get("error", "Enrichment failed"))
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/enrich/batch")
+async def enrich_companies_batch(company_ids: List[str]):
+    """Enrich multiple companies in batch."""
+    try:
+        from ingestion.company_enrichment import enrich_companies_batch
+        
+        if not company_ids:
+            raise HTTPException(status_code=400, detail="No company IDs provided")
+        
+        stats = enrich_companies_batch(company_ids)
+        
+        return {
+            "message": f"Batch enrichment complete: {stats['successful']} successful, {stats['failed']} failed",
+            "stats": stats
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/enrich/unenriched")
+async def get_unenriched_companies(limit: int = 1000):
+    """Get list of companies that haven't been enriched yet."""
+    try:
+        from ingestion.company_enrichment import get_unenriched_companies
+        
+        company_ids = get_unenriched_companies(limit)
+        
+        return {
+            "company_ids": company_ids,
+            "count": len(company_ids)
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/enrich/stats")
+async def get_enrichment_stats():
+    """Get statistics about company enrichment."""
+    try:
+        from ingestion.company_enrichment import get_enrichment_stats
+        
+        stats = get_enrichment_stats()
+        
+        return stats
+        
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

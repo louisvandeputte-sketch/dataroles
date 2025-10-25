@@ -12,6 +12,31 @@
                 <p class="text-gray-600 mt-1">Manage company master data</p>
             </div>
             <div class="flex items-center space-x-3">
+                <!-- AI Enrichment Stats -->
+                <div class="bg-purple-50 border border-purple-200 rounded-lg px-4 py-2">
+                    <div class="text-sm text-purple-900">
+                        <span class="font-semibold">AI Enriched:</span>
+                        <span x-text="aiStats.enriched"></span> / <span x-text="aiStats.total"></span>
+                        (<span x-text="aiStats.percentage_enriched"></span>%)
+                    </div>
+                </div>
+                <!-- Enrich Selected Button -->
+                <button @click="enrichSelected" 
+                        :disabled="enriching || selectedCompanies.length === 0"
+                        x-show="selectedCompanies.length > 0"
+                        class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium">
+                    <i data-lucide="sparkles" class="w-4 h-4 mr-2"></i>
+                    <span x-show="!enriching">Enrich Selected (<span x-text="selectedCompanies.length"></span>)</span>
+                    <span x-show="enriching">Enriching...</span>
+                </button>
+                <!-- Enrich All Button -->
+                <button @click="enrichAllUnenriched" 
+                        :disabled="enriching || aiStats.unenriched === 0"
+                        class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium">
+                    <i data-lucide="zap" class="w-4 h-4 mr-2"></i>
+                    <span x-show="!enriching">Enrich All (<span x-text="aiStats.unenriched"></span>)</span>
+                    <span x-show="enriching">Enriching...</span>
+                </button>
                 <button @click="showImportModal = true" 
                         class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
                     <i data-lucide="upload" class="w-4 h-4 mr-2"></i>
@@ -81,6 +106,9 @@
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50 sticky top-0">
                         <tr>
+                            <th class="px-4 py-3 text-left">
+                                <input type="checkbox" @change="toggleAll" class="rounded border-gray-300">
+                            </th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Industry</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">KBO/VAT</th>
@@ -96,6 +124,13 @@
                 <tbody class="bg-white divide-y divide-gray-200">
                     <template x-for="company in companies" :key="company.id">
                         <tr class="hover:bg-gray-50">
+                            <!-- Checkbox -->
+                            <td class="px-4 py-3">
+                                <input type="checkbox" 
+                                       :checked="selectedCompanies.includes(company.id)"
+                                       @change="toggleCompanySelection(company.id)"
+                                       class="rounded border-gray-300">
+                            </td>
                             <!-- Company Name & Logo -->
                             <td class="px-4 py-3">
                                 <div class="flex items-center min-w-[200px]">
@@ -428,10 +463,19 @@ function companiesPage() {
         companiesCache: {},
         cacheTimestamp: {},
         cacheDuration: 10 * 60 * 1000, // 10 minutes
+        selectedCompanies: [],
+        enriching: false,
+        aiStats: {
+            total: 0,
+            enriched: 0,
+            unenriched: 0,
+            percentage_enriched: 0
+        },
         
         async init() {
             this.loadCacheFromStorage();
             await this.loadCompanies();
+            await this.loadAIStats();
             this.prefetchPages();
             this.$nextTick(() => lucide.createIcons());
         },
@@ -762,6 +806,109 @@ function companiesPage() {
                 this.$nextTick(() => lucide.createIcons());
             } finally {
                 this.importing = false;
+            }
+        },
+        
+        async loadAIStats() {
+            try {
+                const response = await fetch('/api/companies/enrich/stats');
+                this.aiStats = await response.json();
+            } catch (error) {
+                console.error('Failed to load AI stats:', error);
+            }
+        },
+        
+        toggleCompanySelection(companyId) {
+            const index = this.selectedCompanies.indexOf(companyId);
+            if (index > -1) {
+                this.selectedCompanies.splice(index, 1);
+            } else {
+                this.selectedCompanies.push(companyId);
+            }
+        },
+        
+        toggleAll() {
+            if (this.selectedCompanies.length === this.companies.length) {
+                this.selectedCompanies = [];
+            } else {
+                this.selectedCompanies = this.companies.map(c => c.id);
+            }
+        },
+        
+        async enrichSelected() {
+            if (this.selectedCompanies.length === 0) {
+                alert('No companies selected');
+                return;
+            }
+            
+            if (!confirm(`Enrich ${this.selectedCompanies.length} selected company(ies)? This may take a few minutes.`)) {
+                return;
+            }
+            
+            this.enriching = true;
+            
+            try {
+                const response = await fetch('/api/companies/enrich/batch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(this.selectedCompanies)
+                });
+                
+                const result = await response.json();
+                
+                alert(`Enrichment complete!\nSuccessful: ${result.stats.successful}\nFailed: ${result.stats.failed}`);
+                
+                // Clear selection
+                this.selectedCompanies = [];
+                
+                // Reload data
+                await this.loadCompanies();
+                await this.loadAIStats();
+                this.$nextTick(() => lucide.createIcons());
+            } catch (error) {
+                console.error('Failed to enrich companies:', error);
+                alert('Failed to enrich companies: ' + error.message);
+            } finally {
+                this.enriching = false;
+            }
+        },
+        
+        async enrichAllUnenriched() {
+            if (!confirm(`Enrich all ${this.aiStats.unenriched} unenriched companies? This may take several minutes.`)) {
+                return;
+            }
+            
+            this.enriching = true;
+            
+            try {
+                // Get unenriched company IDs
+                const response = await fetch('/api/companies/enrich/unenriched?limit=1000');
+                const data = await response.json();
+                
+                if (data.company_ids.length === 0) {
+                    alert('No unenriched companies found');
+                    return;
+                }
+                
+                // Enrich in batch
+                const enrichResponse = await fetch('/api/companies/enrich/batch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data.company_ids)
+                });
+                
+                const result = await enrichResponse.json();
+                
+                alert(`Enrichment complete!\nSuccessful: ${result.stats.successful}\nFailed: ${result.stats.failed}`);
+                
+                await this.loadCompanies();
+                await this.loadAIStats();
+                this.$nextTick(() => lucide.createIcons());
+            } catch (error) {
+                console.error('Failed to enrich companies:', error);
+                alert('Failed to enrich companies: ' + error.message);
+            } finally {
+                this.enriching = false;
             }
         }
     }
