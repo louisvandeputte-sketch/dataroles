@@ -20,53 +20,17 @@ MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 
 # Pydantic models for request/response
 class CompanyMasterDataCreate(BaseModel):
-    company_number: Optional[str] = None
-    description: Optional[str] = None
     industry: Optional[str] = None
     founded_year: Optional[int] = None
     website: Optional[str] = None
-    employee_count: Optional[int] = None
-    employee_count_range: Optional[str] = None
-    revenue_eur: Optional[int] = None
-    revenue_range: Optional[str] = None
-    profitability: Optional[str] = None
-    growth_rate: Optional[float] = None
-    growth_trend: Optional[str] = None
-    tech_stack: Optional[List[str]] = None
-    office_locations: Optional[List[str]] = None
-    company_culture: Optional[str] = None
-    benefits: Optional[str] = None
-    remote_policy: Optional[str] = None
-    custom_fields: Optional[dict] = None
-    data_source: Optional[str] = "Manual"
-    verified: Optional[bool] = False
-    notes: Optional[str] = None
     jobs_page_url: Optional[str] = None
     contact_email: Optional[str] = None
 
 
 class CompanyMasterDataUpdate(BaseModel):
-    company_number: Optional[str] = None
-    description: Optional[str] = None
     industry: Optional[str] = None
     founded_year: Optional[int] = None
     website: Optional[str] = None
-    employee_count: Optional[int] = None
-    employee_count_range: Optional[str] = None
-    revenue_eur: Optional[int] = None
-    revenue_range: Optional[str] = None
-    profitability: Optional[str] = None
-    growth_rate: Optional[float] = None
-    growth_trend: Optional[str] = None
-    tech_stack: Optional[List[str]] = None
-    office_locations: Optional[List[str]] = None
-    company_culture: Optional[str] = None
-    benefits: Optional[str] = None
-    remote_policy: Optional[str] = None
-    custom_fields: Optional[dict] = None
-    data_source: Optional[str] = None
-    verified: Optional[bool] = None
-    notes: Optional[str] = None
     jobs_page_url: Optional[str] = None
     contact_email: Optional[str] = None
 
@@ -301,15 +265,11 @@ async def export_companies_csv(
         writer.writerow([
             'LinkedIn Company ID',
             'Company Name',
-            'Company Number (KBO/VAT)',
-            'Description',
             'Industry',
-            'Employee Count',
-            'Revenue (EUR)',
-            'Growth Trend',
+            'Founded Year',
+            'Website',
             'Jobs Page URL',
-            'Contact Email',
-            'Verified'
+            'Contact Email'
         ])
         
         # Write data rows
@@ -323,28 +283,20 @@ async def export_companies_csv(
             # Extract fields
             linkedin_company_id = company.get("linkedin_company_id", "")
             company_name = company.get("name", "")
-            company_number = master_data.get("company_number", "") if master_data else ""
-            description = master_data.get("description", "") if master_data else ""
             industry = master_data.get("industry", "") if master_data else ""
-            employee_count = master_data.get("employee_count", "") if master_data else ""
-            revenue_eur = master_data.get("revenue_eur", "") if master_data else ""
-            growth_trend = master_data.get("growth_trend", "") if master_data else ""
+            founded_year = master_data.get("founded_year", "") if master_data else ""
+            website = master_data.get("website", "") if master_data else ""
             jobs_page_url = master_data.get("jobs_page_url", "") if master_data else ""
             contact_email = master_data.get("contact_email", "") if master_data else ""
-            verified = "Yes" if (master_data and master_data.get("verified")) else "No"
             
             writer.writerow([
                 linkedin_company_id,
                 company_name,
-                company_number,
-                description,
                 industry,
-                employee_count,
-                revenue_eur,
-                growth_trend,
+                founded_year,
+                website,
                 jobs_page_url,
-                contact_email,
-                verified
+                contact_email
             ])
         
         # Prepare response
@@ -428,24 +380,16 @@ async def import_companies_csv(file: UploadFile = File(...)):
                 header_map['linkedin_company_id'] = idx
             elif 'company' in header_lower and 'name' in header_lower:
                 header_map['company_name'] = idx
-            elif 'company' in header_lower and 'number' in header_lower:
-                header_map['company_number'] = idx
-            elif 'description' in header_lower:
-                header_map['description'] = idx
             elif 'industry' in header_lower:
                 header_map['industry'] = idx
-            elif 'employee' in header_lower and 'count' in header_lower:
-                header_map['employee_count'] = idx
-            elif 'revenue' in header_lower:
-                header_map['revenue_eur'] = idx
-            elif 'growth' in header_lower and 'trend' in header_lower:
-                header_map['growth_trend'] = idx
+            elif 'founded' in header_lower and 'year' in header_lower:
+                header_map['founded_year'] = idx
+            elif 'website' in header_lower:
+                header_map['website'] = idx
             elif 'jobs' in header_lower and 'page' in header_lower:
                 header_map['jobs_page_url'] = idx
             elif 'contact' in header_lower and 'email' in header_lower:
                 header_map['contact_email'] = idx
-            elif 'verified' in header_lower:
-                header_map['verified'] = idx
         
         stats = {
             'total_rows': 0,
@@ -510,48 +454,33 @@ async def import_companies_csv(file: UploadFile = File(...)):
                     return value if value else None
                 
                 # Prepare master data - only include fields that have values
-                master_data = {'data_source': 'CSV Import'}
+                master_data = {}
                 
                 # String fields
-                if get_value('company_number'):
-                    master_data['company_number'] = get_value('company_number')
-                if get_value('description'):
-                    master_data['description'] = get_value('description')
                 if get_value('industry'):
                     master_data['industry'] = get_value('industry')
-                if get_value('growth_trend'):
-                    master_data['growth_trend'] = get_value('growth_trend')
+                if get_value('website'):
+                    master_data['website'] = get_value('website')
                 if get_value('jobs_page_url'):
                     master_data['jobs_page_url'] = get_value('jobs_page_url')
                 if get_value('contact_email'):
                     master_data['contact_email'] = get_value('contact_email')
                 
-                # Parse employee count
-                employee_count_str = get_value('employee_count')
-                if employee_count_str:
+                # Parse founded year
+                founded_year_str = get_value('founded_year')
+                if founded_year_str:
                     try:
-                        # Remove any non-digit characters except decimal point
-                        clean_str = ''.join(c for c in employee_count_str if c.isdigit())
+                        # Remove any non-digit characters
+                        clean_str = ''.join(c for c in founded_year_str if c.isdigit())
                         if clean_str:
-                            master_data['employee_count'] = int(clean_str)
+                            master_data['founded_year'] = int(clean_str)
                     except ValueError:
                         pass
                 
-                # Parse revenue
-                revenue_str = get_value('revenue_eur')
-                if revenue_str:
-                    try:
-                        # Remove any non-digit characters except decimal point
-                        clean_str = ''.join(c for c in revenue_str if c.isdigit() or c == '.')
-                        if clean_str:
-                            master_data['revenue_eur'] = int(float(clean_str))
-                    except ValueError:
-                        pass
-                
-                # Parse verified
-                verified_str = get_value('verified')
-                if verified_str:
-                    master_data['verified'] = verified_str.lower() in ['yes', 'true', '1', 'y']
+                # Skip if no data to import
+                if not master_data:
+                    stats['skipped_rows'] += 1
+                    continue
                 
                 # Check if master data exists
                 existing = db.client.table("company_master_data")\
@@ -561,10 +490,6 @@ async def import_companies_csv(file: UploadFile = File(...)):
                 
                 if existing.data:
                     # Update existing master data
-                    if master_data.get('verified'):
-                        from datetime import datetime
-                        master_data['last_verified_at'] = datetime.utcnow().isoformat()
-                    
                     db.client.table("company_master_data")\
                         .update(master_data)\
                         .eq("company_id", company_id)\
