@@ -1,5 +1,6 @@
 """Company enrichment using OpenAI LLM to extract company information."""
 
+import json
 from typing import Dict, Any, Optional
 from datetime import datetime
 from loguru import logger
@@ -9,8 +10,11 @@ from config.settings import settings
 from database.client import db
 
 
-# Initialize OpenAI client
-client = OpenAI(api_key=settings.openai_api_key)
+# Initialize OpenAI client with extended timeout (5 minutes for long responses)
+client = OpenAI(
+    api_key=settings.openai_api_key,
+    timeout=300.0  # 5 minutes timeout
+)
 
 # Prompt ID for company enrichment
 COMPANY_ENRICHMENT_PROMPT_ID = "pmpt_68fd06175d7c8190bd8767fddcb5486a0e87d16aa5f38bc2"
@@ -50,17 +54,22 @@ def enrich_company(company_id: str, company_name: str, company_url: Optional[str
         
         logger.debug(f"OpenAI response: {response}")
         
-        # Extract the enrichment data from response
-        # Try different response formats
-        if hasattr(response, 'output'):
-            enrichment_data = response.output
-        elif hasattr(response, 'data'):
-            enrichment_data = response.data
-        elif isinstance(response, dict):
-            enrichment_data = response
-        else:
-            logger.error(f"Unexpected response format: {type(response)}")
-            raise ValueError(f"Unexpected response format: {type(response)}")
+        # Extract structured output from response (same as job enrichment)
+        enrichment_data = None
+        if hasattr(response, 'output') and response.output:
+            for item in response.output:
+                if hasattr(item, 'type') and item.type == 'message' and hasattr(item, 'content'):
+                    for content in item.content:
+                        if hasattr(content, 'type') and content.type == 'output_text':
+                            # Parse JSON from text output
+                            enrichment_data = json.loads(content.text)
+                            break
+                if enrichment_data:
+                    break
+        
+        if not enrichment_data:
+            logger.error(f"Could not extract structured output from API response")
+            raise ValueError("Could not extract structured output from API response")
         
         logger.debug(f"Extracted enrichment data: {enrichment_data}")
         
