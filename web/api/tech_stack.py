@@ -184,9 +184,16 @@ async def get_programming_language_logo(language_id: str):
         # Decode base64 data
         logo_bytes = base64.b64decode(result.data["logo_data"])
         
+        # Determine correct content type
+        content_type = result.data.get("logo_content_type", "image/png")
+        
         return Response(
             content=logo_bytes,
-            media_type=result.data.get("logo_content_type", "image/png")
+            media_type=content_type,
+            headers={
+                "Cache-Control": "public, max-age=86400",  # Cache for 24 hours
+                "Access-Control-Allow-Origin": "*"
+            }
         )
     except HTTPException:
         raise
@@ -342,9 +349,16 @@ async def get_ecosystem_logo(ecosystem_id: str):
         # Decode base64 data
         logo_bytes = base64.b64decode(result.data["logo_data"])
         
+        # Determine correct content type
+        content_type = result.data.get("logo_content_type", "image/png")
+        
         return Response(
             content=logo_bytes,
-            media_type=result.data.get("logo_content_type", "image/png")
+            media_type=content_type,
+            headers={
+                "Cache-Control": "public, max-age=86400",  # Cache for 24 hours
+                "Access-Control-Allow-Origin": "*"
+            }
         )
     except HTTPException:
         raise

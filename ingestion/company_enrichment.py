@@ -18,7 +18,7 @@ client = OpenAI(
 
 # Prompt ID for company enrichment
 COMPANY_ENRICHMENT_PROMPT_ID = "pmpt_68fd06175d7c8190bd8767fddcb5486a0e87d16aa5f38bc2"
-COMPANY_ENRICHMENT_PROMPT_VERSION = "3"
+COMPANY_ENRICHMENT_PROMPT_VERSION = "4"
 
 
 def enrich_company(company_id: str, company_name: str, company_url: Optional[str] = None) -> Dict[str, Any]:
@@ -140,7 +140,11 @@ def save_enrichment_to_db(company_id: str, enrichment_data: Dict[str, Any]) -> b
             "email_hr": enrichment_data.get("email_hr"),
             "email_hr_bron": enrichment_data.get("email_hr_bron"),
             "email_algemeen": enrichment_data.get("email_algemeen"),
-            "bedrijfsomschrijving": enrichment_data.get("bedrijfsomschrijving"),
+            "bedrijfsomschrijving_nl": enrichment_data.get("bedrijfsomschrijving_nl"),
+            "bedrijfsomschrijving_fr": enrichment_data.get("bedrijfsomschrijving_fr"),
+            "bedrijfsomschrijving_en": enrichment_data.get("bedrijfsomschrijving_en"),
+            "sector_en": enrichment_data.get("sector_en"),
+            "aantal_werknemers": enrichment_data.get("aantal_werknemers"),
             "ai_enriched": True,
             "ai_enriched_at": datetime.utcnow().isoformat(),
             "ai_enrichment_error": None
