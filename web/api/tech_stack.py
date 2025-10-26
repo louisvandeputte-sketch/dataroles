@@ -181,8 +181,33 @@ async def get_programming_language_logo(language_id: str):
         if not result.data or not result.data.get("logo_data"):
             raise HTTPException(status_code=404, detail="Logo not found")
         
-        # Decode base64 data
-        logo_bytes = base64.b64decode(result.data["logo_data"])
+        logo_data = result.data["logo_data"]
+        
+        # Handle different data formats
+        try:
+            # Try to decode as base64 first
+            logo_bytes = base64.b64decode(logo_data)
+        except Exception:
+            # If that fails, it might be hex-encoded (Supabase bytea format)
+            try:
+                # Remove \x prefix if present
+                if logo_data.startswith('\\x'):
+                    hex_str = logo_data[2:]
+                else:
+                    hex_str = logo_data
+                
+                # Decode hex to get ASCII (which might be base64)
+                ascii_bytes = bytes.fromhex(hex_str)
+                
+                # Try to decode as base64
+                try:
+                    logo_bytes = base64.b64decode(ascii_bytes)
+                except Exception:
+                    # If not base64, use the raw bytes
+                    logo_bytes = ascii_bytes
+            except Exception:
+                # Last resort: treat as raw bytes
+                logo_bytes = logo_data.encode() if isinstance(logo_data, str) else logo_data
         
         # Determine correct content type
         content_type = result.data.get("logo_content_type", "image/png")
@@ -346,8 +371,33 @@ async def get_ecosystem_logo(ecosystem_id: str):
         if not result.data or not result.data.get("logo_data"):
             raise HTTPException(status_code=404, detail="Logo not found")
         
-        # Decode base64 data
-        logo_bytes = base64.b64decode(result.data["logo_data"])
+        logo_data = result.data["logo_data"]
+        
+        # Handle different data formats
+        try:
+            # Try to decode as base64 first
+            logo_bytes = base64.b64decode(logo_data)
+        except Exception:
+            # If that fails, it might be hex-encoded (Supabase bytea format)
+            try:
+                # Remove \x prefix if present
+                if logo_data.startswith('\\x'):
+                    hex_str = logo_data[2:]
+                else:
+                    hex_str = logo_data
+                
+                # Decode hex to get ASCII (which might be base64)
+                ascii_bytes = bytes.fromhex(hex_str)
+                
+                # Try to decode as base64
+                try:
+                    logo_bytes = base64.b64decode(ascii_bytes)
+                except Exception:
+                    # If not base64, use the raw bytes
+                    logo_bytes = ascii_bytes
+            except Exception:
+                # Last resort: treat as raw bytes
+                logo_bytes = logo_data.encode() if isinstance(logo_data, str) else logo_data
         
         # Determine correct content type
         content_type = result.data.get("logo_content_type", "image/png")
