@@ -110,14 +110,15 @@
                             <template x-for="lang in filteredLanguages" :key="lang.id">
                                 <tr>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <template x-if="lang.logo_data || lang.logo_url">
-                                            <img :src="lang.logo_data ? `/api/tech-stack/programming-languages/${lang.id}/logo` : lang.logo_url" :alt="lang.name" class="w-8 h-8 object-contain">
-                                        </template>
-                                        <template x-if="!lang.logo_data && !lang.logo_url">
-                                            <div class="w-8 h-8 bg-gray-200 rounded flex items-center justify-center">
-                                                <i data-lucide="code-2" class="w-4 h-4 text-gray-400"></i>
-                                            </div>
-                                        </template>
+                                        <img x-show="lang.logo_data || lang.logo_url" 
+                                             :src="lang.logo_data ? `/api/tech-stack/programming-languages/${lang.id}/logo` : lang.logo_url" 
+                                             :alt="lang.name" 
+                                             class="w-8 h-8 object-contain"
+                                             @error="$el.style.display='none'">
+                                        <div x-show="!lang.logo_data && !lang.logo_url" 
+                                             class="w-8 h-8 bg-gray-200 rounded flex items-center justify-center">
+                                            <i data-lucide="code-2" class="w-4 h-4 text-gray-400"></i>
+                                        </div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" x-text="lang.name"></td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" x-text="lang.display_name"></td>
@@ -175,14 +176,15 @@
                             <template x-for="eco in filteredEcosystems" :key="eco.id">
                                 <tr>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <template x-if="eco.logo_data || eco.logo_url">
-                                            <img :src="eco.logo_data ? `/api/tech-stack/ecosystems/${eco.id}/logo` : eco.logo_url" :alt="eco.name" class="w-8 h-8 object-contain">
-                                        </template>
-                                        <template x-if="!eco.logo_data && !eco.logo_url">
-                                            <div class="w-8 h-8 bg-gray-200 rounded flex items-center justify-center">
-                                                <i data-lucide="package" class="w-4 h-4 text-gray-400"></i>
-                                            </div>
-                                        </template>
+                                        <img x-show="eco.logo_data || eco.logo_url" 
+                                             :src="eco.logo_data ? `/api/tech-stack/ecosystems/${eco.id}/logo` : eco.logo_url" 
+                                             :alt="eco.name" 
+                                             class="w-8 h-8 object-contain"
+                                             @error="$el.style.display='none'">
+                                        <div x-show="!eco.logo_data && !eco.logo_url" 
+                                             class="w-8 h-8 bg-gray-200 rounded flex items-center justify-center">
+                                            <i data-lucide="package" class="w-4 h-4 text-gray-400"></i>
+                                        </div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" x-text="eco.name"></td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" x-text="eco.display_name"></td>

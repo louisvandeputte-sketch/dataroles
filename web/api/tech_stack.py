@@ -5,6 +5,7 @@ from fastapi.responses import Response
 from typing import List, Optional
 from pydantic import BaseModel
 import io
+import base64
 from PIL import Image
 
 from database.client import db
@@ -147,10 +148,13 @@ async def upload_programming_language_logo(language_id: str, file: UploadFile = 
                 detail=f"File too large. Maximum size: {MAX_FILE_SIZE / 1024 / 1024}MB"
             )
         
-        # Update database with binary data
+        # Convert to base64 for PostgreSQL bytea storage
+        logo_base64 = base64.b64encode(logo_data).decode('utf-8')
+        
+        # Update database with base64-encoded data
         db.client.table("programming_languages")\
             .update({
-                "logo_data": logo_data,
+                "logo_data": logo_base64,
                 "logo_filename": file.filename,
                 "logo_content_type": file.content_type
             })\
@@ -177,8 +181,11 @@ async def get_programming_language_logo(language_id: str):
         if not result.data or not result.data.get("logo_data"):
             raise HTTPException(status_code=404, detail="Logo not found")
         
+        # Decode base64 data
+        logo_bytes = base64.b64decode(result.data["logo_data"])
+        
         return Response(
-            content=bytes(result.data["logo_data"]),
+            content=logo_bytes,
             media_type=result.data.get("logo_content_type", "image/png")
         )
     except HTTPException:
@@ -299,10 +306,13 @@ async def upload_ecosystem_logo(ecosystem_id: str, file: UploadFile = File(...))
                 detail=f"File too large. Maximum size: {MAX_FILE_SIZE / 1024 / 1024}MB"
             )
         
-        # Update database with binary data
+        # Convert to base64 for PostgreSQL bytea storage
+        logo_base64 = base64.b64encode(logo_data).decode('utf-8')
+        
+        # Update database with base64-encoded data
         db.client.table("ecosystems")\
             .update({
-                "logo_data": logo_data,
+                "logo_data": logo_base64,
                 "logo_filename": file.filename,
                 "logo_content_type": file.content_type
             })\
@@ -329,8 +339,11 @@ async def get_ecosystem_logo(ecosystem_id: str):
         if not result.data or not result.data.get("logo_data"):
             raise HTTPException(status_code=404, detail="Logo not found")
         
+        # Decode base64 data
+        logo_bytes = base64.b64decode(result.data["logo_data"])
+        
         return Response(
-            content=bytes(result.data["logo_data"]),
+            content=logo_bytes,
             media_type=result.data.get("logo_content_type", "image/png")
         )
     except HTTPException:
