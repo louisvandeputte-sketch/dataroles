@@ -99,13 +99,14 @@
                             <th class="px-4 py-3 text-left">
                                 <input type="checkbox" @change="toggleAll" class="rounded border-gray-300">
                             </th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
-                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"><i data-lucide="globe" class="w-4 h-4 inline"></i></th>
-                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"><i data-lucide="briefcase" class="w-4 h-4 inline"></i></th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email HR</th>
-                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"><i data-lucide="link" class="w-4 h-4 inline"></i></th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email Algemeen</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Omschrijving</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
+                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Industry</th>
+                            <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"><i data-lucide="globe" class="w-4 h-4 inline"></i></th>
+                            <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"><i data-lucide="briefcase" class="w-4 h-4 inline"></i></th>
+                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email HR</th>
+                            <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"><i data-lucide="link" class="w-4 h-4 inline"></i></th>
+                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email Alg.</th>
+                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Omschrijving</th>
                         </tr>
                     </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
@@ -119,18 +120,22 @@
                                        class="rounded border-gray-300">
                             </td>
                             <!-- Company Name & Logo -->
-                            <td class="px-4 py-3">
-                                <div class="flex items-center min-w-[200px]">
+                            <td class="px-3 py-2">
+                                <div class="flex items-center min-w-[180px]">
                                     <img x-show="company.logo_url" :src="company.logo_url" :alt="company.name" 
-                                         class="w-8 h-8 rounded object-cover mr-2 flex-shrink-0">
-                                    <div x-show="!company.logo_url" class="w-8 h-8 rounded bg-gray-200 flex items-center justify-center mr-2 flex-shrink-0">
+                                         class="w-7 h-7 rounded object-cover mr-2 flex-shrink-0">
+                                    <div x-show="!company.logo_url" class="w-7 h-7 rounded bg-gray-100 flex items-center justify-center mr-2 flex-shrink-0">
                                         <i data-lucide="building-2" class="w-4 h-4 text-gray-400"></i>
                                     </div>
                                     <div class="text-sm font-medium text-gray-900 truncate" x-text="company.name"></div>
                                 </div>
                             </td>
+                            <!-- Industry -->
+                            <td class="px-2 py-2">
+                                <div class="text-xs text-gray-600 truncate max-w-[120px]" :title="company.industry" x-text="company.industry || '-'"></div>
+                            </td>
                             <!-- Bedrijfswebsite -->
-                            <td class="px-4 py-3 text-center" @click.stop>
+                            <td class="px-2 py-2 text-center" @click.stop>
                                 <a x-show="company.company_master_data?.bedrijfswebsite" 
                                    :href="company.company_master_data?.bedrijfswebsite" 
                                    target="_blank"
@@ -143,7 +148,7 @@
                                 </span>
                             </td>
                             <!-- Jobspagina -->
-                            <td class="px-4 py-3 text-center" @click.stop>
+                            <td class="px-2 py-2 text-center" @click.stop>
                                 <a x-show="company.company_master_data?.jobspagina" 
                                    :href="company.company_master_data?.jobspagina" 
                                    target="_blank"
@@ -156,15 +161,16 @@
                                 </span>
                             </td>
                             <!-- Email HR -->
-                            <td class="px-4 py-3">
+                            <td class="px-2 py-2">
                                 <a x-show="company.company_master_data?.email_hr" 
                                    :href="'mailto:' + company.company_master_data?.email_hr" 
-                                   class="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                                   class="text-xs text-blue-600 hover:text-blue-800 hover:underline truncate block max-w-[140px]"
+                                   :title="company.company_master_data?.email_hr"
                                    x-text="company.company_master_data?.email_hr"></a>
-                                <span x-show="!company.company_master_data?.email_hr" class="text-sm text-gray-400">-</span>
+                                <span x-show="!company.company_master_data?.email_hr" class="text-xs text-gray-400">-</span>
                             </td>
                             <!-- Email HR Bron -->
-                            <td class="px-4 py-3 text-center" @click.stop>
+                            <td class="px-2 py-2 text-center" @click.stop>
                                 <a x-show="company.company_master_data?.email_hr_bron" 
                                    :href="company.company_master_data?.email_hr_bron" 
                                    target="_blank"
@@ -177,16 +183,17 @@
                                 </span>
                             </td>
                             <!-- Email Algemeen -->
-                            <td class="px-4 py-3">
+                            <td class="px-2 py-2">
                                 <a x-show="company.company_master_data?.email_algemeen" 
                                    :href="'mailto:' + company.company_master_data?.email_algemeen" 
-                                   class="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                                   class="text-xs text-blue-600 hover:text-blue-800 hover:underline truncate block max-w-[140px]"
+                                   :title="company.company_master_data?.email_algemeen"
                                    x-text="company.company_master_data?.email_algemeen"></a>
-                                <span x-show="!company.company_master_data?.email_algemeen" class="text-sm text-gray-400">-</span>
+                                <span x-show="!company.company_master_data?.email_algemeen" class="text-xs text-gray-400">-</span>
                             </td>
                             <!-- Bedrijfsomschrijving -->
-                            <td class="px-4 py-3">
-                                <div class="text-sm text-gray-600 max-w-xs truncate" 
+                            <td class="px-2 py-2">
+                                <div class="text-xs text-gray-600 max-w-[200px] truncate" 
                                      :title="company.company_master_data?.bedrijfsomschrijving"
                                      x-text="company.company_master_data?.bedrijfsomschrijving || '-'"></div>
                             </td>
