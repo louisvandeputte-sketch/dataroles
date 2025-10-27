@@ -42,7 +42,7 @@ def get_enrichment_stats():
         failed_result = db.client.table("locations")\
             .select("id", count="exact")\
             .eq("ai_enriched", False)\
-            .is_("ai_enrichment_error", "not.null")\
+            .not_.is_("ai_enrichment_error", "null")\
             .execute()
         failed = failed_result.count if failed_result.count else 0
         
@@ -85,16 +85,26 @@ def main():
     print(f"\n⚠️  This will enrich {stats['pending']} locations using OpenAI API.")
     print("   This may take a while and will consume API credits.")
     
-    # Check for batch size argument
+    # Check for arguments
+    force_reenrich = False
+    batch_size = None
+    
     if len(sys.argv) > 1:
-        try:
-            batch_size = int(sys.argv[1])
-            print(f"\n📦 Batch size: {batch_size} locations")
-        except ValueError:
-            print("❌ Invalid batch size argument. Using all pending locations.")
-            batch_size = None
-    else:
-        batch_size = None
+        if sys.argv[1] == "--force" or sys.argv[1] == "-f":
+            force_reenrich = True
+            print(f"\n🔄 Force re-enrich mode: Will re-enrich ALL locations")
+            if len(sys.argv) > 2:
+                try:
+                    batch_size = int(sys.argv[2])
+                    print(f"📦 Batch size: {batch_size} locations")
+                except ValueError:
+                    pass
+        else:
+            try:
+                batch_size = int(sys.argv[1])
+                print(f"\n📦 Batch size: {batch_size} locations")
+            except ValueError:
+                print("❌ Invalid batch size argument. Using all pending locations.")
     
     confirm = input(f"\n   Continue? (yes/no): ")
     if confirm.lower() != "yes":
@@ -105,7 +115,7 @@ def main():
     print(f"\n🚀 Starting enrichment...")
     print("-" * 60)
     
-    result = enrich_locations_batch(limit=batch_size)
+    result = enrich_locations_batch(limit=batch_size, force_reenrich=force_reenrich)
     
     print("\n" + "=" * 60)
     print("📊 Enrichment Results:")

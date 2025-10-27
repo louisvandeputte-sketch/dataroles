@@ -18,7 +18,7 @@ client = OpenAI(
 
 # Prompt ID for location enrichment
 LOCATION_ENRICHMENT_PROMPT_ID = "pmpt_68ff4fce6a0c8193baa5b7310f37a930074c8aedab026486"
-LOCATION_ENRICHMENT_PROMPT_VERSION = "1"
+LOCATION_ENRICHMENT_PROMPT_VERSION = "2"
 
 
 def enrich_location(location_id: str, city: str, country_code: str, region: Optional[str] = None) -> Dict[str, Any]:
@@ -173,13 +173,14 @@ def save_enrichment_to_db(location_id: str, enrichment_data: Dict[str, Any]) -> 
         return False
 
 
-def enrich_locations_batch(location_ids: list = None, limit: int = None) -> Dict[str, Any]:
+def enrich_locations_batch(location_ids: list = None, limit: int = None, force_reenrich: bool = False) -> Dict[str, Any]:
     """
     Enrich multiple locations in batch.
     
     Args:
-        location_ids: Optional list of location UUIDs to enrich. If None, enriches all unenriched locations.
+        location_ids: Optional list of location UUIDs to enrich. If None, enriches all locations.
         limit: Optional limit on number of locations to enrich
+        force_reenrich: If True, re-enrich all locations (even already enriched ones)
         
     Returns:
         Dictionary with statistics about the enrichment process
@@ -198,8 +199,12 @@ def enrich_locations_batch(location_ids: list = None, limit: int = None) -> Dict
             query = db.client.table("locations")\
                 .select("id, city, country_code, region")\
                 .in_("id", location_ids)
+        elif force_reenrich:
+            # Re-enrich ALL locations
+            query = db.client.table("locations")\
+                .select("id, city, country_code, region")
         else:
-            # Enrich all unenriched locations
+            # Enrich only unenriched locations
             query = db.client.table("locations")\
                 .select("id, city, country_code, region")\
                 .or_("ai_enriched.is.null,ai_enriched.eq.false")
