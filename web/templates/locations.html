@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Locations - DataRoles</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex space-x-8">
+                    <a href="/queries" class="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-700">
+                        Queries
+                    </a>
+                    <a href="/runs" class="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-700">
+                        Runs
+                    </a>
+                    <a href="/jobs" class="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-700">
+                        Jobs
+                    </a>
+                    <div class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium text-gray-900">
+                        <span class="text-gray-400 mr-2">Masterdata</span>
+                        <div class="flex space-x-4">
+                            <a href="/companies" class="text-gray-500 hover:text-gray-700">Companies</a>
+                            <a href="/tech-stack" class="text-gray-500 hover:text-gray-700">Tech Stack</a>
+                            <a href="/job-types" class="text-gray-500 hover:text-gray-700">Job Types</a>
+                            <a href="/locations" class="border-b-2 border-indigo-500 text-gray-900">Locations</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" x-data="locationsApp()">
+        <!-- Header -->
+        <div class="mb-6">
+            <h1 class="text-2xl font-bold text-gray-900">Locations</h1>
+            <p class="mt-1 text-sm text-gray-500">Manage location master data</p>
+        </div>
+
+        <!-- Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white rounded-lg shadow p-4">
+                <div class="text-sm font-medium text-gray-500">Total Locations</div>
+                <div class="mt-1 text-2xl font-semibold text-gray-900" x-text="stats.total"></div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4">
+                <div class="text-sm font-medium text-gray-500">AI Enriched</div>
+                <div class="mt-1 text-2xl font-semibold text-green-600" x-text="stats.enriched"></div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4">
+                <div class="text-sm font-medium text-gray-500">Pending</div>
+                <div class="mt-1 text-2xl font-semibold text-orange-600" x-text="stats.pending"></div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4">
+                <div class="text-sm font-medium text-gray-500">Enrichment %</div>
+                <div class="mt-1 text-2xl font-semibold text-indigo-600" x-text="stats.enrichment_percentage + '%'"></div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="bg-white rounded-lg shadow mb-6 p-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                    <input type="text" x-model="searchQuery" @input="searchLocations" 
+                           placeholder="Search city, country..."
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Country</label>
+                    <select x-model="filterCountry" @change="loadLocations" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        <option value="">All Countries</option>
+                        <option value="BE">Belgium</option>
+                        <option value="NL">Netherlands</option>
+                        <option value="FR">France</option>
+                        <option value="DE">Germany</option>
+                        <option value="GB">United Kingdom</option>
+                        <option value="US">United States</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Enrichment Status</label>
+                    <select x-model="filterEnriched" @change="loadLocations" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        <option value="">All</option>
+                        <option value="true">Enriched</option>
+                        <option value="false">Not Enriched</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Locations Table -->
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">City</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Country</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Region</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subdivision</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Timezone</th>
+                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Enriched</th>
+                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <template x-for="location in locations" :key="location.id">
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-4 py-3">
+                                    <div class="text-sm font-medium text-gray-900" x-text="location.city"></div>
+                                    <div class="text-xs text-gray-500" x-text="location.city_official_name" x-show="location.city_official_name && location.city_official_name !== location.city"></div>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <span class="text-sm text-gray-900" x-text="location.country_code || '-'"></span>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <span class="text-sm text-gray-600" x-text="location.region || '-'"></span>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <span class="text-sm text-gray-600" x-text="location.subdivision_name || '-'"></span>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <span class="text-xs text-gray-500" x-text="location.timezone || '-'"></span>
+                                </td>
+                                <td class="px-4 py-3 text-center">
+                                    <span x-show="location.ai_enriched" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        ✓
+                                    </span>
+                                    <span x-show="!location.ai_enriched" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                                        -
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 text-center">
+                                    <button @click="editLocation(location)" class="text-indigo-600 hover:text-indigo-900 text-sm">
+                                        Edit
+                                    </button>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="bg-gray-50 px-4 py-3 flex items-center justify-between border-t border-gray-200">
+                <div class="text-sm text-gray-700">
+                    Showing <span class="font-medium" x-text="locations.length"></span> locations
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Modal -->
+        <div x-show="showEditModal" x-cloak class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+            <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Edit Location</h3>
+                <template x-if="editingLocation">
+                    <div class="space-y-4">
+                        <!-- Basic Info -->
+                        <div class="grid grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">City</label>
+                                <input type="text" x-model="editingLocation.city" 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Country Code</label>
+                                <input type="text" x-model="editingLocation.country_code" 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Region</label>
+                                <input type="text" x-model="editingLocation.region" 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                            </div>
+                        </div>
+
+                        <!-- Enriched Data -->
+                        <div class="border-t pt-4">
+                            <h4 class="text-sm font-semibold text-gray-700 mb-3">AI Enriched Data</h4>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Country Code (ISO 3)</label>
+                                    <input type="text" x-model="editingLocation.country_code_3" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Timezone</label>
+                                    <input type="text" x-model="editingLocation.timezone" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Official City Name</label>
+                                    <input type="text" x-model="editingLocation.city_official_name" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Subdivision</label>
+                                    <input type="text" x-model="editingLocation.subdivision_name" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Subdivision (FR)</label>
+                                    <input type="text" x-model="editingLocation.subdivision_name_fr" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Subdivision (EN)</label>
+                                    <input type="text" x-model="editingLocation.subdivision_name_en" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Multilingual Names -->
+                        <div class="border-t pt-4">
+                            <h4 class="text-sm font-semibold text-gray-700 mb-3">Multilingual Names</h4>
+                            <div class="grid grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">City (NL)</label>
+                                    <input type="text" x-model="editingLocation.city_name_nl" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">City (FR)</label>
+                                    <input type="text" x-model="editingLocation.city_name_fr" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">City (EN)</label>
+                                    <input type="text" x-model="editingLocation.city_name_en" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Country (NL)</label>
+                                    <input type="text" x-model="editingLocation.country_name_nl" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Country (FR)</label>
+                                    <input type="text" x-model="editingLocation.country_name_fr" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Country (EN)</label>
+                                    <input type="text" x-model="editingLocation.country_name_en" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="flex justify-end space-x-3 pt-4 border-t">
+                            <button @click="showEditModal = false" 
+                                    class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                                Cancel
+                            </button>
+                            <button @click="saveLocation" 
+                                    class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                                Save Changes
+                            </button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function locationsApp() {
+            return {
+                locations: [],
+                stats: {
+                    total: 0,
+                    enriched: 0,
+                    pending: 0,
+                    enrichment_percentage: 0
+                },
+                searchQuery: '',
+                filterCountry: '',
+                filterEnriched: '',
+                showEditModal: false,
+                editingLocation: null,
+                searchTimeout: null,
+
+                async init() {
+                    await this.loadStats();
+                    await this.loadLocations();
+                    lucide.createIcons();
+                },
+
+                async loadStats() {
+                    try {
+                        const response = await fetch('/api/locations/stats/overview');
+                        const data = await response.json();
+                        this.stats = data;
+                    } catch (error) {
+                        console.error('Failed to load stats:', error);
+                    }
+                },
+
+                async loadLocations() {
+                    try {
+                        let url = '/api/locations/?limit=1000';
+                        
+                        if (this.searchQuery) {
+                            url += `&search=${encodeURIComponent(this.searchQuery)}`;
+                        }
+                        if (this.filterCountry) {
+                            url += `&country_code=${this.filterCountry}`;
+                        }
+                        if (this.filterEnriched) {
+                            url += `&ai_enriched=${this.filterEnriched}`;
+                        }
+
+                        const response = await fetch(url);
+                        const data = await response.json();
+                        this.locations = data.locations;
+                    } catch (error) {
+                        console.error('Failed to load locations:', error);
+                    }
+                },
+
+                searchLocations() {
+                    clearTimeout(this.searchTimeout);
+                    this.searchTimeout = setTimeout(() => {
+                        this.loadLocations();
+                    }, 300);
+                },
+
+                editLocation(location) {
+                    this.editingLocation = { ...location };
+                    this.showEditModal = true;
+                },
+
+                async saveLocation() {
+                    try {
+                        const response = await fetch(`/api/locations/${this.editingLocation.id}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(this.editingLocation)
+                        });
+
+                        if (response.ok) {
+                            alert('Location updated successfully!');
+                            this.showEditModal = false;
+                            await this.loadLocations();
+                            await this.loadStats();
+                        } else {
+                            const error = await response.json();
+                            alert(`Failed to update location: ${error.detail}`);
+                        }
+                    } catch (error) {
+                        console.error('Failed to save location:', error);
+                        alert('Failed to save location');
+                    }
+                }
+            };
+        }
+    </script>
+
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
+</body>
+</html>

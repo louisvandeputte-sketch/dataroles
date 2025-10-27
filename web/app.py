@@ -10,7 +10,7 @@ from pathlib import Path
 from contextlib import asynccontextmanager
 from loguru import logger
 
-from web.api import queries, runs, jobs, quality, job_types, companies, tech_stack
+from web.api import queries, runs, jobs, quality, job_types, companies, tech_stack, locations
 from scheduler import get_scheduler
 
 
@@ -74,6 +74,7 @@ app.include_router(quality.router, prefix="/api/quality", tags=["quality"])
 app.include_router(job_types.router, prefix="/api/job-types", tags=["job-types"])
 app.include_router(companies.router, prefix="/api/companies", tags=["companies"])
 app.include_router(tech_stack.router, prefix="/api/tech-stack", tags=["tech-stack"])
+app.include_router(locations.router, prefix="/api/locations", tags=["locations"])
 
 
 # Main pages
@@ -132,6 +133,12 @@ async def companies_page(request: Request):
 async def tech_stack_page(request: Request):
     """Tech stack masterdata management page."""
     return templates.TemplateResponse("tech_stack.html", {"request": request})
+
+
+@app.get("/locations", response_class=HTMLResponse)
+async def locations_page(request: Request):
+    """Locations master data management page."""
+    return templates.TemplateResponse("locations.html", {"request": request})
 
 
 @app.get("/health")
