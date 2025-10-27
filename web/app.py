@@ -12,6 +12,8 @@ from loguru import logger
 
 from web.api import queries, runs, jobs, quality, job_types, companies, tech_stack, locations
 from scheduler import get_scheduler
+from ingestion.auto_enrich_service import get_auto_enrich_service
+import asyncio
 
 
 @asynccontextmanager
@@ -25,10 +27,25 @@ async def lifespan(app: FastAPI):
     scheduler.start()
     logger.info("✅ Scheduler started")
     
+    # Start auto-enrichment service
+    auto_enrich_service = get_auto_enrich_service()
+    auto_enrich_task = asyncio.create_task(auto_enrich_service.start())
+    logger.info("✅ Auto-enrichment service started")
+    
     yield
     
     # Shutdown
     logger.info("🛑 Shutting down DataRoles application")
+    
+    # Stop auto-enrichment service
+    auto_enrich_service.stop()
+    auto_enrich_task.cancel()
+    try:
+        await auto_enrich_task
+    except asyncio.CancelledError:
+        pass
+    logger.info("✅ Auto-enrichment service stopped")
+    
     scheduler.shutdown()
     logger.info("✅ Scheduler stopped")
 

@@ -1,11 +1,12 @@
 """API endpoints for location management."""
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 from typing import Optional, List
 from loguru import logger
 
 from database.client import db
+from ingestion.location_enrichment import enrich_location
 
 router = APIRouter()
 
@@ -137,6 +138,45 @@ async def delete_location(location_id: str):
 
 
 # ==================== STATS ====================
+
+@router.post("/{location_id}/enrich")
+async def enrich_location_endpoint(location_id: str, background_tasks: BackgroundTasks):
+    """Manually trigger enrichment for a specific location."""
+    try:
+        # Get location data
+        result = db.client.table("locations")\
+            .select("id, city, country_code, region")\
+            .eq("id", location_id)\
+            .single()\
+            .execute()
+        
+        if not result.data:
+            raise HTTPException(status_code=404, detail="Location not found")
+        
+        location = result.data
+        
+        # Enrich in background
+        def enrich_task():
+            try:
+                enrich_location(
+                    location_id=location["id"],
+                    city=location.get("city"),
+                    country_code=location.get("country_code"),
+                    region=location.get("region")
+                )
+            except Exception as e:
+                logger.error(f"Background enrichment failed for {location.get('city')}: {e}")
+        
+        background_tasks.add_task(enrich_task)
+        
+        return {"success": True, "message": "Enrichment started in background"}
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to trigger enrichment: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/stats/overview")
 async def get_location_stats():
