@@ -140,41 +140,50 @@ async def delete_location(location_id: str):
 
 @router.get("/stats/overview")
 async def get_location_stats():
-    """Get statistics about locations."""
+    """Get statistics about locations with data quality metrics."""
     try:
-        # Total locations
-        total_result = db.client.table("locations")\
-            .select("id", count="exact")\
-            .execute()
-        total = total_result.count if total_result.count else 0
-        
-        # Enriched locations
-        enriched_result = db.client.table("locations")\
-            .select("id", count="exact")\
-            .eq("ai_enriched", True)\
-            .execute()
-        enriched = enriched_result.count if enriched_result.count else 0
-        
-        # Locations by country (top 10)
-        countries_result = db.client.table("locations")\
-            .select("country_code", count="exact")\
+        # Get all locations to analyze data quality
+        all_locations = db.client.table("locations")\
+            .select("subdivision_name, subdivision_name_fr, subdivision_name_en, timezone, city_name_nl, city_name_fr, city_name_en, country_name_nl")\
             .execute()
         
-        # Count by country
-        country_counts = {}
-        if countries_result.data:
-            for loc in countries_result.data:
-                cc = loc.get("country_code", "Unknown")
-                country_counts[cc] = country_counts.get(cc, 0) + 1
+        locations = all_locations.data if all_locations.data else []
+        total = len(locations)
         
-        top_countries = sorted(country_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+        # Calculate data quality metrics
+        missing_subdivision = 0
+        missing_timezone = 0
+        missing_translations = 0
+        complete = 0
+        
+        for loc in locations:
+            has_issues = False
+            
+            # Check subdivision (any language)
+            if not loc.get("subdivision_name") and not loc.get("subdivision_name_fr") and not loc.get("subdivision_name_en"):
+                missing_subdivision += 1
+                has_issues = True
+            
+            # Check timezone
+            if not loc.get("timezone"):
+                missing_timezone += 1
+                has_issues = True
+            
+            # Check translations (city and country names in all 3 languages)
+            if not (loc.get("city_name_nl") and loc.get("city_name_fr") and loc.get("city_name_en") and loc.get("country_name_nl")):
+                missing_translations += 1
+                has_issues = True
+            
+            # Complete record: has all fields
+            if not has_issues:
+                complete += 1
         
         return {
             "total": total,
-            "enriched": enriched,
-            "pending": total - enriched,
-            "enrichment_percentage": round((enriched / total * 100), 1) if total > 0 else 0,
-            "top_countries": [{"country_code": cc, "count": count} for cc, count in top_countries]
+            "missing_subdivision": missing_subdivision,
+            "missing_timezone": missing_timezone,
+            "missing_translations": missing_translations,
+            "complete": complete
         }
     except Exception as e:
         logger.error(f"Failed to get location stats: {e}")

@@ -11,22 +11,26 @@
         </div>
 
         <!-- Stats -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
             <div class="bg-white rounded-lg shadow p-4">
                 <div class="text-sm font-medium text-gray-500">Total Locations</div>
                 <div class="mt-1 text-2xl font-semibold text-gray-900" x-text="stats.total"></div>
             </div>
             <div class="bg-white rounded-lg shadow p-4">
-                <div class="text-sm font-medium text-gray-500">AI Enriched</div>
-                <div class="mt-1 text-2xl font-semibold text-green-600" x-text="stats.enriched"></div>
+                <div class="text-sm font-medium text-gray-500">Missing Subdivision</div>
+                <div class="mt-1 text-2xl font-semibold text-orange-600" x-text="stats.missing_subdivision || 0"></div>
             </div>
             <div class="bg-white rounded-lg shadow p-4">
-                <div class="text-sm font-medium text-gray-500">Pending</div>
-                <div class="mt-1 text-2xl font-semibold text-orange-600" x-text="stats.pending"></div>
+                <div class="text-sm font-medium text-gray-500">Missing Timezone</div>
+                <div class="mt-1 text-2xl font-semibold text-orange-600" x-text="stats.missing_timezone || 0"></div>
             </div>
             <div class="bg-white rounded-lg shadow p-4">
-                <div class="text-sm font-medium text-gray-500">Enrichment %</div>
-                <div class="mt-1 text-2xl font-semibold text-indigo-600" x-text="stats.enrichment_percentage + '%'"></div>
+                <div class="text-sm font-medium text-gray-500">Missing Translations</div>
+                <div class="mt-1 text-2xl font-semibold text-red-600" x-text="stats.missing_translations || 0"></div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4">
+                <div class="text-sm font-medium text-gray-500">Complete Records</div>
+                <div class="mt-1 text-2xl font-semibold text-green-600" x-text="stats.complete || 0"></div>
             </div>
         </div>
 
@@ -70,32 +74,61 @@
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Platform City</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stad (NL)</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Land (NL)</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Provincie/Regio (NL)</th>
-                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Platform City</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stad (NL)</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stad (FR)</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stad (EN)</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Land (NL)</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Provincie (NL)</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Provincie (FR)</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Provincie (EN)</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Timezone</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">ISO3</th>
+                            <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         <template x-for="location in locations" :key="location.id">
                             <tr class="hover:bg-gray-50">
-                                <td class="px-4 py-3">
+                                <td class="px-3 py-2">
                                     <div class="text-sm font-medium text-gray-900" x-text="location.city"></div>
                                 </td>
-                                <td class="px-4 py-3">
-                                    <span class="text-sm text-gray-900" x-text="location.city_name_nl || '-' "></span>
+                                <td class="px-3 py-2">
+                                    <span class="text-sm" :class="location.city_name_nl ? 'text-gray-900' : 'text-red-400'" x-text="location.city_name_nl || '—'"></span>
                                 </td>
-                                <td class="px-4 py-3">
-                                    <span class="text-sm text-gray-900" x-text="location.country_name_nl || '-' "></span>
+                                <td class="px-3 py-2">
+                                    <span class="text-sm" :class="location.city_name_fr ? 'text-gray-900' : 'text-red-400'" x-text="location.city_name_fr || '—'"></span>
                                 </td>
-                                <td class="px-4 py-3">
-                                    <span class="text-sm text-gray-900" x-text="location.subdivision_name || '-' "></span>
+                                <td class="px-3 py-2">
+                                    <span class="text-sm" :class="location.city_name_en ? 'text-gray-900' : 'text-red-400'" x-text="location.city_name_en || '—'"></span>
                                 </td>
-                                <td class="px-4 py-3 text-center">
-                                    <button @click="editLocation(location)" class="text-indigo-600 hover:text-indigo-900 text-sm">
-                                        Edit
-                                    </button>
+                                <td class="px-3 py-2">
+                                    <span class="text-sm" :class="location.country_name_nl ? 'text-gray-900' : 'text-red-400'" x-text="location.country_name_nl || '—'"></span>
+                                </td>
+                                <td class="px-3 py-2">
+                                    <span class="text-sm" :class="location.subdivision_name ? 'text-gray-900' : 'text-orange-400'" x-text="location.subdivision_name || '—'"></span>
+                                </td>
+                                <td class="px-3 py-2">
+                                    <span class="text-sm" :class="location.subdivision_name_fr ? 'text-gray-900' : 'text-orange-400'" x-text="location.subdivision_name_fr || '—'"></span>
+                                </td>
+                                <td class="px-3 py-2">
+                                    <span class="text-sm" :class="location.subdivision_name_en ? 'text-gray-900' : 'text-orange-400'" x-text="location.subdivision_name_en || '—'"></span>
+                                </td>
+                                <td class="px-3 py-2">
+                                    <span class="text-xs" :class="location.timezone ? 'text-gray-600' : 'text-orange-400'" x-text="location.timezone || '—'"></span>
+                                </td>
+                                <td class="px-3 py-2">
+                                    <span class="text-xs text-gray-600" x-text="location.country_code_3 || '—'"></span>
+                                </td>
+                                <td class="px-3 py-2 text-center">
+                                    <div class="flex items-center justify-center space-x-2">
+                                        <button @click="editLocation(location)" class="text-indigo-600 hover:text-indigo-900 text-sm">
+                                            Edit
+                                        </button>
+                                        <button @click="deleteLocation(location)" class="text-red-600 hover:text-red-900 text-sm">
+                                            Delete
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         </template>
@@ -235,9 +268,10 @@
                 locations: [],
                 stats: {
                     total: 0,
-                    enriched: 0,
-                    pending: 0,
-                    enrichment_percentage: 0
+                    missing_subdivision: 0,
+                    missing_timezone: 0,
+                    missing_translations: 0,
+                    complete: 0
                 },
                 searchQuery: '',
                 filterCountry: '',
@@ -318,6 +352,30 @@
                     } catch (error) {
                         console.error('Failed to save location:', error);
                         alert('Failed to save location');
+                    }
+                },
+
+                async deleteLocation(location) {
+                    if (!confirm(`Are you sure you want to delete "${location.city}"? This action cannot be undone.`)) {
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch(`/api/locations/${location.id}`, {
+                            method: 'DELETE'
+                        });
+
+                        if (response.ok) {
+                            alert('Location deleted successfully!');
+                            await this.loadLocations();
+                            await this.loadStats();
+                        } else {
+                            const error = await response.json();
+                            alert(`Failed to delete location: ${error.detail}`);
+                        }
+                    } catch (error) {
+                        console.error('Failed to delete location:', error);
+                        alert('Failed to delete location');
                     }
                 }
             };
