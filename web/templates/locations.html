@@ -105,12 +105,10 @@
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">City</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Country</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Region</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subdivision</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Timezone</th>
-                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Enriched</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Platform City</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stad (NL)</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Land (NL)</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Provincie/Regio (NL)</th>
                             <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
                         </tr>
                     </thead>
@@ -119,27 +117,15 @@
                             <tr class="hover:bg-gray-50">
                                 <td class="px-4 py-3">
                                     <div class="text-sm font-medium text-gray-900" x-text="location.city"></div>
-                                    <div class="text-xs text-gray-500" x-text="location.city_official_name" x-show="location.city_official_name && location.city_official_name !== location.city"></div>
                                 </td>
                                 <td class="px-4 py-3">
-                                    <span class="text-sm text-gray-900" x-text="location.country_code || '-'"></span>
+                                    <span class="text-sm text-gray-900" x-text="location.city_name_nl || '-' "></span>
                                 </td>
                                 <td class="px-4 py-3">
-                                    <span class="text-sm text-gray-600" x-text="location.region || '-'"></span>
+                                    <span class="text-sm text-gray-900" x-text="location.country_name_nl || '-' "></span>
                                 </td>
                                 <td class="px-4 py-3">
-                                    <span class="text-sm text-gray-600" x-text="location.subdivision_name || '-'"></span>
-                                </td>
-                                <td class="px-4 py-3">
-                                    <span class="text-xs text-gray-500" x-text="location.timezone || '-'"></span>
-                                </td>
-                                <td class="px-4 py-3 text-center">
-                                    <span x-show="location.ai_enriched" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                        ✓
-                                    </span>
-                                    <span x-show="!location.ai_enriched" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-                                        -
-                                    </span>
+                                    <span class="text-sm text-gray-900" x-text="location.subdivision_name || '-' "></span>
                                 </td>
                                 <td class="px-4 py-3 text-center">
                                     <button @click="editLocation(location)" class="text-indigo-600 hover:text-indigo-900 text-sm">
@@ -169,17 +155,17 @@
                         <!-- Basic Info -->
                         <div class="grid grid-cols-3 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">City</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Platform City</label>
                                 <input type="text" x-model="editingLocation.city" 
                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Country Code</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Platform Country Code</label>
                                 <input type="text" x-model="editingLocation.country_code" 
                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Region</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Platform Region</label>
                                 <input type="text" x-model="editingLocation.region" 
                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg">
                             </div>
@@ -288,7 +274,7 @@
                 },
                 searchQuery: '',
                 filterCountry: '',
-                filterEnriched: '',
+                filterEnriched: 'true',
                 showEditModal: false,
                 editingLocation: null,
                 searchTimeout: null,

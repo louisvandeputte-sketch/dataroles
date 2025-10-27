@@ -65,32 +65,11 @@ def main():
     print("🌍 Location Enrichment Script")
     print("=" * 60)
     
-    # Get current stats
-    print("\n📊 Current Status:")
-    stats = get_enrichment_stats()
-    if stats:
-        print(f"   Total locations: {stats['total']}")
-        print(f"   Already enriched: {stats['enriched']} ({stats['enriched']/stats['total']*100:.1f}%)" if stats['total'] > 0 else "   Already enriched: 0")
-        print(f"   Failed enrichments: {stats['failed']}")
-        print(f"   Pending enrichment: {stats['pending']}")
-    else:
-        print("   ❌ Could not retrieve stats")
-        return
-    
-    if stats['pending'] == 0:
-        print("\n✅ All locations are already enriched!")
-        return
-    
-    # Ask for confirmation
-    print(f"\n⚠️  This will enrich {stats['pending']} locations using OpenAI API.")
-    print("   This may take a while and will consume API credits.")
-    
-    # Check for arguments
+    # Parse arguments early to support --force bypass
     force_reenrich = False
     batch_size = None
-    
     if len(sys.argv) > 1:
-        if sys.argv[1] == "--force" or sys.argv[1] == "-f":
+        if sys.argv[1] in ("--force", "-f"):
             force_reenrich = True
             print(f"\n🔄 Force re-enrich mode: Will re-enrich ALL locations")
             if len(sys.argv) > 2:
@@ -105,6 +84,27 @@ def main():
                 print(f"\n📦 Batch size: {batch_size} locations")
             except ValueError:
                 print("❌ Invalid batch size argument. Using all pending locations.")
+
+    # Get current stats
+    print("\n📊 Current Status:")
+    stats = get_enrichment_stats()
+    if stats:
+        print(f"   Total locations: {stats['total']}")
+        print(f"   Already enriched: {stats['enriched']} ({stats['enriched']/stats['total']*100:.1f}%)" if stats['total'] > 0 else "   Already enriched: 0")
+        print(f"   Failed enrichments: {stats['failed']}")
+        print(f"   Pending enrichment: {stats['pending']}")
+    else:
+        print("   ❌ Could not retrieve stats")
+        return
+    
+    # Only exit early if not forcing
+    if stats['pending'] == 0 and not force_reenrich:
+        print("\n✅ All locations are already enriched!")
+        return
+    
+    # Ask for confirmation
+    print(f"\n⚠️  This will enrich {('ALL' if force_reenrich else stats['pending'])} locations using OpenAI API.")
+    print("   This may take a while and will consume API credits.")
     
     confirm = input(f"\n   Continue? (yes/no): ")
     if confirm.lower() != "yes":
