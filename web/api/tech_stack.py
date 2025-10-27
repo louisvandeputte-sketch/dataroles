@@ -6,6 +6,7 @@ from typing import List, Optional
 from pydantic import BaseModel
 import io
 import base64
+import re
 from PIL import Image
 
 from database.client import db
@@ -18,6 +19,39 @@ ALLOWED_MIME_TYPES = {
     'image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml', 'image/webp'
 }
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+
+
+# ==================== HELPERS ====================
+
+def generate_seo_filename(name: str, file_extension: str) -> str:
+    """
+    Generate SEO-friendly filename from name.
+    
+    Examples:
+        'Python' -> 'python-logo.png'
+        'Apache Spark' -> 'apache-spark-logo.png'
+        'C++' -> 'cpp-logo.png'
+        'scikit-learn' -> 'scikit-learn-logo.png'
+    """
+    # Convert to lowercase
+    seo_name = name.lower()
+    
+    # Replace special characters
+    seo_name = seo_name.replace('++', 'pp')  # C++ -> cpp
+    seo_name = seo_name.replace('#', 'sharp')  # C# -> csharp
+    seo_name = seo_name.replace('.', '')  # scikit.learn -> scikitlearn
+    
+    # Replace spaces and special chars with hyphens
+    seo_name = re.sub(r'[^a-z0-9-]', '-', seo_name)
+    
+    # Remove multiple consecutive hyphens
+    seo_name = re.sub(r'-+', '-', seo_name)
+    
+    # Remove leading/trailing hyphens
+    seo_name = seo_name.strip('-')
+    
+    # Add logo suffix and extension
+    return f"{seo_name}-logo.{file_extension}"
 
 
 # ==================== MODELS ====================
@@ -151,11 +185,25 @@ async def upload_programming_language_logo(language_id: str, file: UploadFile = 
         # Convert to base64 for PostgreSQL bytea storage
         logo_base64 = base64.b64encode(logo_data).decode('utf-8')
         
+        # Get language name for SEO filename
+        lang_result = db.client.table("programming_languages")\
+            .select("name")\
+            .eq("id", language_id)\
+            .single()\
+            .execute()
+        
+        if not lang_result.data:
+            raise HTTPException(status_code=404, detail="Programming language not found")
+        
+        # Generate SEO-friendly filename
+        file_extension = file.filename.split('.')[-1].lower() if '.' in file.filename else 'png'
+        seo_filename = generate_seo_filename(lang_result.data["name"], file_extension)
+        
         # Update database with base64-encoded data
         db.client.table("programming_languages")\
             .update({
                 "logo_data": logo_base64,
-                "logo_filename": file.filename,
+                "logo_filename": seo_filename,
                 "logo_content_type": file.content_type
             })\
             .eq("id", language_id)\
@@ -212,12 +260,16 @@ async def get_programming_language_logo(language_id: str):
         # Determine correct content type
         content_type = result.data.get("logo_content_type", "image/png")
         
+        # Get SEO-friendly filename for Content-Disposition header
+        seo_filename = result.data.get("logo_filename", "logo.png")
+        
         return Response(
             content=logo_bytes,
             media_type=content_type,
             headers={
                 "Cache-Control": "public, max-age=86400",  # Cache for 24 hours
-                "Access-Control-Allow-Origin": "*"
+                "Access-Control-Allow-Origin": "*",
+                "Content-Disposition": f'inline; filename="{seo_filename}"'  # SEO-friendly filename
             }
         )
     except HTTPException:
@@ -341,17 +393,31 @@ async def upload_ecosystem_logo(ecosystem_id: str, file: UploadFile = File(...))
         # Convert to base64 for PostgreSQL bytea storage
         logo_base64 = base64.b64encode(logo_data).decode('utf-8')
         
+        # Get ecosystem name for SEO filename
+        eco_result = db.client.table("ecosystems")\
+            .select("name")\
+            .eq("id", ecosystem_id)\
+            .single()\
+            .execute()
+        
+        if not eco_result.data:
+            raise HTTPException(status_code=404, detail="Ecosystem not found")
+        
+        # Generate SEO-friendly filename
+        file_extension = file.filename.split('.')[-1].lower() if '.' in file.filename else 'png'
+        seo_filename = generate_seo_filename(eco_result.data["name"], file_extension)
+        
         # Update database with base64-encoded data
         db.client.table("ecosystems")\
             .update({
                 "logo_data": logo_base64,
-                "logo_filename": file.filename,
+                "logo_filename": seo_filename,
                 "logo_content_type": file.content_type
             })\
             .eq("id", ecosystem_id)\
             .execute()
         
-        return {"message": "Logo uploaded successfully", "filename": file.filename}
+        return {"message": "Logo uploaded successfully", "filename": seo_filename}
     except HTTPException:
         raise
     except Exception as e:
@@ -402,12 +468,16 @@ async def get_ecosystem_logo(ecosystem_id: str):
         # Determine correct content type
         content_type = result.data.get("logo_content_type", "image/png")
         
+        # Get SEO-friendly filename for Content-Disposition header
+        seo_filename = result.data.get("logo_filename", "logo.png")
+        
         return Response(
             content=logo_bytes,
             media_type=content_type,
             headers={
                 "Cache-Control": "public, max-age=86400",  # Cache for 24 hours
-                "Access-Control-Allow-Origin": "*"
+                "Access-Control-Allow-Origin": "*",
+                "Content-Disposition": f'inline; filename="{seo_filename}"'  # SEO-friendly filename
             }
         )
     except HTTPException:
