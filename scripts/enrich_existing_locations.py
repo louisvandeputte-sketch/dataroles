@@ -102,14 +102,17 @@ def main():
         print("\n✅ All locations are already enriched!")
         return
     
-    # Ask for confirmation
+    # Ask for confirmation (skip when forcing to support automation)
     print(f"\n⚠️  This will enrich {('ALL' if force_reenrich else stats['pending'])} locations using OpenAI API.")
     print("   This may take a while and will consume API credits.")
     
-    confirm = input(f"\n   Continue? (yes/no): ")
-    if confirm.lower() != "yes":
-        print("❌ Enrichment cancelled")
-        return
+    if not force_reenrich:
+        confirm = input(f"\n   Continue? (yes/no): ")
+        if confirm.lower() != "yes":
+            print("❌ Enrichment cancelled")
+            return
+    else:
+        print("✅ Force mode: auto-confirmed")
     
     # Run enrichment
     print(f"\n🚀 Starting enrichment...")
