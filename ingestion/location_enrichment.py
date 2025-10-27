@@ -18,7 +18,7 @@ client = OpenAI(
 
 # Prompt ID for location enrichment
 LOCATION_ENRICHMENT_PROMPT_ID = "pmpt_68ff4fce6a0c8193baa5b7310f37a930074c8aedab026486"
-LOCATION_ENRICHMENT_PROMPT_VERSION = "2"
+LOCATION_ENRICHMENT_PROMPT_VERSION = "3"
 
 
 def enrich_location(location_id: str, city: str, country_code: str, region: Optional[str] = None) -> Dict[str, Any]:
@@ -141,6 +141,8 @@ def save_enrichment_to_db(location_id: str, enrichment_data: Dict[str, Any]) -> 
             "country_code_3": enrichment_data.get("country_code_3"),
             "country_name": enrichment_data.get("country_name"),
             "subdivision_name": enrichment_data.get("subdivision_name"),
+            "subdivision_name_fr": enrichment_data.get("subdivision_name_fr"),
+            "subdivision_name_en": enrichment_data.get("subdivision_name_en"),
             "timezone": enrichment_data.get("timezone"),
             "city_official_name": enrichment_data.get("city_official_name"),
             "city_normalized": enrichment_data.get("city_normalized"),
