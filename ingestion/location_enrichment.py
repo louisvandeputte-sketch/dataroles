@@ -18,7 +18,7 @@ client = OpenAI(
 
 # Prompt ID for location enrichment
 LOCATION_ENRICHMENT_PROMPT_ID = "pmpt_68ff4fce6a0c8193baa5b7310f37a930074c8aedab026486"
-LOCATION_ENRICHMENT_PROMPT_VERSION = "3"
+LOCATION_ENRICHMENT_PROMPT_VERSION = "4"
 
 
 def enrich_location(location_id: str, city: str, country_code: str, region: Optional[str] = None) -> Dict[str, Any]:

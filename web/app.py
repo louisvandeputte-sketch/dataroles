@@ -52,7 +52,7 @@ async def lifespan(app: FastAPI):
 
 # Create FastAPI app
 app = FastAPI(
-    title="DataRoles Admin",
+    title="everyjob",
     description="Job aggregation platform admin panel",
     version="1.0.0",
     lifespan=lifespan
