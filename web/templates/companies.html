@@ -346,6 +346,74 @@
                             <span class="text-sm text-gray-500" x-show="viewingCompany.company_master_data?.ai_enriched_at" x-text="new Date(viewingCompany.company_master_data?.ai_enriched_at).toLocaleString()"></span>
                         </div>
 
+                        <!-- Company Size Classification -->
+                        <div x-show="viewingCompany.company_master_data?.size_category" class="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                            <h4 class="text-sm font-semibold text-orange-900 mb-3 flex items-center">
+                                <i data-lucide="building" class="w-4 h-4 mr-2"></i>
+                                Company Size Classification
+                            </h4>
+                            <div class="space-y-3">
+                                <!-- Category Badge -->
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Category</label>
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
+                                          :class="{
+                                              'bg-green-100 text-green-800': viewingCompany.company_master_data?.size_category === 'startup',
+                                              'bg-blue-100 text-blue-800': viewingCompany.company_master_data?.size_category === 'scaleup',
+                                              'bg-yellow-100 text-yellow-800': viewingCompany.company_master_data?.size_category === 'sme',
+                                              'bg-purple-100 text-purple-800': viewingCompany.company_master_data?.size_category === 'established_enterprise',
+                                              'bg-indigo-100 text-indigo-800': viewingCompany.company_master_data?.size_category === 'corporate',
+                                              'bg-red-100 text-red-800': viewingCompany.company_master_data?.size_category === 'public_company',
+                                              'bg-gray-100 text-gray-800': viewingCompany.company_master_data?.size_category === 'government',
+                                          }"
+                                          x-text="viewingCompany.company_master_data?.size_category?.replace('_', ' ')">
+                                    </span>
+                                    <span class="ml-2 text-sm text-gray-600">
+                                        Confidence: <span class="font-medium" x-text="(viewingCompany.company_master_data?.size_confidence * 100).toFixed(0) + '%'"></span>
+                                    </span>
+                                </div>
+                                
+                                <!-- Trilingual Summaries -->
+                                <div x-show="viewingCompany.company_master_data?.size_summary_nl">
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">🇳🇱 Samenvatting (NL)</label>
+                                    <p class="text-sm text-gray-700" x-text="viewingCompany.company_master_data?.size_summary_nl"></p>
+                                </div>
+                                <div x-show="viewingCompany.company_master_data?.size_summary_fr">
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">🇫🇷 Résumé (FR)</label>
+                                    <p class="text-sm text-gray-700" x-text="viewingCompany.company_master_data?.size_summary_fr"></p>
+                                </div>
+                                <div x-show="viewingCompany.company_master_data?.size_summary_en">
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">🇬🇧 Summary (EN)</label>
+                                    <p class="text-sm text-gray-700" x-text="viewingCompany.company_master_data?.size_summary_en"></p>
+                                </div>
+                                
+                                <!-- Key Arguments -->
+                                <div x-show="viewingCompany.company_master_data?.size_key_arguments">
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Key Arguments</label>
+                                    <ul class="list-disc list-inside text-sm text-gray-700 space-y-1">
+                                        <template x-for="arg in JSON.parse(viewingCompany.company_master_data?.size_key_arguments || '[]')" :key="arg">
+                                            <li x-text="arg"></li>
+                                        </template>
+                                    </ul>
+                                </div>
+                                
+                                <!-- Sources -->
+                                <div x-show="viewingCompany.company_master_data?.size_sources">
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Sources</label>
+                                    <div class="space-y-1">
+                                        <template x-for="source in JSON.parse(viewingCompany.company_master_data?.size_sources || '[]')" :key="source">
+                                            <a :href="source" target="_blank" class="text-xs text-blue-600 hover:underline block break-all" x-text="source"></a>
+                                        </template>
+                                    </div>
+                                </div>
+                                
+                                <!-- Enrichment Date -->
+                                <div x-show="viewingCompany.company_master_data?.size_enriched_at" class="text-xs text-gray-500 pt-2 border-t">
+                                    Classified on <span x-text="new Date(viewingCompany.company_master_data?.size_enriched_at).toLocaleString()"></span>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- AI Enriched Data -->
                         <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
                             <h4 class="text-sm font-semibold text-purple-900 mb-3 flex items-center">
@@ -426,11 +494,20 @@
 
                         <!-- Actions -->
                         <div class="flex justify-between items-center pt-4 border-t">
-                            <a :href="`/jobs?company_id=${viewingCompany.id}`" 
-                               class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50">
-                                <i data-lucide="briefcase" class="w-4 h-4 mr-2"></i>
-                                View Jobs
-                            </a>
+                            <div class="flex space-x-3">
+                                <a :href="`/jobs?company_id=${viewingCompany.id}`" 
+                                   class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50">
+                                    <i data-lucide="briefcase" class="w-4 h-4 mr-2"></i>
+                                    View Jobs
+                                </a>
+                                <button @click="classifyCompanySize(viewingCompany.id)" 
+                                        :disabled="classifying"
+                                        class="inline-flex items-center px-4 py-2 border border-orange-300 rounded-lg text-orange-700 bg-white hover:bg-orange-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <i data-lucide="building" class="w-4 h-4 mr-2"></i>
+                                    <span x-show="!classifying">Classify Size</span>
+                                    <span x-show="classifying">Classifying...</span>
+                                </button>
+                            </div>
                             <div class="flex space-x-3">
                                 <button @click="showViewModal = false" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Close</button>
                                 <button @click="editCompany(viewingCompany); showViewModal = false" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Edit Company</button>
@@ -467,6 +544,7 @@ function companiesPage() {
         cacheDuration: 10 * 60 * 1000, // 10 minutes
         selectedCompanies: [],
         enriching: false,
+        classifying: false,
         aiStats: {
             total: 0,
             enriched: 0,
@@ -894,6 +972,52 @@ function companiesPage() {
                 alert('Failed to enrich companies: ' + error.message);
             } finally {
                 this.enriching = false;
+            }
+        },
+        
+        async classifyCompanySize(companyId) {
+            if (!confirm('Classify this company size using AI? This may take 30-60 seconds due to web search.')) {
+                return;
+            }
+            
+            this.classifying = true;
+            
+            try {
+                const response = await fetch(`/api/companies/${companyId}/classify-size`, {
+                    method: 'POST'
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Classification failed');
+                }
+                
+                const result = await response.json();
+                
+                if (result.classification) {
+                    const cat = result.classification.category;
+                    const conf = (result.classification.confidence * 100).toFixed(0);
+                    alert(`✅ Classification successful!\n\nCategory: ${cat}\nConfidence: ${conf}%`);
+                    
+                    // Reload company data
+                    await this.loadCompanies();
+                    await this.loadSizeStats();
+                    
+                    // Refresh viewing company
+                    const updatedCompany = this.companies.find(c => c.id === companyId);
+                    if (updatedCompany) {
+                        this.viewingCompany = updatedCompany;
+                    }
+                    
+                    this.$nextTick(() => lucide.createIcons());
+                } else {
+                    alert('Classification completed but no result returned');
+                }
+            } catch (error) {
+                console.error('Failed to classify company:', error);
+                alert('Failed to classify company: ' + error.message);
+            } finally {
+                this.classifying = false;
             }
         }
     }
