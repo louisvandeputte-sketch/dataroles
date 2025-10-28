@@ -17,9 +17,9 @@ client = OpenAI(
 )
 
 # Prompt ID for unified company enrichment (includes both info + size classification)
-# Version 6: Added multilingual sector (sector_en/nl/fr) and category (category_en/nl/fr)
+# Version 7: Removed summary object, category now with proper capitalization (e.g. "Established Enterprise")
 COMPANY_ENRICHMENT_PROMPT_ID = "pmpt_68fd06175d7c8190bd8767fddcb5486a0e87d16aa5f38bc2"
-COMPANY_ENRICHMENT_PROMPT_VERSION = "6"
+COMPANY_ENRICHMENT_PROMPT_VERSION = "7"
 
 
 def enrich_company(company_id: str, company_name: str, company_url: Optional[str] = None) -> Dict[str, Any]:
@@ -153,17 +153,15 @@ def save_enrichment_to_db(company_id: str, enrichment_data: Dict[str, Any]) -> b
             "ai_enriched": True,
             "ai_enriched_at": datetime.utcnow().isoformat(),
             "ai_enrichment_error": None,
-            # Size classification fields (from unified prompt v6)
+            # Size classification fields (from unified prompt v7)
             # Store English category in size_category for backward compatibility
             "size_category": enrichment_data.get("category_en"),
-            # Multilingual category fields
+            # Multilingual category fields (v7: proper capitalization like "Established Enterprise")
             "category_en": enrichment_data.get("category_en"),
             "category_nl": enrichment_data.get("category_nl"),
             "category_fr": enrichment_data.get("category_fr"),
             "size_confidence": enrichment_data.get("confidence"),
-            "size_summary_en": enrichment_data.get("summary", {}).get("en") if isinstance(enrichment_data.get("summary"), dict) else None,
-            "size_summary_nl": enrichment_data.get("summary", {}).get("nl") if isinstance(enrichment_data.get("summary"), dict) else None,
-            "size_summary_fr": enrichment_data.get("summary", {}).get("fr") if isinstance(enrichment_data.get("summary"), dict) else None,
+            # Note: summary fields removed in v7 (no longer in prompt output)
             "size_key_arguments": enrichment_data.get("key_arguments"),
             "size_sources": enrichment_data.get("sources"),
             "size_enriched_at": datetime.utcnow().isoformat() if enrichment_data.get("category_en") else None,
