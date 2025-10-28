@@ -728,3 +728,62 @@ async def get_enrichment_stats():
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== COMPANY SIZE CLASSIFICATION ====================
+
+@router.post("/{company_id}/classify-size")
+async def classify_company_size(company_id: str):
+    """Trigger size classification for a specific company."""
+    try:
+        from ingestion.company_size_enrichment import enrich_company_size
+        
+        # Get company data
+        result = db.client.table("company_master_data")\
+            .select("id, name, country")\
+            .eq("id", company_id)\
+            .single()\
+            .execute()
+        
+        if not result.data:
+            raise HTTPException(status_code=404, detail="Company not found")
+        
+        company = result.data
+        company_name = company.get("name")
+        
+        if not company_name:
+            raise HTTPException(status_code=400, detail="Company has no name")
+        
+        # Run classification
+        classification = enrich_company_size(
+            company_id=company_id,
+            company_name=company_name,
+            country=company.get("country")
+        )
+        
+        if not classification:
+            raise HTTPException(status_code=500, detail="Classification failed")
+        
+        return {
+            "success": True,
+            "classification": classification
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/size-classification/stats")
+async def get_size_classification_stats():
+    """Get statistics about company size classifications."""
+    try:
+        from ingestion.company_size_enrichment import get_classification_stats
+        
+        stats = get_classification_stats()
+        
+        return stats
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

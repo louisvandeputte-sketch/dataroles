@@ -41,7 +41,7 @@
         </div>
 
         <!-- Stats Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <div class="bg-white rounded-lg shadow p-4">
                 <div class="flex items-center justify-between">
                     <div>
@@ -67,6 +67,16 @@
                         <p class="text-2xl font-bold text-gray-900" x-text="verified"></p>
                     </div>
                     <i data-lucide="check-circle" class="w-8 h-8 text-purple-500"></i>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600">Size Classified</p>
+                        <p class="text-2xl font-bold text-gray-900" x-text="sizeStats.classified || 0"></p>
+                        <p class="text-xs text-gray-500" x-text="'(' + (sizeStats.pending || 0) + ' pending)'"></p>
+                    </div>
+                    <i data-lucide="building" class="w-8 h-8 text-orange-500"></i>
                 </div>
             </div>
         </div>
@@ -101,6 +111,7 @@
                             </th>
                             <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
                             <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Industry</th>
+                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
                             <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"><i data-lucide="globe" class="w-4 h-4 inline"></i></th>
                             <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"><i data-lucide="briefcase" class="w-4 h-4 inline"></i></th>
                             <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email HR</th>
@@ -132,6 +143,23 @@
                             <!-- Industry -->
                             <td class="px-2 py-2">
                                 <div class="text-xs text-gray-600 truncate max-w-[120px]" :title="company.industry" x-text="company.industry || '-'"></div>
+                            </td>
+                            <!-- Size Category -->
+                            <td class="px-2 py-2">
+                                <span x-show="company.company_master_data?.size_category" 
+                                      class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                                      :class="{
+                                          'bg-green-100 text-green-800': company.company_master_data?.size_category === 'startup',
+                                          'bg-blue-100 text-blue-800': company.company_master_data?.size_category === 'scaleup',
+                                          'bg-yellow-100 text-yellow-800': company.company_master_data?.size_category === 'sme',
+                                          'bg-purple-100 text-purple-800': company.company_master_data?.size_category === 'established_enterprise',
+                                          'bg-indigo-100 text-indigo-800': company.company_master_data?.size_category === 'corporate',
+                                          'bg-red-100 text-red-800': company.company_master_data?.size_category === 'public_company',
+                                          'bg-gray-100 text-gray-800': company.company_master_data?.size_category === 'government',
+                                      }"
+                                      x-text="company.company_master_data?.size_category?.replace('_', ' ')">
+                                </span>
+                                <span x-show="!company.company_master_data?.size_category" class="text-xs text-gray-400">-</span>
                             </td>
                             <!-- Bedrijfswebsite -->
                             <td class="px-2 py-2 text-center" @click.stop>
@@ -445,6 +473,12 @@ function companiesPage() {
             unenriched: 0,
             percentage_enriched: 0
         },
+        sizeStats: {
+            total: 0,
+            classified: 0,
+            pending: 0,
+            categories: {}
+        },
         
         async init() {
             // Clear cache if schema version changed
@@ -452,6 +486,7 @@ function companiesPage() {
             this.loadCacheFromStorage();
             await this.loadCompanies();
             await this.loadAIStats();
+            await this.loadSizeStats();
             this.prefetchPages();
             this.$nextTick(() => lucide.createIcons());
         },
@@ -726,6 +761,15 @@ function companiesPage() {
                 this.aiStats = await response.json();
             } catch (error) {
                 console.error('Failed to load AI stats:', error);
+            }
+        },
+        
+        async loadSizeStats() {
+            try {
+                const response = await fetch('/api/companies/size-classification/stats');
+                this.sizeStats = await response.json();
+            } catch (error) {
+                console.error('Failed to load size stats:', error);
             }
         },
         
