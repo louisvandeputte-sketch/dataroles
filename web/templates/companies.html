@@ -112,11 +112,11 @@
                             <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
                             <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Industry</th>
                             <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
-                            <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"><i data-lucide="globe" class="w-4 h-4 inline"></i></th>
-                            <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"><i data-lucide="briefcase" class="w-4 h-4 inline"></i></th>
+                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Website</th>
+                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jobs Page</th>
                             <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email HR</th>
-                            <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"><i data-lucide="link" class="w-4 h-4 inline"></i></th>
-                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email Alg.</th>
+                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">HR Source</th>
+                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email General</th>
                         </tr>
                     </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
@@ -162,30 +162,28 @@
                                 <span x-show="!company.company_master_data?.size_category" class="text-xs text-gray-400">-</span>
                             </td>
                             <!-- Bedrijfswebsite -->
-                            <td class="px-2 py-2 text-center" @click.stop>
+                            <td class="px-2 py-2" @click.stop>
                                 <a x-show="company.company_master_data?.bedrijfswebsite" 
                                    :href="company.company_master_data?.bedrijfswebsite" 
                                    target="_blank"
                                    class="inline-flex items-center text-blue-600 hover:text-blue-800"
                                    :title="company.company_master_data?.bedrijfswebsite">
-                                    <i data-lucide="globe" class="w-4 h-4"></i>
+                                    <i data-lucide="globe" class="w-4 h-4 mr-1"></i>
+                                    <span class="text-xs">Link</span>
                                 </a>
-                                <span x-show="!company.company_master_data?.bedrijfswebsite" class="text-gray-300">
-                                    <i data-lucide="globe" class="w-4 h-4"></i>
-                                </span>
+                                <span x-show="!company.company_master_data?.bedrijfswebsite" class="text-xs text-gray-400">-</span>
                             </td>
                             <!-- Jobspagina -->
-                            <td class="px-2 py-2 text-center" @click.stop>
+                            <td class="px-2 py-2" @click.stop>
                                 <a x-show="company.company_master_data?.jobspagina" 
                                    :href="company.company_master_data?.jobspagina" 
                                    target="_blank"
                                    class="inline-flex items-center text-blue-600 hover:text-blue-800"
                                    :title="company.company_master_data?.jobspagina">
-                                    <i data-lucide="briefcase" class="w-4 h-4"></i>
+                                    <i data-lucide="briefcase" class="w-4 h-4 mr-1"></i>
+                                    <span class="text-xs">Link</span>
                                 </a>
-                                <span x-show="!company.company_master_data?.jobspagina" class="text-gray-300">
-                                    <i data-lucide="briefcase" class="w-4 h-4"></i>
-                                </span>
+                                <span x-show="!company.company_master_data?.jobspagina" class="text-xs text-gray-400">-</span>
                             </td>
                             <!-- Email HR -->
                             <td class="px-2 py-2">
@@ -197,17 +195,16 @@
                                 <span x-show="!company.company_master_data?.email_hr" class="text-xs text-gray-400">-</span>
                             </td>
                             <!-- Email HR Bron -->
-                            <td class="px-2 py-2 text-center" @click.stop>
+                            <td class="px-2 py-2" @click.stop>
                                 <a x-show="company.company_master_data?.email_hr_bron" 
                                    :href="company.company_master_data?.email_hr_bron" 
                                    target="_blank"
                                    class="inline-flex items-center text-blue-600 hover:text-blue-800"
                                    :title="company.company_master_data?.email_hr_bron">
-                                    <i data-lucide="link" class="w-4 h-4"></i>
+                                    <i data-lucide="link" class="w-4 h-4 mr-1"></i>
+                                    <span class="text-xs">Link</span>
                                 </a>
-                                <span x-show="!company.company_master_data?.email_hr_bron" class="text-gray-300">
-                                    <i data-lucide="link" class="w-4 h-4"></i>
-                                </span>
+                                <span x-show="!company.company_master_data?.email_hr_bron" class="text-xs text-gray-400">-</span>
                             </td>
                             <!-- Email Algemeen -->
                             <td class="px-2 py-2">
