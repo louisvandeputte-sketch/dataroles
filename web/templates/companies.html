@@ -491,20 +491,11 @@
 
                         <!-- Actions -->
                         <div class="flex justify-between items-center pt-4 border-t">
-                            <div class="flex space-x-3">
-                                <a :href="`/jobs?company_id=${viewingCompany.id}`" 
-                                   class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50">
-                                    <i data-lucide="briefcase" class="w-4 h-4 mr-2"></i>
-                                    View Jobs
-                                </a>
-                                <button @click="classifyCompanySize(viewingCompany.id)" 
-                                        :disabled="classifying"
-                                        class="inline-flex items-center px-4 py-2 border border-orange-300 rounded-lg text-orange-700 bg-white hover:bg-orange-50 disabled:opacity-50 disabled:cursor-not-allowed">
-                                    <i data-lucide="building" class="w-4 h-4 mr-2"></i>
-                                    <span x-show="!classifying">Classify Size</span>
-                                    <span x-show="classifying">Classifying...</span>
-                                </button>
-                            </div>
+                            <a :href="`/jobs?company_id=${viewingCompany.id}`" 
+                               class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50">
+                                <i data-lucide="briefcase" class="w-4 h-4 mr-2"></i>
+                                View Jobs
+                            </a>
                             <div class="flex space-x-3">
                                 <button @click="showViewModal = false" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Close</button>
                                 <button @click="editCompany(viewingCompany); showViewModal = false" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Edit Company</button>
@@ -541,7 +532,6 @@ function companiesPage() {
         cacheDuration: 10 * 60 * 1000, // 10 minutes
         selectedCompanies: [],
         enriching: false,
-        classifying: false,
         aiStats: {
             total: 0,
             enriched: 0,
@@ -892,7 +882,13 @@ function companiesPage() {
                 const result = await response.json();
                 
                 if (result.stats) {
-                    alert(`Enrichment complete!\nSuccessful: ${result.stats.successful}\nFailed: ${result.stats.failed}`);
+                    alert(
+                        `✅ Enrichment Complete!\n\n` +
+                        `Unified enrichment (company info + size classification):\n` +
+                        `  • Successful: ${result.stats.successful}\n` +
+                        `  • Failed: ${result.stats.failed}\n` +
+                        `  • Total: ${result.stats.total}`
+                    );
                 } else {
                     alert('Enrichment completed!');
                 }
@@ -909,6 +905,7 @@ function companiesPage() {
                 // Reload data
                 await this.loadCompanies();
                 await this.loadAIStats();
+                await this.loadSizeStats();
                 this.$nextTick(() => lucide.createIcons());
             } catch (error) {
                 console.error('Failed to enrich companies:', error);
@@ -969,52 +966,6 @@ function companiesPage() {
                 alert('Failed to enrich companies: ' + error.message);
             } finally {
                 this.enriching = false;
-            }
-        },
-        
-        async classifyCompanySize(companyId) {
-            if (!confirm('Classify this company size using AI? This may take 30-60 seconds due to web search.')) {
-                return;
-            }
-            
-            this.classifying = true;
-            
-            try {
-                const response = await fetch(`/api/companies/${companyId}/classify-size`, {
-                    method: 'POST'
-                });
-                
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.detail || 'Classification failed');
-                }
-                
-                const result = await response.json();
-                
-                if (result.classification) {
-                    const cat = result.classification.category;
-                    const conf = (result.classification.confidence * 100).toFixed(0);
-                    alert(`✅ Classification successful!\n\nCategory: ${cat}\nConfidence: ${conf}%`);
-                    
-                    // Reload company data
-                    await this.loadCompanies();
-                    await this.loadSizeStats();
-                    
-                    // Refresh viewing company
-                    const updatedCompany = this.companies.find(c => c.id === companyId);
-                    if (updatedCompany) {
-                        this.viewingCompany = updatedCompany;
-                    }
-                    
-                    this.$nextTick(() => lucide.createIcons());
-                } else {
-                    alert('Classification completed but no result returned');
-                }
-            } catch (error) {
-                console.error('Failed to classify company:', error);
-                alert('Failed to classify company: ' + error.message);
-            } finally {
-                this.classifying = false;
             }
         }
     }

@@ -16,9 +16,9 @@ client = OpenAI(
     timeout=300.0  # 5 minutes timeout
 )
 
-# Prompt ID for company enrichment
+# Prompt ID for unified company enrichment (includes both info + size classification)
 COMPANY_ENRICHMENT_PROMPT_ID = "pmpt_68fd06175d7c8190bd8767fddcb5486a0e87d16aa5f38bc2"
-COMPANY_ENRICHMENT_PROMPT_VERSION = "4"
+COMPANY_ENRICHMENT_PROMPT_VERSION = "5"
 
 
 def enrich_company(company_id: str, company_name: str, company_url: Optional[str] = None) -> Dict[str, Any]:
@@ -132,9 +132,10 @@ def save_enrichment_to_db(company_id: str, enrichment_data: Dict[str, Any]) -> b
         True if successful, False otherwise
     """
     try:
-        # Prepare data for database
+        # Prepare data for database (includes both company info and size classification)
         db_data = {
             "company_id": company_id,
+            # Company info fields
             "bedrijfswebsite": enrichment_data.get("bedrijfswebsite"),
             "jobspagina": enrichment_data.get("jobspagina"),
             "email_hr": enrichment_data.get("email_hr"),
@@ -147,7 +148,17 @@ def save_enrichment_to_db(company_id: str, enrichment_data: Dict[str, Any]) -> b
             "aantal_werknemers": enrichment_data.get("aantal_werknemers"),
             "ai_enriched": True,
             "ai_enriched_at": datetime.utcnow().isoformat(),
-            "ai_enrichment_error": None
+            "ai_enrichment_error": None,
+            # Size classification fields (from unified prompt v5)
+            "size_category": enrichment_data.get("category"),
+            "size_confidence": enrichment_data.get("confidence"),
+            "size_summary_en": enrichment_data.get("summary", {}).get("en") if isinstance(enrichment_data.get("summary"), dict) else None,
+            "size_summary_nl": enrichment_data.get("summary", {}).get("nl") if isinstance(enrichment_data.get("summary"), dict) else None,
+            "size_summary_fr": enrichment_data.get("summary", {}).get("fr") if isinstance(enrichment_data.get("summary"), dict) else None,
+            "size_key_arguments": enrichment_data.get("key_arguments"),
+            "size_sources": enrichment_data.get("sources"),
+            "size_enriched_at": datetime.utcnow().isoformat() if enrichment_data.get("category") else None,
+            "size_enrichment_error": None
         }
         
         # Remove None values

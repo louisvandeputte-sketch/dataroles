@@ -679,13 +679,14 @@ async def enrich_single_company(company_id: str):
 
 @router.post("/enrich/batch")
 async def enrich_companies_batch(company_ids: List[str]):
-    """Enrich multiple companies in batch."""
+    """Enrich multiple companies in batch (unified: company info + size classification in one LLM call)."""
     try:
         from ingestion.company_enrichment import enrich_companies_batch
         
         if not company_ids:
             raise HTTPException(status_code=400, detail="No company IDs provided")
         
+        # Unified enrichment (prompt v5 includes both company info and size classification)
         stats = enrich_companies_batch(company_ids)
         
         return {
@@ -731,42 +732,55 @@ async def get_enrichment_stats():
 
 
 # ==================== COMPANY SIZE CLASSIFICATION ====================
+# Note: Size classification is now included in the unified enrichment (prompt v5)
+# Use /enrich/batch or /companies/{id}/enrich instead
 
 @router.post("/{company_id}/classify-size")
 async def classify_company_size(company_id: str):
-    """Trigger size classification for a specific company."""
+    """
+    DEPRECATED: Use unified enrichment instead.
+    Size classification is now automatically included in company enrichment (prompt v5).
+    This endpoint triggers a full re-enrichment.
+    """
     try:
-        from ingestion.company_size_enrichment import enrich_company_size
+        from ingestion.company_enrichment import enrich_company
         
         # Get company data
-        result = db.client.table("company_master_data")\
-            .select("id, name, country")\
+        company = db.client.table("companies")\
+            .select("id, name, logo_url")\
             .eq("id", company_id)\
             .single()\
             .execute()
         
-        if not result.data:
+        if not company.data:
             raise HTTPException(status_code=404, detail="Company not found")
         
-        company = result.data
-        company_name = company.get("name")
+        company_name = company.data.get("name")
+        company_url = company.data.get("logo_url")
         
         if not company_name:
             raise HTTPException(status_code=400, detail="Company has no name")
         
-        # Run classification
-        classification = enrich_company_size(
-            company_id=company_id,
-            company_name=company_name,
-            country=company.get("country")
-        )
+        # Run unified enrichment (includes size classification)
+        result = enrich_company(company_id, company_name, company_url)
         
-        if not classification:
-            raise HTTPException(status_code=500, detail="Classification failed")
+        if not result.get("success"):
+            raise HTTPException(status_code=500, detail=result.get("error", "Enrichment failed"))
+        
+        # Extract classification from enrichment data
+        enrichment_data = result.get("data", {})
+        classification = {
+            "category": enrichment_data.get("category"),
+            "confidence": enrichment_data.get("confidence"),
+            "summary": enrichment_data.get("summary"),
+            "key_arguments": enrichment_data.get("key_arguments"),
+            "sources": enrichment_data.get("sources")
+        }
         
         return {
             "success": True,
-            "classification": classification
+            "classification": classification,
+            "note": "This endpoint is deprecated. Size classification is now included in unified enrichment."
         }
         
     except HTTPException:
