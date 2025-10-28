@@ -353,21 +353,35 @@
                                 <!-- Category Badge -->
                                 <div>
                                     <label class="block text-xs font-medium text-gray-600 mb-1">Category</label>
-                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
-                                          :class="{
-                                              'bg-green-100 text-green-800': viewingCompany.company_master_data?.size_category === 'startup',
-                                              'bg-blue-100 text-blue-800': viewingCompany.company_master_data?.size_category === 'scaleup',
-                                              'bg-yellow-100 text-yellow-800': viewingCompany.company_master_data?.size_category === 'sme',
-                                              'bg-purple-100 text-purple-800': viewingCompany.company_master_data?.size_category === 'established_enterprise',
-                                              'bg-indigo-100 text-indigo-800': viewingCompany.company_master_data?.size_category === 'corporate',
-                                              'bg-red-100 text-red-800': viewingCompany.company_master_data?.size_category === 'public_company',
-                                              'bg-gray-100 text-gray-800': viewingCompany.company_master_data?.size_category === 'government',
-                                          }"
-                                          x-text="viewingCompany.company_master_data?.size_category?.replace('_', ' ')">
-                                    </span>
-                                    <span class="ml-2 text-sm text-gray-600">
-                                        Confidence: <span class="font-medium" x-text="(viewingCompany.company_master_data?.size_confidence * 100).toFixed(0) + '%'"></span>
-                                    </span>
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
+                                              :class="{
+                                                  'bg-green-100 text-green-800': viewingCompany.company_master_data?.size_category === 'startup',
+                                                  'bg-blue-100 text-blue-800': viewingCompany.company_master_data?.size_category === 'scaleup',
+                                                  'bg-yellow-100 text-yellow-800': viewingCompany.company_master_data?.size_category === 'sme',
+                                                  'bg-purple-100 text-purple-800': viewingCompany.company_master_data?.size_category === 'established_enterprise',
+                                                  'bg-indigo-100 text-indigo-800': viewingCompany.company_master_data?.size_category === 'corporate',
+                                                  'bg-red-100 text-red-800': viewingCompany.company_master_data?.size_category === 'public_company',
+                                                  'bg-gray-100 text-gray-800': viewingCompany.company_master_data?.size_category === 'government',
+                                              }"
+                                              x-text="viewingCompany.company_master_data?.size_category?.replace('_', ' ')">
+                                        </span>
+                                        <span class="text-sm text-gray-600">
+                                            Confidence: <span class="font-medium" x-text="(viewingCompany.company_master_data?.size_confidence * 100).toFixed(0) + '%'"></span>
+                                        </span>
+                                    </div>
+                                    <!-- Multilingual category labels -->
+                                    <div class="text-xs text-gray-600 space-y-1">
+                                        <div x-show="viewingCompany.company_master_data?.category_en">
+                                            🇬🇧 <span x-text="viewingCompany.company_master_data?.category_en"></span>
+                                        </div>
+                                        <div x-show="viewingCompany.company_master_data?.category_nl">
+                                            🇳🇱 <span x-text="viewingCompany.company_master_data?.category_nl"></span>
+                                        </div>
+                                        <div x-show="viewingCompany.company_master_data?.category_fr">
+                                            🇫🇷 <span x-text="viewingCompany.company_master_data?.category_fr"></span>
+                                        </div>
+                                    </div>
                                 </div>
                                 
                                 <!-- Trilingual Summaries -->
