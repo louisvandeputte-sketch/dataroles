@@ -17,9 +17,13 @@ client = OpenAI(
 )
 
 # Prompt ID for unified company enrichment (includes both info + size classification)
-# Version 7: Removed summary object, category now with proper capitalization (e.g. "Established Enterprise")
+# Version 12: Latest version with weetjes (factlets) improvements
+#             1-3 multilingual factlets with category, source, confidence, date_verified
+#             At least 1 static factlet required; no ISO/certification factlets
+#             Categories: Startup, Scaleup, SME, Midmarket, Corporate, Subsidiary, Government, Unknown
+#             Multilingual sector (EN/NL/FR) and category
 COMPANY_ENRICHMENT_PROMPT_ID = "pmpt_68fd06175d7c8190bd8767fddcb5486a0e87d16aa5f38bc2"
-COMPANY_ENRICHMENT_PROMPT_VERSION = "7"
+COMPANY_ENRICHMENT_PROMPT_VERSION = "12"
 
 
 def enrich_company(company_id: str, company_name: str, company_url: Optional[str] = None) -> Dict[str, Any]:
@@ -145,23 +149,26 @@ def save_enrichment_to_db(company_id: str, enrichment_data: Dict[str, Any]) -> b
             "bedrijfsomschrijving_nl": enrichment_data.get("bedrijfsomschrijving_nl"),
             "bedrijfsomschrijving_fr": enrichment_data.get("bedrijfsomschrijving_fr"),
             "bedrijfsomschrijving_en": enrichment_data.get("bedrijfsomschrijving_en"),
-            # Multilingual sector fields (prompt v6)
+            # Multilingual sector fields (prompt v6+)
             "sector_en": enrichment_data.get("sector_en"),
             "sector_nl": enrichment_data.get("sector_nl"),
             "sector_fr": enrichment_data.get("sector_fr"),
             "aantal_werknemers": enrichment_data.get("aantal_werknemers"),
+            # Weetjes (factlets) - prompt v11+
+            "weetjes": enrichment_data.get("weetjes"),
             "ai_enriched": True,
             "ai_enriched_at": datetime.utcnow().isoformat(),
             "ai_enrichment_error": None,
-            # Size classification fields (from unified prompt v7)
-            # Store English category in size_category for backward compatibility
+            # Size classification fields (from unified prompt v9)
+            # Store category_en directly (no constraint, flexible values from LLM)
             "size_category": enrichment_data.get("category_en"),
-            # Multilingual category fields (v7: proper capitalization like "Established Enterprise")
+            # Multilingual category fields (v9)
             "category_en": enrichment_data.get("category_en"),
             "category_nl": enrichment_data.get("category_nl"),
             "category_fr": enrichment_data.get("category_fr"),
             "size_confidence": enrichment_data.get("confidence"),
-            # Note: summary fields removed in v7 (no longer in prompt output)
+            # Note: summary fields removed from prompt output (no longer generated)
+            # Store arrays as JSONB (Supabase handles Python lists directly)
             "size_key_arguments": enrichment_data.get("key_arguments"),
             "size_sources": enrichment_data.get("sources"),
             "size_enriched_at": datetime.utcnow().isoformat() if enrichment_data.get("category_en") else None,

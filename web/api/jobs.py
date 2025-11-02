@@ -1,12 +1,18 @@
 """API endpoints for job database."""
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, BackgroundTasks
 from typing import Optional, List
 from uuid import UUID
+from pydantic import BaseModel
 
 from database import db
+from ingestion.job_title_classifier import classify_and_save
 
 router = APIRouter()
+
+
+class ClassifyJobsRequest(BaseModel):
+    job_ids: List[str]
 
 
 @router.get("/")
@@ -22,6 +28,7 @@ async def list_jobs(
     employment_type: Optional[str] = None,
     posted_date: Optional[str] = None,  # today, week, month, all
     ai_enriched: Optional[str] = None,  # true, false, or None for all
+    title_classification: Optional[str] = None,  # Data, NIS, or None for all
     is_active: Optional[bool] = None,
     run_id: Optional[str] = None,  # Filter by scrape run
     date_from: Optional[str] = None,
@@ -79,6 +86,7 @@ async def list_jobs(
         employment=employment,
         posted_date=posted_date,
         ai_enriched=ai_enriched_bool,
+        title_classification=title_classification,
         active_only=is_active if is_active is not None else True,
         job_ids=job_ids_filter,
         limit=limit,
@@ -279,22 +287,24 @@ async def get_unenriched_jobs_list(limit: int = 100):
 
 @router.get("/enrich/stats")
 async def get_enrichment_stats():
-    """Get enrichment statistics."""
+    """Get enrichment statistics (only for 'Data' classified jobs)."""
     try:
-        # Total jobs
+        # Total 'Data' jobs
         total_result = db.client.table("llm_enrichment")\
-            .select("id", count="exact")\
+            .select("id, job_postings!inner(title_classification)", count="exact")\
+            .eq("job_postings.title_classification", "Data")\
             .execute()
         total = total_result.count or 0
         
-        # Enriched jobs
+        # Enriched 'Data' jobs
         enriched_result = db.client.table("llm_enrichment")\
-            .select("id", count="exact")\
+            .select("id, job_postings!inner(title_classification)", count="exact")\
+            .eq("job_postings.title_classification", "Data")\
             .not_.is_("enrichment_completed_at", "null")\
             .execute()
         enriched = enriched_result.count or 0
         
-        # Unenriched jobs
+        # Unenriched 'Data' jobs
         unenriched = total - enriched
         
         return {
@@ -303,5 +313,35 @@ async def get_enrichment_stats():
             "unenriched": unenriched,
             "percentage_enriched": round((enriched / total * 100) if total > 0 else 0, 1)
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/classify")
+async def classify_selected_jobs(request: ClassifyJobsRequest, background_tasks: BackgroundTasks):
+    """Classify selected jobs using LLM title check."""
+    try:
+        if not request.job_ids:
+            raise HTTPException(status_code=400, detail="No job IDs provided")
+        
+        # Get job titles for the selected jobs
+        jobs = db.client.table("job_postings")\
+            .select("id, title")\
+            .in_("id", request.job_ids)\
+            .execute()
+        
+        if not jobs.data:
+            raise HTTPException(status_code=404, detail="No jobs found")
+        
+        # Classify each job in background
+        for job in jobs.data:
+            background_tasks.add_task(classify_and_save, job["id"], job["title"])
+        
+        return {
+            "message": f"Classification started for {len(jobs.data)} jobs",
+            "job_count": len(jobs.data)
+        }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

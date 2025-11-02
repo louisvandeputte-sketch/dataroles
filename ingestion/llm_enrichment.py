@@ -11,7 +11,7 @@ from database.client import db
 
 # OpenAI Responses API configuration
 PROMPT_TEMPLATE_ID = "pmpt_68ee0e7890788197b06ced94ab8af4d50759bbe1e2c42f88"
-PROMPT_VERSION = "12"
+PROMPT_VERSION = "14"
 
 # Initialize OpenAI client
 client = OpenAI(api_key=settings.openai_api_key)
@@ -107,6 +107,7 @@ def save_enrichment_to_db(job_id: str, enrichment_data: Dict[str, Any]) -> bool:
         nice_to_have_ecosystems = enrichment_data.get("nice_to_have_ecosystems", [])
         must_have_spoken = enrichment_data.get("must_have_spoken_languages", [])
         nice_to_have_spoken = enrichment_data.get("nice_to_have_spoken_languages", [])
+        remote_work_policy = enrichment_data.get("remote_work_policy")
         
         # Extract i18n translations
         i18n = enrichment_data.get("i18n", {})
@@ -163,6 +164,9 @@ def save_enrichment_to_db(job_id: str, enrichment_data: Dict[str, Any]) -> bool:
             # Spoken/written languages
             "must_have_talen": _format_array_for_postgres(must_have_spoken),
             "nice_to_have_talen": _format_array_for_postgres(nice_to_have_spoken),
+            
+            # Remote work policy
+            "remote_work_policy": remote_work_policy,
             
             "enrichment_completed_at": datetime.utcnow().isoformat(),
             "enrichment_model_version": f"prompt-{PROMPT_TEMPLATE_ID}-v{PROMPT_VERSION}"
@@ -282,6 +286,7 @@ def process_job_enrichment(job_id: str, force: bool = False) -> Dict[str, Any]:
 def get_unenriched_jobs(limit: int = 100) -> List[str]:
     """
     Get list of job IDs that need enrichment.
+    Only returns jobs with title_classification = 'Data'.
     
     Args:
         limit: Maximum number of jobs to return
@@ -291,14 +296,16 @@ def get_unenriched_jobs(limit: int = 100) -> List[str]:
     """
     try:
         # Find jobs where enrichment_completed_at is NULL
+        # AND title_classification = 'Data' (only enrich data-related jobs)
         result = db.client.table("llm_enrichment")\
-            .select("job_posting_id")\
+            .select("job_posting_id, job_postings!inner(title_classification)")\
             .is_("enrichment_completed_at", "null")\
+            .eq("job_postings.title_classification", "Data")\
             .limit(limit)\
             .execute()
         
         job_ids = [row["job_posting_id"] for row in result.data]
-        logger.info(f"Found {len(job_ids)} unenriched jobs")
+        logger.info(f"Found {len(job_ids)} unenriched 'Data' jobs")
         
         return job_ids
         

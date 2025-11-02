@@ -331,6 +331,7 @@ class SupabaseClient:
         employment: Optional[List[str]] = None,
         posted_date: Optional[str] = None,
         ai_enriched: Optional[bool] = None,
+        title_classification: Optional[str] = None,
         active_only: bool = True,
         job_ids: Optional[List[str]] = None,
         limit: int = 50,
@@ -341,7 +342,7 @@ class SupabaseClient:
         """
         # Build query
         query = self.client.table("job_postings")\
-            .select("*, companies(*), locations(*)", count="exact")
+            .select("*, companies(id, name, logo_url), locations(id, city, country_code)", count="exact")
         
         # NEW: Filter by job IDs if provided (for run_id filtering)
         if job_ids is not None:
@@ -388,6 +389,10 @@ class SupabaseClient:
             
             if date_threshold:
                 query = query.gte("posted_date", date_threshold.isoformat())
+        
+        # Filter by title classification
+        if title_classification:
+            query = query.eq("title_classification", title_classification)
         
         # Execute with pagination
         result = query.order("posted_date", desc=True)\

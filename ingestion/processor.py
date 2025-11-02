@@ -10,6 +10,7 @@ from models.linkedin import LinkedInJobPosting
 from database.client import db
 from ingestion.normalizer import normalize_company, normalize_location
 from ingestion.deduplicator import check_job_exists, should_update_job
+from ingestion.job_title_classifier import classify_and_save
 
 
 class ProcessingResult:
@@ -158,6 +159,15 @@ def process_job_posting(raw_job: Dict[str, Any], scrape_run_id: UUID) -> Process
         
         # Step 7: Record in scrape history
         db.insert_scrape_history(job_id, scrape_run_id)
+        
+        # Step 8: Classify job title (async, non-blocking)
+        try:
+            classification = classify_and_save(str(job_id), job.job_title)
+            if classification:
+                logger.debug(f"Job title classified as: {classification}")
+        except Exception as e:
+            # Don't fail the entire job processing if classification fails
+            logger.warning(f"Failed to classify job title for {job_id}: {e}")
         
         return ProcessingResult(status=status, job_id=job_id)
         

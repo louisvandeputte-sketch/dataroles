@@ -25,6 +25,7 @@ class QueryCreate(BaseModel):
 
 class QueryUpdate(BaseModel):
     """Schema for updating a query."""
+    job_type_id: Optional[str] = None
     search_query: Optional[str] = None
     location_query: Optional[str] = None
     lookback_days: Optional[int] = None
