@@ -64,7 +64,7 @@ class JobData:
     company_employee_count_range: Optional[str]
     company_rating: Optional[float]
     company_reviews_count: Optional[int]
-    is_recruitment_agency: bool
+    hiring_model: Optional[str]  # 'recruitment', 'direct', or 'unknown' from company_master_data
     is_faang: bool
     
     # Location data
@@ -210,8 +210,8 @@ class JobRankingSystem:
         """Bereken transparantie score (0-100)"""
         score = 0
         
-        # Direct werkgever: 60 punten
-        if not job.is_recruitment_agency:
+        # Direct werkgever: 60 punten (recruitment agencies krijgen 0)
+        if job.hiring_model == 'direct':
             score += 60
         
         # Apply URL: 20 punten
@@ -283,9 +283,20 @@ class JobRankingSystem:
         return score
     
     def calculate_reputation_score(self, job: JobData) -> float:
-        """Bereken reputatie score (0-100)"""
+        """Bereken reputatie score (0-100) met zware straf voor recruitment agencies"""
         score = 0
         
+        # ZWARE STRAF: Recruitment agencies krijgen maximaal 20 punten (was 100)
+        if job.hiring_model == 'recruitment':
+            # Alleen basis rating, geen size of FAANG bonus
+            rating = job.company_rating
+            if rating is not None and rating >= 4.0:
+                score += 20  # Max 20 punten voor recruitment
+            else:
+                score += 10  # Minimale score
+            return score  # Early return, geen verdere bonussen
+        
+        # Voor directe werkgevers: normale scoring
         # Rating score (max 40)
         rating = job.company_rating
         if rating is not None:
@@ -439,16 +450,18 @@ def load_jobs_from_database(only_needs_ranking: bool = False) -> List[JobData]:
     offset = 0
     
     while True:
-        # Query jobs in batches
+        # Query jobs in batches - join company_master_data for hiring_model
         query = db.client.table("job_postings")\
             .select("""
                 *,
                 companies(*),
+                company_master_data!inner(hiring_model),
                 locations(*),
                 llm_enrichment(*),
                 job_descriptions(description_text)
             """)\
             .eq("is_active", True)\
+            .eq("title_classification", "Data")\
             .range(offset, offset + page_size - 1)
         
         # Optionally filter to only jobs that need ranking
@@ -465,13 +478,13 @@ def load_jobs_from_database(only_needs_ranking: bool = False) -> List[JobData]:
         # Process this batch
         for row in result.data:
             company = row.get('companies', {})
+            company_master = row.get('company_master_data', {})
             location = row.get('locations', {})
             enrichment = row.get('llm_enrichment', {})
             description = row.get('job_descriptions', {})
             
-            # Check if recruitment agency
-            recruitment_keywords = ['recruitment', 'interim', 'staffing', 'consulting', 'hr services', 'talent']
-            is_recruitment = any(kw in company.get('name', '').lower() for kw in recruitment_keywords)
+            # Get hiring_model from company_master_data
+            hiring_model = company_master.get('hiring_model') if company_master else None
             
             # Check if FAANG
             faang_companies = ['google', 'microsoft', 'meta', 'amazon', 'apple', 'netflix', 'facebook', 'alphabet']
@@ -520,7 +533,7 @@ def load_jobs_from_database(only_needs_ranking: bool = False) -> List[JobData]:
                 company_employee_count_range=company.get('employee_count_range'),
                 company_rating=company.get('rating'),
                 company_reviews_count=company.get('reviews_count'),
-                is_recruitment_agency=is_recruitment,
+                hiring_model=hiring_model,
                 is_faang=is_faang,
                 
                 # Location data
