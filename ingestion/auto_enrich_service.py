@@ -1,6 +1,6 @@
 """
-Auto-enrichment service for locations and job titles.
-Automatically enriches new location records and classifies job titles in the background.
+Auto-enrichment service for locations, job titles, and Data jobs.
+Automatically enriches new location records, classifies job titles, and enriches Data jobs in the background.
 Includes automatic retry for quota errors after 24h.
 """
 
@@ -13,10 +13,11 @@ from database.client import db
 from ingestion.location_enrichment import enrich_location
 from ingestion.job_title_classifier import classify_job_title
 from ingestion.relevance_scorer import score_programming_language, score_ecosystem
+from ingestion.llm_enrichment import process_job_enrichment
 
 
 class AutoEnrichService:
-    """Service to automatically enrich new location records, classify job titles, and score tech stack relevance."""
+    """Service to automatically enrich new location records, classify job titles, enrich Data jobs, and score tech stack relevance."""
     
     def __init__(self):
         self.running = False
@@ -25,7 +26,7 @@ class AutoEnrichService:
     async def start(self):
         """Start the auto-enrichment service."""
         self.running = True
-        logger.info("🤖 Auto-enrichment service started (locations + job titles + tech relevance)")
+        logger.info("🤖 Auto-enrichment service started (locations + job titles + Data jobs + tech relevance)")
         
         # Wait before first check to avoid blocking startup
         logger.info(f"⏳ Waiting {self.check_interval}s before first enrichment check")
@@ -36,6 +37,7 @@ class AutoEnrichService:
                 # Process all enrichment tasks
                 await self.process_pending_locations()
                 await self.process_pending_job_titles()
+                await self.process_pending_data_jobs()
                 await self.process_pending_tech_scores()
             except Exception as e:
                 logger.error(f"Error in auto-enrichment service: {e}")
@@ -165,6 +167,71 @@ class AutoEnrichService:
         
         except Exception as e:
             logger.error(f"Failed to fetch pending job titles: {e}")
+    
+    async def process_pending_data_jobs(self):
+        """Process Data jobs that need LLM enrichment."""
+        try:
+            # Find jobs that:
+            # 1. Have title_classification = 'Data'
+            # 2. Don't have enrichment yet (no enrichment_completed_at in llm_enrichment)
+            # 3. Are active
+            
+            # First get all enriched job IDs
+            enriched_result = db.client.table("llm_enrichment")\
+                .select("job_posting_id")\
+                .not_.is_("enrichment_completed_at", "null")\
+                .execute()
+            
+            enriched_job_ids = [row["job_posting_id"] for row in enriched_result.data] if enriched_result.data else []
+            
+            # Now find Data jobs that are not in the enriched list
+            query = db.client.table("job_postings")\
+                .select("id, title")\
+                .eq("title_classification", "Data")\
+                .eq("is_active", True)
+            
+            # Exclude already enriched jobs
+            if enriched_job_ids:
+                query = query.not_.in_("id", enriched_job_ids)
+            
+            result = query.limit(5).execute()  # Process 5 at a time to avoid overload
+            
+            jobs = result.data if result.data else []
+            
+            if not jobs:
+                return  # No pending Data jobs
+            
+            logger.info(f"🧠 Auto-enriching {len(jobs)} Data jobs with LLM")
+            
+            # Enrich each Data job
+            for job in jobs:
+                try:
+                    job_id = job["id"]
+                    title = job.get("title", "Unknown")
+                    
+                    logger.info(f"Enriching Data job: {title}")
+                    
+                    # Process LLM enrichment (force=False, so it won't re-enrich)
+                    success = await asyncio.to_thread(
+                        process_job_enrichment,
+                        job_id,
+                        force=False
+                    )
+                    
+                    if success:
+                        logger.success(f"✅ Auto-enriched Data job: {title}")
+                    else:
+                        logger.warning(f"⚠️ Failed to auto-enrich Data job: {title}")
+                    
+                    # Small delay between jobs to avoid rate limiting
+                    await asyncio.sleep(2)
+                
+                except Exception as e:
+                    logger.error(f"Failed to enrich Data job '{job.get('title')}': {e}")
+                    continue
+        
+        except Exception as e:
+            logger.error(f"Failed to fetch pending Data jobs: {e}")
     
     async def process_pending_tech_scores(self):
         """Process programming languages and ecosystems that need relevance scoring."""

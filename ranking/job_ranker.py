@@ -75,8 +75,14 @@ class JobData:
     samenvatting_kort: Optional[str]
     samenvatting_lang: Optional[str]
     data_role_type: Optional[str]
-    seniority: Optional[str]
+    seniority: Optional[List[str]]
     enrichment_completed_at: Optional[datetime]
+    
+    # Tech stack data (for bonus calculation)
+    must_have_programmeertalen: Optional[List[str]] = None
+    nice_to_have_programmeertalen: Optional[List[str]] = None
+    must_have_ecosystemen: Optional[List[str]] = None
+    nice_to_have_ecosystemen: Optional[List[str]] = None
     
     # Description data
     description_text: Optional[str]
@@ -154,12 +160,12 @@ class JobRankingSystem:
             return 20
     
     def calculate_quality_score(self, job: JobData) -> float:
-        """Bereken kwaliteit score (0-100)"""
+        """Bereken kwaliteit score (0-100) met tech stack bonus"""
         score = 0
         
-        # Skills: 25 punten
+        # Skills: 20 punten (reduced from 25 to make room for tech stack)
         if job.skills_must_have and len(job.skills_must_have) >= 3:
-            score += 25
+            score += 20
         
         # Salaris: 25 punten
         if job.base_salary_min is not None and job.base_salary_max is not None:
@@ -181,7 +187,24 @@ class JobRankingSystem:
         if job.description_text and len(job.description_text) > 500:
             score += 10
         
-        return score
+        # Tech stack bonus: max 15 punten (NEW!)
+        # Hoe meer tech stack items, hoe beter (toont expertise en specificiteit)
+        tech_count = 0
+        if job.must_have_programmeertalen:
+            tech_count += len(job.must_have_programmeertalen)
+        if job.nice_to_have_programmeertalen:
+            tech_count += len(job.nice_to_have_programmeertalen)
+        if job.must_have_ecosystemen:
+            tech_count += len(job.must_have_ecosystemen)
+        if job.nice_to_have_ecosystemen:
+            tech_count += len(job.nice_to_have_ecosystemen)
+        
+        # Scale: 0-5 items = 0-5 punten, 6-10 items = 6-10 punten, 11+ items = 11-15 punten
+        if tech_count > 0:
+            tech_bonus = min(15, tech_count)  # Cap at 15 points
+            score += tech_bonus
+        
+        return min(100, score)  # Cap at 100
     
     def calculate_transparency_score(self, job: JobData) -> float:
         """Bereken transparantie score (0-100)"""
@@ -383,8 +406,11 @@ class JobRankingSystem:
         # Pas diversity modifiers toe
         jobs_with_final_scores = self.apply_diversity_modifiers(jobs_with_ranks)
         
-        # Sorteer op final_score
-        ranked_jobs = sorted(jobs_with_final_scores, key=lambda j: j.final_score, reverse=True)
+        # Sorteer op final_score (DESC), dan op job ID (ASC) voor consistentie bij gelijke scores
+        ranked_jobs = sorted(
+            jobs_with_final_scores, 
+            key=lambda j: (-j.final_score, j.id)  # Negative score for DESC, ID for ASC
+        )
         
         # Bepaal final ranks
         for i, job in enumerate(ranked_jobs):
@@ -397,108 +423,131 @@ class JobRankingSystem:
 
 def load_jobs_from_database(only_needs_ranking: bool = False) -> List[JobData]:
     """
-    Load jobs from database with necessary joins
+    Load jobs from database with necessary joins using pagination
     
     Args:
         only_needs_ranking: If True, only load jobs where needs_ranking = TRUE
     """
-    logger.info("Loading jobs from database...")
-    
-    # Query all active jobs with joins
-    query = db.client.table("job_postings")\
-        .select("""
-            *,
-            companies(*),
-            locations(*),
-            llm_enrichment(*),
-            job_descriptions(description_text)
-        """)\
-        .eq("is_active", True)
-    
-    # Optionally filter to only jobs that need ranking
-    if only_needs_ranking:
-        query = query.eq("needs_ranking", True)
-        logger.info("Filtering to only jobs that need ranking...")
-    
-    result = query.execute()
+    logger.info("Loading jobs from database with pagination...")
     
     jobs = []
-    for row in result.data:
-        company = row.get('companies', {})
-        location = row.get('locations', {})
-        enrichment = row.get('llm_enrichment', {})
-        description = row.get('job_descriptions', {})
+    page_size = 1000  # Supabase limit
+    offset = 0
+    
+    while True:
+        # Query jobs in batches
+        query = db.client.table("job_postings")\
+            .select("""
+                *,
+                companies(*),
+                locations(*),
+                llm_enrichment(*),
+                job_descriptions(description_text)
+            """)\
+            .eq("is_active", True)\
+            .range(offset, offset + page_size - 1)
         
-        # Check if recruitment agency
-        recruitment_keywords = ['recruitment', 'interim', 'staffing', 'consulting', 'hr services', 'talent']
-        is_recruitment = any(kw in company.get('name', '').lower() for kw in recruitment_keywords)
+        # Optionally filter to only jobs that need ranking
+        if only_needs_ranking:
+            query = query.eq("needs_ranking", True)
         
-        # Check if FAANG
-        faang_companies = ['google', 'microsoft', 'meta', 'amazon', 'apple', 'netflix', 'facebook', 'alphabet']
-        is_faang = company.get('name', '').lower() in faang_companies
+        result = query.execute()
         
-        # Parse labels JSON if exists
-        labels = enrichment.get('labels')
-        if isinstance(labels, str):
-            import json
-            try:
-                labels = json.loads(labels)
-            except:
-                labels = {}
+        if not result.data:
+            break  # No more jobs
         
-        data_role_type = None
-        seniority = None
-        if labels:
-            # Try different language keys
-            for lang in ['nl', 'en', 'fr']:
-                if lang in labels:
-                    data_role_type = labels[lang].get('data_role_type')
-                    seniority = labels[lang].get('seniority')
-                    if data_role_type:
-                        break
+        logger.info(f"Loaded batch: {len(result.data)} jobs (offset {offset})")
         
-        job = JobData(
-            id=row['id'],
-            title=row['title'],
-            company_id=row['company_id'],
-            company_name=company.get('name', ''),
-            location_id=row['location_id'],
-            posted_date=parse_datetime(row.get('posted_date')),
-            seniority_level=row.get('seniority_level'),
-            employment_type=row.get('employment_type'),
-            function_areas=row.get('function_areas'),
-            base_salary_min=row.get('base_salary_min'),
-            base_salary_max=row.get('base_salary_max'),
-            apply_url=row.get('apply_url'),
-            num_applicants=row.get('num_applicants'),
-            is_active=row.get('is_active', True),
+        # Process this batch
+        for row in result.data:
+            company = row.get('companies', {})
+            location = row.get('locations', {})
+            enrichment = row.get('llm_enrichment', {})
+            description = row.get('job_descriptions', {})
             
-            # Company data
-            company_industry=company.get('industry'),
-            company_url=company.get('company_url'),
-            company_logo_data=company.get('logo_data'),
-            company_employee_count_range=company.get('employee_count_range'),
-            company_rating=company.get('rating'),
-            company_reviews_count=company.get('reviews_count'),
-            is_recruitment_agency=is_recruitment,
-            is_faang=is_faang,
+            # Check if recruitment agency
+            recruitment_keywords = ['recruitment', 'interim', 'staffing', 'consulting', 'hr services', 'talent']
+            is_recruitment = any(kw in company.get('name', '').lower() for kw in recruitment_keywords)
             
-            # Location data
-            location_city=location.get('city'),
+            # Check if FAANG
+            faang_companies = ['google', 'microsoft', 'meta', 'amazon', 'apple', 'netflix', 'facebook', 'alphabet']
+            is_faang = company.get('name', '').lower() in faang_companies
             
-            # Enrichment data
-            skills_must_have=enrichment.get('skills_must_have_nl'),
-            samenvatting_kort=enrichment.get('samenvatting_kort_nl'),
-            samenvatting_lang=enrichment.get('samenvatting_lang_nl'),
-            data_role_type=data_role_type,
-            seniority=seniority,
-            enrichment_completed_at=parse_datetime(enrichment.get('enrichment_completed_at')),
+            # Parse labels JSON if exists
+            labels = enrichment.get('labels')
+            if isinstance(labels, str):
+                import json
+                try:
+                    labels = json.loads(labels)
+                except:
+                    labels = {}
             
-            # Description data
-            description_text=description.get('description_text') if description else None
-        )
+            data_role_type = None
+            seniority = None
+            if labels:
+                # Try different language keys
+                for lang in ['nl', 'en', 'fr']:
+                    if lang in labels:
+                        data_role_type = labels[lang].get('data_role_type')
+                        seniority = labels[lang].get('seniority')
+                        if data_role_type:
+                            break
+            
+            job = JobData(
+                id=row['id'],
+                title=row['title'],
+                company_id=row['company_id'],
+                company_name=company.get('name', ''),
+                location_id=row['location_id'],
+                posted_date=parse_datetime(row.get('posted_date')),
+                seniority_level=row.get('seniority_level'),
+                employment_type=row.get('employment_type'),
+                function_areas=row.get('function_areas'),
+                base_salary_min=row.get('base_salary_min'),
+                base_salary_max=row.get('base_salary_max'),
+                apply_url=row.get('apply_url'),
+                num_applicants=row.get('num_applicants'),
+                is_active=row.get('is_active', True),
+                
+                # Company data
+                company_industry=company.get('industry'),
+                company_url=company.get('company_url'),
+                company_logo_data=company.get('logo_data'),
+                company_employee_count_range=company.get('employee_count_range'),
+                company_rating=company.get('rating'),
+                company_reviews_count=company.get('reviews_count'),
+                is_recruitment_agency=is_recruitment,
+                is_faang=is_faang,
+                
+                # Location data
+                location_city=location.get('city'),
+                
+                # Enrichment data
+                skills_must_have=enrichment.get('skills_must_have_nl'),
+                samenvatting_kort=enrichment.get('samenvatting_kort_nl'),
+                samenvatting_lang=enrichment.get('samenvatting_lang_nl'),
+                data_role_type=data_role_type,
+                seniority=seniority,
+                enrichment_completed_at=parse_datetime(enrichment.get('enrichment_completed_at')),
+                
+                # Tech stack data
+                must_have_programmeertalen=enrichment.get('must_have_programmeertalen', []),
+                nice_to_have_programmeertalen=enrichment.get('nice_to_have_programmeertalen', []),
+                must_have_ecosystemen=enrichment.get('must_have_ecosystemen', []),
+                nice_to_have_ecosystemen=enrichment.get('nice_to_have_ecosystemen', []),
+                
+                # Description data
+                description_text=description.get('description_text') if description else None
+            )
+            
+            jobs.append(job)
         
-        jobs.append(job)
+        # Check if we got less than page_size (last page)
+        if len(result.data) < page_size:
+            break
+        
+        # Move to next page
+        offset += page_size
     
     logger.info(f"Loaded {len(jobs)} jobs from database")
     return jobs

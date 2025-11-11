@@ -412,7 +412,7 @@
                                           'bg-blue-100 text-blue-800': job.ranking_position > 10 && job.ranking_position <= 50,
                                           'bg-gray-100 text-gray-600': job.ranking_position > 50
                                       }"
-                                      x-text="'#' + job.ranking_position"></span>
+                                      x-text="job.ranking_position"></span>
                                 <span x-show="!job.ranking_position" class="text-xs text-gray-400">-</span>
                             </div>
                         </td>
