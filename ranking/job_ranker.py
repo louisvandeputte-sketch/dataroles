@@ -78,14 +78,14 @@ class JobData:
     seniority: Optional[List[str]]
     enrichment_completed_at: Optional[datetime]
     
-    # Tech stack data (for bonus calculation)
+    # Description data
+    description_text: Optional[str]
+    
+    # Tech stack data (for bonus calculation) - with defaults, must come after non-default fields
     must_have_programmeertalen: Optional[List[str]] = None
     nice_to_have_programmeertalen: Optional[List[str]] = None
     must_have_ecosystemen: Optional[List[str]] = None
     nice_to_have_ecosystemen: Optional[List[str]] = None
-    
-    # Description data
-    description_text: Optional[str]
     
     # Calculated scores
     freshness_score: float = 0.0
