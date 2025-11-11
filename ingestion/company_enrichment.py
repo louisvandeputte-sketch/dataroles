@@ -17,6 +17,7 @@ client = OpenAI(
 )
 
 # Prompt ID for unified company enrichment (includes both info + size classification)
+# Version 16: Updated company enrichment prompt (improvements to hiring_model detection)
 # Version 15: Added hiring_model field to distinguish recruitment vs direct hiring companies
 #             - hiring_model: "recruitment" | "direct" | "unknown"
 #             - Multilingual: hiring_model_en/nl/fr
@@ -24,7 +25,7 @@ client = OpenAI(
 #             - Detection: direct = normal organizations hiring for themselves
 #             - All v14 features: sectors, factlets, multilingual categories
 COMPANY_ENRICHMENT_PROMPT_ID = "pmpt_68fd06175d7c8190bd8767fddcb5486a0e87d16aa5f38bc2"
-COMPANY_ENRICHMENT_PROMPT_VERSION = "15"
+COMPANY_ENRICHMENT_PROMPT_VERSION = "16"
 
 
 def enrich_company(company_id: str, company_name: str, company_url: Optional[str] = None) -> Dict[str, Any]:
