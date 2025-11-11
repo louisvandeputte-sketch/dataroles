@@ -7,6 +7,7 @@ This updates them with the improved v16 prompt for better hiring_model detection
 import sys
 from pathlib import Path
 import time
+import argparse
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -18,6 +19,11 @@ from ingestion.company_enrichment import enrich_company
 
 def main():
     """Re-enrich all recruitment companies with v16 prompt."""
+    
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description="Re-enrich recruitment companies with v16 prompt")
+    parser.add_argument("--yes", "-y", action="store_true", help="Skip confirmation prompt")
+    args = parser.parse_args()
     
     logger.info("=" * 80)
     logger.info("RE-ENRICHING RECRUITMENT COMPANIES WITH PROMPT V16")
@@ -41,14 +47,17 @@ def main():
     logger.info(f"✅ Found {total} recruitment companies to re-enrich")
     logger.info("=" * 80)
     
-    # Confirm before proceeding
-    print(f"\n⚠️  This will re-enrich {total} companies with prompt v16.")
-    print("This may take a while and will use OpenAI API credits.")
-    confirm = input("\nProceed? (yes/no): ").strip().lower()
-    
-    if confirm != "yes":
-        logger.info("❌ Cancelled by user")
-        return
+    # Confirm before proceeding (unless --yes flag is used)
+    if not args.yes:
+        print(f"\n⚠️  This will re-enrich {total} companies with prompt v16.")
+        print("This may take a while and will use OpenAI API credits.")
+        confirm = input("\nProceed? (yes/no): ").strip().lower()
+        
+        if confirm != "yes":
+            logger.info("❌ Cancelled by user")
+            return
+    else:
+        logger.info(f"⚡ Auto-confirmed with --yes flag")
     
     logger.info("\n🚀 Starting re-enrichment...")
     logger.info("=" * 80)
