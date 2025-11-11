@@ -379,6 +379,8 @@ class SupabaseClient:
         source: Optional[str] = None,
         active_only: bool = True,
         job_ids: Optional[List[str]] = None,
+        sort_field: str = "posted_date",
+        sort_direction: str = "desc",
         limit: int = 50,
         offset: int = 0
     ) -> tuple[List[Dict], int]:
@@ -443,8 +445,10 @@ class SupabaseClient:
         if source:
             query = query.eq("source", source)
         
-        # Execute with pagination
-        result = query.order("posted_date", desc=True)\
+        # Execute with pagination and sorting
+        # Apply sorting based on parameters
+        is_desc = sort_direction.lower() == "desc"
+        result = query.order(sort_field, desc=is_desc)\
             .range(offset, offset + limit - 1)\
             .execute()
         

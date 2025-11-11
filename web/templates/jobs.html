@@ -751,6 +751,14 @@ function jobsPage() {
                     params.append('title_classification', 'Data');
                 }
                 
+                // Add sorting parameters
+                if (this.sortField) {
+                    params.append('sort_field', this.sortField);
+                }
+                if (this.sortDirection) {
+                    params.append('sort_direction', this.sortDirection);
+                }
+                
                 const response = await fetch(`/api/jobs/?${params}`);
                 const data = await response.json();
                 
@@ -1066,6 +1074,14 @@ function jobsPage() {
                 }
                 if (this.filters.dataOnly) {
                     params.append('title_classification', 'Data');
+                }
+                
+                // Add sorting parameters
+                if (this.sortField) {
+                    params.append('sort_field', this.sortField);
+                }
+                if (this.sortDirection) {
+                    params.append('sort_direction', this.sortDirection);
                 }
                 
                 const response = await fetch(`/api/jobs/?${params}`);

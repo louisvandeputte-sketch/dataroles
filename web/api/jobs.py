@@ -35,6 +35,8 @@ async def list_jobs(
     run_id: Optional[str] = None,  # Filter by scrape run
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
+    sort_field: str = "posted_date",  # Field to sort by
+    sort_direction: str = "desc",  # asc or desc
     limit: int = 50,
     offset: int = 0
 ):
@@ -92,6 +94,8 @@ async def list_jobs(
         source=source,
         active_only=is_active if is_active is not None else True,
         job_ids=job_ids_filter,
+        sort_field=sort_field,
+        sort_direction=sort_direction,
         limit=limit,
         offset=offset
     )
