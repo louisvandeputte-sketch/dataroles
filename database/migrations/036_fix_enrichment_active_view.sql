@@ -11,6 +11,7 @@ SELECT
     -- Job info from job_postings (for convenience)
     j.title,                   -- Job title
     j.posted_date,             -- Job posting date
+    j.ranking_position,        -- Ranking position (1 = best)
     
     -- Company info from companies (for convenience)
     c.logo_url,                -- Company logo URL
