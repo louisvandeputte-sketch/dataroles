@@ -10,7 +10,8 @@ class Settings(BaseSettings):
     
     # Bright Data
     brightdata_api_token: str
-    brightdata_dataset_id: str = "gd_lpfll7v5hcqtkxl6l"
+    brightdata_dataset_id: str = "gd_lpfll7v5hcqtkxl6l"  # LinkedIn dataset
+    # Indeed dataset ID is hardcoded in client: gd_l4dx9j9sscpvs7no2
     brightdata_max_concurrent_requests: int = 3
     brightdata_poll_interval: int = 30
     brightdata_timeout: int = 1800

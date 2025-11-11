@@ -45,6 +45,41 @@ class SupabaseClient:
             .execute()
         return result.data if result else None
     
+    def get_company_by_name(self, name: str) -> Optional[Dict]:
+        """
+        Get company by exact name match.
+        
+        Priority: Returns company with logo_data first, then linkedin_company_id, then first match.
+        This ensures we reuse the "best" company when deduplicating by name.
+        """
+        result = self.client.table("companies")\
+            .select("*")\
+            .eq("name", name)\
+            .execute()
+        
+        if not result.data:
+            return None
+        
+        if len(result.data) == 1:
+            return result.data[0]
+        
+        # Multiple companies with same name - return best one
+        # Priority: logo_data > linkedin_company_id > first
+        companies = result.data
+        
+        # First try: company with logo
+        with_logo = [c for c in companies if c.get('logo_data')]
+        if with_logo:
+            return with_logo[0]
+        
+        # Second try: company with LinkedIn ID
+        with_linkedin = [c for c in companies if c.get('linkedin_company_id')]
+        if with_linkedin:
+            return with_linkedin[0]
+        
+        # Fallback: first one
+        return companies[0]
+    
     def upsert_company(self, data: Dict[str, Any]) -> UUID:
         """Insert or update company, return UUID."""
         result = self.client.table("companies")\
@@ -183,6 +218,15 @@ class SupabaseClient:
         result = self.client.table("job_postings")\
             .select("*")\
             .eq("linkedin_job_id", linkedin_job_id)\
+            .maybe_single()\
+            .execute()
+        return result.data if result else None
+    
+    def get_job_by_indeed_id(self, indeed_job_id: str) -> Optional[Dict]:
+        """Get job posting by Indeed job ID."""
+        result = self.client.table("job_postings")\
+            .select("*")\
+            .eq("indeed_job_id", indeed_job_id)\
             .maybe_single()\
             .execute()
         return result.data if result else None
@@ -332,6 +376,7 @@ class SupabaseClient:
         posted_date: Optional[str] = None,
         ai_enriched: Optional[bool] = None,
         title_classification: Optional[str] = None,
+        source: Optional[str] = None,
         active_only: bool = True,
         job_ids: Optional[List[str]] = None,
         limit: int = 50,
@@ -340,9 +385,9 @@ class SupabaseClient:
         """
         Search jobs with filters. Returns (jobs, total_count).
         """
-        # Build query
+        # Build query - include job_sources for multi-source support
         query = self.client.table("job_postings")\
-            .select("*, companies(id, name, logo_url), locations(id, city, country_code)", count="exact")
+            .select("*, companies(id, name, logo_url), locations(id, city, country_code), job_sources(source, source_job_id)", count="exact")
         
         # NEW: Filter by job IDs if provided (for run_id filtering)
         if job_ids is not None:
@@ -393,6 +438,10 @@ class SupabaseClient:
         # Filter by title classification
         if title_classification:
             query = query.eq("title_classification", title_classification)
+        
+        # Filter by source (linkedin or indeed)
+        if source:
+            query = query.eq("source", source)
         
         # Execute with pagination
         result = query.order("posted_date", desc=True)\

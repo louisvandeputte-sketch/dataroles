@@ -1,11 +1,12 @@
 """API endpoints for company master data management."""
 
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, HTTPException, UploadFile, File, BackgroundTasks
 from fastapi.responses import StreamingResponse, Response
 from typing import Optional, List
 from pydantic import BaseModel
 import csv
 import io
+from loguru import logger
 
 from database import db
 
@@ -643,12 +644,24 @@ async def delete_company_logo(company_id: str):
 
 # ==================== COMPANY ENRICHMENT ====================
 
-@router.post("/{company_id}/enrich")
-async def enrich_single_company(company_id: str):
-    """Enrich a single company with AI."""
+def _enrich_company_background(company_id: str, company_name: str, logo_url: str):
+    """Background task for enriching a single company."""
     try:
         from ingestion.company_enrichment import enrich_company
-        
+        logger.info(f"🔄 Background enrichment started for company: {company_name}")
+        result = enrich_company(company_id, company_name, logo_url)
+        if result["success"]:
+            logger.info(f"✅ Background enrichment complete for company: {company_name}")
+        else:
+            logger.error(f"❌ Background enrichment failed for company: {company_name} - {result.get('error')}")
+    except Exception as e:
+        logger.error(f"❌ Background enrichment error for company: {company_name} - {e}")
+
+
+@router.post("/{company_id}/enrich")
+async def enrich_single_company(company_id: str, background_tasks: BackgroundTasks):
+    """Enrich a single company with AI (runs in background)."""
+    try:
         # Get company details
         company = db.client.table("companies")\
             .select("id, name, logo_url")\
@@ -660,16 +673,20 @@ async def enrich_single_company(company_id: str):
             raise HTTPException(status_code=404, detail="Company not found")
         
         company_data = company.data
-        result = enrich_company(
+        
+        # Add to background tasks
+        background_tasks.add_task(
+            _enrich_company_background,
             company_id,
             company_data.get("name", "Unknown"),
             company_data.get("logo_url")
         )
         
-        if result["success"]:
-            return {"message": "Company enriched successfully", "data": result["data"]}
-        else:
-            raise HTTPException(status_code=500, detail=result.get("error", "Enrichment failed"))
+        return {
+            "message": "Company enrichment started in background",
+            "company_id": company_id,
+            "company_name": company_data.get("name")
+        }
             
     except HTTPException:
         raise
@@ -677,21 +694,30 @@ async def enrich_single_company(company_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/enrich/batch")
-async def enrich_companies_batch(company_ids: List[str]):
-    """Enrich multiple companies in batch (unified: company info + size classification in one LLM call)."""
+def _enrich_companies_batch_background(company_ids: List[str]):
+    """Background task for batch enriching companies."""
     try:
         from ingestion.company_enrichment import enrich_companies_batch
-        
+        logger.info(f"🔄 Background batch enrichment started for {len(company_ids)} companies")
+        stats = enrich_companies_batch(company_ids)
+        logger.info(f"✅ Background batch enrichment complete: {stats['successful']} successful, {stats['failed']} failed")
+    except Exception as e:
+        logger.error(f"❌ Background batch enrichment error: {e}")
+
+
+@router.post("/enrich/batch")
+async def enrich_companies_batch_endpoint(company_ids: List[str], background_tasks: BackgroundTasks):
+    """Enrich multiple companies in batch (runs in background)."""
+    try:
         if not company_ids:
             raise HTTPException(status_code=400, detail="No company IDs provided")
         
-        # Unified enrichment (prompt v5 includes both company info and size classification)
-        stats = enrich_companies_batch(company_ids)
+        # Add to background tasks
+        background_tasks.add_task(_enrich_companies_batch_background, company_ids)
         
         return {
-            "message": f"Batch enrichment complete: {stats['successful']} successful, {stats['failed']} failed",
-            "stats": stats
+            "message": f"Batch enrichment started in background for {len(company_ids)} companies",
+            "company_count": len(company_ids)
         }
         
     except HTTPException:

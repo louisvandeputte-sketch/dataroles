@@ -58,7 +58,8 @@ async def execute_scrape_run(
     lookback_days: Optional[int] = None,
     trigger_type: str = "manual",
     search_query_id: Optional[str] = None,
-    job_type_id: Optional[str] = None
+    job_type_id: Optional[str] = None,
+    source: str = "linkedin"
 ) -> ScrapeRunResult:
     """
     Execute a complete scrape run for one query+location combination.
@@ -80,30 +81,33 @@ async def execute_scrape_run(
         trigger_type: How the scrape was triggered ('manual', 'scheduled', 'api')
         search_query_id: Optional UUID of the search_query record
         job_type_id: Optional UUID of the job type for classification
+        source: Job source - "linkedin" or "indeed"
     
     Returns:
         ScrapeRunResult with counts and timing
     """
     start_time = datetime.utcnow()
     
-    logger.info(f"=== Starting scrape run: '{query}' in '{location}' (type: {job_type_id or 'none'}) ===")
+    logger.info(f"=== Starting {source} scrape run: '{query}' in '{location}' (type: {job_type_id or 'none'}) ===")
     
     # Step 1: Determine date range
     date_range, expected_lookback = determine_date_range(query, location, lookback_days)
     logger.info(f"Using date range: {date_range} (lookback: {expected_lookback} days)")
     
     # Step 2: Create scrape_run record
+    platform = f"{source}_brightdata"
     run_data = {
         "search_query": query,
         "location_query": location,
-        "platform": "linkedin_brightdata",
+        "platform": platform,
         "status": "running",
         "trigger_type": trigger_type,
         "search_query_id": search_query_id,
         "job_type_id": job_type_id,
         "metadata": {
             "date_range": date_range,
-            "lookback_days": expected_lookback
+            "lookback_days": expected_lookback,
+            "source": source
         }
     }
     run_id = db.create_scrape_run(run_data)
@@ -111,7 +115,7 @@ async def execute_scrape_run(
     
     try:
         # Step 3: Get Bright Data client (mock or real based on settings)
-        brightdata = get_client()
+        brightdata = get_client(source=source)
         
         # Step 4: Trigger collection
         snapshot_id = await brightdata.trigger_collection(
@@ -129,7 +133,7 @@ async def execute_scrape_run(
         logger.info(f"Received {len(jobs_data)} jobs from Bright Data")
         
         # Step 6: Process jobs through ingestion pipeline
-        batch_result = await process_jobs_batch(jobs_data, run_id)
+        batch_result = await process_jobs_batch(jobs_data, run_id, source=source)
         
         # Step 7: Assign job types to all jobs found in this run (BEFORE updating scrape_run)
         if job_type_id and batch_result.job_ids:

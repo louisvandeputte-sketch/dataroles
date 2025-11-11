@@ -97,6 +97,23 @@
                     <!-- Divider -->
                     <div class="border-t border-gray-200 my-2"></div>
                     
+                    <!-- Source: Indeed Section -->
+                    <div class="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                        Source: Indeed
+                    </div>
+                    
+                    <a href="/indeed/queries" class="flex items-center px-3 py-2 text-sm font-medium rounded-lg {% if request.url.path == '/indeed/queries' %}bg-green-50 text-green-700{% else %}text-gray-700 hover:bg-gray-50{% endif %}">
+                        <i data-lucide="search" class="w-5 h-5 mr-3"></i>
+                        Search Queries
+                    </a>
+                    <a href="/indeed/runs" class="flex items-center px-3 py-2 text-sm font-medium rounded-lg {% if request.url.path == '/indeed/runs' %}bg-green-50 text-green-700{% else %}text-gray-700 hover:bg-gray-50{% endif %}">
+                        <i data-lucide="zap" class="w-5 h-5 mr-3"></i>
+                        Scrape Runs
+                    </a>
+                    
+                    <!-- Divider -->
+                    <div class="border-t border-gray-200 my-2"></div>
+                    
                     <!-- Fact Data Section -->
                     <div class="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
                         Fact Data

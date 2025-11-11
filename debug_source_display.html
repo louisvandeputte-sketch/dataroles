@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Source Display</title>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body>
+    <div x-data="testData()">
+        <h1>Source Badge Test</h1>
+        
+        <h2>Test Job 1 (with job_sources)</h2>
+        <div class="flex gap-1">
+            <template x-for="source in (job1.job_sources?.length > 0 ? job1.job_sources : [{source: job1.source}])" :key="source.source">
+                <template x-if="source.source === 'linkedin'">
+                    <span style="background: lightblue; padding: 5px;">LinkedIn</span>
+                </template>
+                <template x-if="source.source === 'indeed'">
+                    <span style="background: lightgreen; padding: 5px;">Indeed</span>
+                </template>
+            </template>
+        </div>
+        
+        <h2>Test Job 2 (fallback to old source)</h2>
+        <div class="flex gap-1">
+            <template x-for="source in (job2.job_sources?.length > 0 ? job2.job_sources : [{source: job2.source}])" :key="source.source">
+                <template x-if="source.source === 'linkedin'">
+                    <span style="background: lightblue; padding: 5px;">LinkedIn</span>
+                </template>
+                <template x-if="source.source === 'indeed'">
+                    <span style="background: lightgreen; padding: 5px;">Indeed</span>
+                </template>
+            </template>
+        </div>
+        
+        <h2>Debug Info</h2>
+        <pre x-text="JSON.stringify({job1, job2}, null, 2)"></pre>
+    </div>
+    
+    <script>
+        function testData() {
+            return {
+                job1: {
+                    title: "Test Job 1",
+                    source: "indeed",
+                    job_sources: [{source: "indeed", source_job_id: "123"}]
+                },
+                job2: {
+                    title: "Test Job 2",
+                    source: "linkedin",
+                    job_sources: []
+                }
+            }
+        }
+    </script>
+</body>
+</html>

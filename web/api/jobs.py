@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, Query, BackgroundTasks
 from typing import Optional, List
 from uuid import UUID
 from pydantic import BaseModel
+from loguru import logger
 
 from database import db
 from ingestion.job_title_classifier import classify_and_save
@@ -29,6 +30,7 @@ async def list_jobs(
     posted_date: Optional[str] = None,  # today, week, month, all
     ai_enriched: Optional[str] = None,  # true, false, or None for all
     title_classification: Optional[str] = None,  # Data, NIS, or None for all
+    source: Optional[str] = None,  # linkedin, indeed, or None for all
     is_active: Optional[bool] = None,
     run_id: Optional[str] = None,  # Filter by scrape run
     date_from: Optional[str] = None,
@@ -87,6 +89,7 @@ async def list_jobs(
         posted_date=posted_date,
         ai_enriched=ai_enriched_bool,
         title_classification=title_classification,
+        source=source,
         active_only=is_active if is_active is not None else True,
         job_ids=job_ids_filter,
         limit=limit,
@@ -231,40 +234,62 @@ async def get_job_types():
 
 
 # LLM Enrichment endpoints
-@router.post("/{job_id}/enrich")
-async def enrich_single_job(job_id: str, force: bool = False):
-    """Enrich a single job with LLM analysis. Use force=True to re-enrich."""
-    from ingestion.llm_enrichment import process_job_enrichment
-    
+
+def _enrich_job_background(job_id: str, force: bool = False):
+    """Background task for enriching a single job."""
     try:
+        from ingestion.llm_enrichment import process_job_enrichment
+        logger.info(f"🔄 Background enrichment started for job: {job_id}")
         result = process_job_enrichment(job_id, force=force)
-        
         if result["success"]:
-            return {
-                "success": True,
-                "message": "Job enriched successfully",
-                "data": result.get("data")
-            }
+            logger.info(f"✅ Background enrichment complete for job: {job_id}")
         else:
-            raise HTTPException(
-                status_code=400,
-                detail=result.get("error", "Enrichment failed")
-            )
+            logger.error(f"❌ Background enrichment failed for job: {job_id} - {result.get('error')}")
+    except Exception as e:
+        logger.error(f"❌ Background enrichment error for job: {job_id} - {e}")
+
+
+@router.post("/{job_id}/enrich")
+async def enrich_single_job(job_id: str, background_tasks: BackgroundTasks, force: bool = False):
+    """Enrich a single job with LLM analysis (runs in background). Use force=True to re-enrich."""
+    try:
+        # Add to background tasks
+        background_tasks.add_task(_enrich_job_background, job_id, force)
+        
+        return {
+            "success": True,
+            "message": "Job enrichment started in background",
+            "job_id": job_id
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/enrich/batch")
-async def enrich_batch_jobs(job_ids: List[str]):
-    """Enrich multiple jobs in batch."""
-    from ingestion.llm_enrichment import batch_enrich_jobs
-    
+def _enrich_jobs_batch_background(job_ids: List[str]):
+    """Background task for batch enriching jobs."""
     try:
+        from ingestion.llm_enrichment import batch_enrich_jobs
+        logger.info(f"🔄 Background batch enrichment started for {len(job_ids)} jobs")
         stats = batch_enrich_jobs(job_ids)
+        logger.info(f"✅ Background batch enrichment complete: {stats['successful']} successful, {stats['failed']} failed")
+    except Exception as e:
+        logger.error(f"❌ Background batch enrichment error: {e}")
+
+
+@router.post("/enrich/batch")
+async def enrich_batch_jobs(job_ids: List[str], background_tasks: BackgroundTasks):
+    """Enrich multiple jobs in batch (runs in background)."""
+    try:
+        if not job_ids:
+            raise HTTPException(status_code=400, detail="No job IDs provided")
+        
+        # Add to background tasks
+        background_tasks.add_task(_enrich_jobs_batch_background, job_ids)
+        
         return {
             "success": True,
-            "message": f"Enriched {stats['successful']} of {stats['total']} jobs",
-            "stats": stats
+            "message": f"Batch enrichment started in background for {len(job_ids)} jobs",
+            "job_count": len(job_ids)
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

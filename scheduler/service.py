@@ -69,6 +69,7 @@ class SchedulerService:
         search_query = query["search_query"]
         location_query = query["location_query"]
         schedule_type = query.get("schedule_type")
+        source = query.get("source", "linkedin")  # Get source from query
         
         # Remove existing job if any
         self.unschedule_query(query_id)
@@ -111,7 +112,7 @@ class SchedulerService:
             self.scheduler.add_job(
                 self._run_scheduled_scrape,
                 trigger=trigger,
-                args=[query_id, search_query, location_query, query.get("lookback_days", 7), query.get("job_type_id")],
+                args=[query_id, search_query, location_query, query.get("lookback_days", 7), query.get("job_type_id"), source],
                 id=query_id,
                 replace_existing=True,
                 misfire_grace_time=3600  # Allow 1 hour grace period for missed runs
@@ -139,7 +140,7 @@ class SchedulerService:
             # Job doesn't exist, that's fine
             pass
     
-    async def _run_scheduled_scrape(self, query_id: str, search_query: str, location_query: str, lookback_days: int, job_type_id: str = None):
+    async def _run_scheduled_scrape(self, query_id: str, search_query: str, location_query: str, lookback_days: int, job_type_id: str = None, source: str = "linkedin"):
         """
         Execute a scheduled scrape run.
         
@@ -149,18 +150,20 @@ class SchedulerService:
             location_query: Location
             lookback_days: Days to look back
             job_type_id: Job type ID for classification
+            source: Source platform ('linkedin' or 'indeed')
         """
-        logger.info(f"🤖 Running scheduled scrape: '{search_query}' in '{location_query}'")
+        logger.info(f"🤖 Running scheduled {source} scrape: '{search_query}' in '{location_query}'")
         
         try:
-            # Execute scrape with trigger_type='scheduled'
+            # Execute scrape with trigger_type='scheduled' and correct source
             result = await execute_scrape_run(
                 query=search_query,
                 location=location_query,
                 lookback_days=lookback_days,
                 trigger_type="scheduled",
                 search_query_id=query_id,
-                job_type_id=job_type_id
+                job_type_id=job_type_id,
+                source=source
             )
             
             # Update last_run_at and next_run_at

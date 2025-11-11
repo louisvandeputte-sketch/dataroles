@@ -8,17 +8,23 @@ import hashlib
 import json
 
 
-def check_job_exists(linkedin_job_id: str) -> tuple[bool, Optional[UUID], Optional[Dict]]:
+def check_job_exists(job_id: str, source: str = "linkedin") -> tuple[bool, Optional[UUID], Optional[Dict]]:
     """
     Check if job posting already exists in database.
     
     Args:
-        linkedin_job_id: LinkedIn job posting ID
+        job_id: Job posting ID (LinkedIn or Indeed)
+        source: Job source - "linkedin" or "indeed"
     
     Returns:
         (exists: bool, job_db_id: Optional[UUID], existing_data: Optional[Dict])
     """
-    existing_job = db.get_job_by_linkedin_id(linkedin_job_id)
+    if source == "linkedin":
+        existing_job = db.get_job_by_linkedin_id(job_id)
+    elif source == "indeed":
+        existing_job = db.get_job_by_indeed_id(job_id)
+    else:
+        raise ValueError(f"Unknown source: {source}")
     
     if existing_job:
         return True, UUID(existing_job["id"]), existing_job
@@ -107,7 +113,9 @@ def should_update_job(existing_job: Dict[str, Any], new_job_data: Dict[str, Any]
     has_changes = fields_have_changed(existing_job, new_job_data, update_fields)
     
     if has_changes:
-        logger.info(f"Job {existing_job['linkedin_job_id']} has updates")
+        # Get job ID based on source
+        job_id = existing_job.get('linkedin_job_id') or existing_job.get('indeed_job_id')
+        logger.info(f"Job {job_id} has updates")
         return True
     
     return False

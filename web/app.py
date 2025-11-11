@@ -10,7 +10,7 @@ from pathlib import Path
 from contextlib import asynccontextmanager
 from loguru import logger
 
-from web.api import queries, runs, jobs, quality, job_types, companies, tech_stack, locations
+from web.api import queries, runs, jobs, quality, job_types, companies, tech_stack, locations, indeed_queries, indeed_runs, ranking
 from scheduler import get_scheduler
 from ingestion.auto_enrich_service import get_auto_enrich_service
 import asyncio
@@ -93,6 +93,13 @@ app.include_router(companies.router, prefix="/api/companies", tags=["companies"]
 app.include_router(tech_stack.router, prefix="/api/tech-stack", tags=["tech-stack"])
 app.include_router(locations.router, prefix="/api/locations", tags=["locations"])
 
+# Indeed API routers
+app.include_router(indeed_queries.router, prefix="/api/indeed/queries", tags=["indeed-queries"])
+app.include_router(indeed_runs.router, prefix="/api/indeed/runs", tags=["indeed-runs"])
+
+# Ranking API router
+app.include_router(ranking.router, prefix="/api/ranking", tags=["ranking"])
+
 
 # Main pages
 @app.get("/", response_class=HTMLResponse)
@@ -111,6 +118,18 @@ async def queries_page(request: Request):
 async def runs_page(request: Request):
     """Scrape runs monitoring page."""
     return templates.TemplateResponse("runs.html", {"request": request})
+
+
+@app.get("/indeed/queries", response_class=HTMLResponse)
+async def indeed_queries_page(request: Request):
+    """Indeed search queries management page."""
+    return templates.TemplateResponse("indeed_queries.html", {"request": request})
+
+
+@app.get("/indeed/runs", response_class=HTMLResponse)
+async def indeed_runs_page(request: Request):
+    """Indeed scrape runs monitoring page."""
+    return templates.TemplateResponse("indeed_runs.html", {"request": request})
 
 
 @app.get("/jobs", response_class=HTMLResponse)

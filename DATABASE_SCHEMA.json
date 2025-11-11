@@ -1,0 +1,816 @@
+{
+  "database": "datarole",
+  "description": "Job scraping and enrichment platform for LinkedIn and Indeed",
+  "version": "1.0.0",
+  "last_updated": "2025-11-10",
+  
+  "tables": {
+    "job_postings": {
+      "description": "Core table for job postings from multiple sources",
+      "primary_key": "id",
+      "columns": {
+        "id": {
+          "type": "UUID",
+          "nullable": false,
+          "description": "Primary key"
+        },
+        "linkedin_job_id": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "LinkedIn job ID (NULL for Indeed jobs)",
+          "unique": false
+        },
+        "indeed_job_id": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "Indeed job ID (NULL for LinkedIn jobs)",
+          "unique": false
+        },
+        "company_id": {
+          "type": "UUID",
+          "nullable": false,
+          "foreign_key": "companies.id",
+          "description": "Reference to company"
+        },
+        "location_id": {
+          "type": "UUID",
+          "nullable": false,
+          "foreign_key": "locations.id",
+          "description": "Reference to location"
+        },
+        "title": {
+          "type": "TEXT",
+          "nullable": false,
+          "description": "Job title"
+        },
+        "title_normalized": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "Normalized job title for deduplication (lowercase, trimmed)"
+        },
+        "dedup_key": {
+          "type": "TEXT",
+          "nullable": true,
+          "unique": true,
+          "description": "Deduplication key: normalized_title|company_name"
+        },
+        "seniority_level": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "Job seniority level"
+        },
+        "employment_type": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "Employment type (Full-time, Part-time, etc.)"
+        },
+        "industries": {
+          "type": "TEXT[]",
+          "nullable": true,
+          "description": "Array of industries"
+        },
+        "function_areas": {
+          "type": "TEXT[]",
+          "nullable": true,
+          "description": "Array of function areas"
+        },
+        "posted_date": {
+          "type": "TIMESTAMPTZ",
+          "nullable": true,
+          "description": "When job was posted"
+        },
+        "posted_time_ago": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "Human-readable time ago"
+        },
+        "num_applicants": {
+          "type": "INTEGER",
+          "nullable": true,
+          "description": "Number of applicants"
+        },
+        "base_salary_min": {
+          "type": "NUMERIC",
+          "nullable": true,
+          "description": "Minimum salary"
+        },
+        "base_salary_max": {
+          "type": "NUMERIC",
+          "nullable": true,
+          "description": "Maximum salary"
+        },
+        "salary_currency": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "Salary currency code"
+        },
+        "salary_period": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "Salary period (yearly, monthly, etc.)"
+        },
+        "job_url": {
+          "type": "TEXT",
+          "nullable": false,
+          "description": "URL to job posting"
+        },
+        "apply_url": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "Direct application URL"
+        },
+        "application_available": {
+          "type": "BOOLEAN",
+          "nullable": true,
+          "description": "Whether application is available"
+        },
+        "is_active": {
+          "type": "BOOLEAN",
+          "nullable": false,
+          "default": true,
+          "description": "Whether job is still active"
+        },
+        "detected_inactive_at": {
+          "type": "TIMESTAMPTZ",
+          "nullable": true,
+          "description": "When job was detected as inactive"
+        },
+        "created_at": {
+          "type": "TIMESTAMPTZ",
+          "nullable": false,
+          "default": "NOW()",
+          "description": "When record was created"
+        },
+        "updated_at": {
+          "type": "TIMESTAMPTZ",
+          "nullable": false,
+          "default": "NOW()",
+          "description": "When record was last updated"
+        },
+        "last_seen_at": {
+          "type": "TIMESTAMPTZ",
+          "nullable": false,
+          "default": "NOW()",
+          "description": "When job was last seen in a scrape"
+        },
+        "title_classification": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "AI classification: 'Data' or 'NIS' (Not In Scope)"
+        },
+        "title_classification_at": {
+          "type": "TIMESTAMPTZ",
+          "nullable": true,
+          "description": "When title was classified"
+        },
+        "title_classification_error": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "Error message if classification failed"
+        },
+        "source": {
+          "type": "TEXT",
+          "nullable": false,
+          "description": "Job source: 'linkedin' or 'indeed' (kept for backward compatibility)"
+        },
+        "ranking_score": {
+          "type": "NUMERIC(10, 2)",
+          "nullable": true,
+          "description": "Calculated ranking score (0-100) based on multiple factors"
+        },
+        "ranking_position": {
+          "type": "INTEGER",
+          "nullable": true,
+          "description": "Final ranking position (1 = best)"
+        },
+        "ranking_updated_at": {
+          "type": "TIMESTAMPTZ",
+          "nullable": true,
+          "description": "When ranking was last calculated"
+        },
+        "ranking_metadata": {
+          "type": "JSONB",
+          "nullable": true,
+          "description": "JSON with score breakdown (freshness_score, quality_score, transparency_score, role_match_score, completeness_score, reputation_score, base_score, company_rank, role_type_rank, location_rank, seniority_rank)"
+        }
+      },
+      "indexes": [
+        "idx_job_postings_company_id",
+        "idx_job_postings_location_id",
+        "idx_job_postings_posted_date",
+        "idx_job_postings_is_active",
+        "idx_job_postings_dedup_key (UNIQUE)",
+        "idx_job_postings_ranking_score (DESC NULLS LAST, WHERE is_active = true)",
+        "idx_job_postings_ranking_position (ASC NULLS LAST, WHERE is_active = true)"
+      ],
+      "constraints": [
+        "CHECK: (source = 'linkedin' AND linkedin_job_id IS NOT NULL) OR (source = 'indeed' AND indeed_job_id IS NOT NULL)"
+      ]
+    },
+
+    "job_sources": {
+      "description": "Many-to-many relationship between jobs and their sources (LinkedIn/Indeed)",
+      "primary_key": "id",
+      "columns": {
+        "id": {
+          "type": "UUID",
+          "nullable": false,
+          "description": "Primary key"
+        },
+        "job_posting_id": {
+          "type": "UUID",
+          "nullable": false,
+          "foreign_key": "job_postings.id",
+          "on_delete": "CASCADE",
+          "description": "Reference to job posting"
+        },
+        "source": {
+          "type": "TEXT",
+          "nullable": false,
+          "description": "Source platform: 'linkedin' or 'indeed'"
+        },
+        "source_job_id": {
+          "type": "TEXT",
+          "nullable": false,
+          "description": "The job ID from the source platform"
+        },
+        "first_seen_at": {
+          "type": "TIMESTAMPTZ",
+          "nullable": false,
+          "default": "NOW()",
+          "description": "When this job was first seen from this source"
+        },
+        "last_seen_at": {
+          "type": "TIMESTAMPTZ",
+          "nullable": false,
+          "default": "NOW()",
+          "description": "When this job was last seen from this source"
+        }
+      },
+      "indexes": [
+        "idx_job_sources_job_id",
+        "idx_job_sources_source",
+        "idx_job_sources_source_job_id"
+      ],
+      "constraints": [
+        "UNIQUE(job_posting_id, source)",
+        "CHECK: source IN ('linkedin', 'indeed')"
+      ]
+    },
+
+    "companies": {
+      "description": "Companies that post jobs",
+      "primary_key": "id",
+      "columns": {
+        "id": {
+          "type": "UUID",
+          "nullable": false,
+          "description": "Primary key"
+        },
+        "linkedin_company_id": {
+          "type": "TEXT",
+          "nullable": true,
+          "unique": true,
+          "description": "LinkedIn company ID"
+        },
+        "name": {
+          "type": "TEXT",
+          "nullable": false,
+          "description": "Company name"
+        },
+        "industry": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "Company industry"
+        },
+        "company_url": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "Company website URL"
+        },
+        "logo_url": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "URL to company logo"
+        },
+        "logo_data": {
+          "type": "BYTEA",
+          "nullable": true,
+          "description": "Binary logo data (stored locally)"
+        },
+        "logo_filename": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "Original logo filename"
+        },
+        "logo_content_type": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "Logo MIME type (e.g., 'image/png')"
+        },
+        "employee_count_range": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "Employee count range (e.g., '51-200')"
+        },
+        "rating": {
+          "type": "NUMERIC",
+          "nullable": true,
+          "description": "Company rating (from Indeed)"
+        },
+        "reviews_count": {
+          "type": "INTEGER",
+          "nullable": true,
+          "description": "Number of reviews (from Indeed)"
+        },
+        "indeed_company_url": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "Indeed company profile URL"
+        },
+        "created_at": {
+          "type": "TIMESTAMPTZ",
+          "nullable": false,
+          "default": "NOW()"
+        },
+        "updated_at": {
+          "type": "TIMESTAMPTZ",
+          "nullable": false,
+          "default": "NOW()"
+        }
+      },
+      "indexes": [
+        "idx_companies_linkedin_id (UNIQUE)"
+      ]
+    },
+
+    "locations": {
+      "description": "Job locations",
+      "primary_key": "id",
+      "columns": {
+        "id": {
+          "type": "UUID",
+          "nullable": false,
+          "description": "Primary key"
+        },
+        "city": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "City name"
+        },
+        "country_code": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "Country code"
+        },
+        "full_location_string": {
+          "type": "TEXT",
+          "nullable": false,
+          "unique": true,
+          "description": "Full location string for deduplication"
+        },
+        "created_at": {
+          "type": "TIMESTAMPTZ",
+          "nullable": false,
+          "default": "NOW()"
+        }
+      },
+      "indexes": [
+        "idx_locations_full_string (UNIQUE)"
+      ]
+    },
+
+    "job_descriptions": {
+      "description": "Full job descriptions (separate table for performance)",
+      "primary_key": "id",
+      "columns": {
+        "id": {
+          "type": "UUID",
+          "nullable": false,
+          "description": "Primary key"
+        },
+        "job_posting_id": {
+          "type": "UUID",
+          "nullable": false,
+          "foreign_key": "job_postings.id",
+          "on_delete": "CASCADE",
+          "unique": true,
+          "description": "Reference to job posting"
+        },
+        "description_html": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "HTML description"
+        },
+        "description_text": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "Plain text description"
+        },
+        "created_at": {
+          "type": "TIMESTAMPTZ",
+          "nullable": false,
+          "default": "NOW()"
+        }
+      }
+    },
+
+    "job_posters": {
+      "description": "Information about job posters (LinkedIn only)",
+      "primary_key": "id",
+      "columns": {
+        "id": {
+          "type": "UUID",
+          "nullable": false,
+          "description": "Primary key"
+        },
+        "job_posting_id": {
+          "type": "UUID",
+          "nullable": false,
+          "foreign_key": "job_postings.id",
+          "on_delete": "CASCADE",
+          "unique": true,
+          "description": "Reference to job posting"
+        },
+        "name": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "Poster name"
+        },
+        "linkedin_profile_url": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "LinkedIn profile URL"
+        },
+        "created_at": {
+          "type": "TIMESTAMPTZ",
+          "nullable": false,
+          "default": "NOW()"
+        }
+      }
+    },
+
+    "job_types": {
+      "description": "Job type categories (e.g., 'Data', 'Analytics')",
+      "primary_key": "id",
+      "columns": {
+        "id": {
+          "type": "UUID",
+          "nullable": false,
+          "description": "Primary key"
+        },
+        "name": {
+          "type": "TEXT",
+          "nullable": false,
+          "unique": true,
+          "description": "Type name"
+        },
+        "color": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "Display color (hex code)"
+        },
+        "created_at": {
+          "type": "TIMESTAMPTZ",
+          "nullable": false,
+          "default": "NOW()"
+        }
+      }
+    },
+
+    "job_type_assignments": {
+      "description": "Many-to-many relationship between jobs and types",
+      "primary_key": "id",
+      "columns": {
+        "id": {
+          "type": "UUID",
+          "nullable": false,
+          "description": "Primary key"
+        },
+        "job_posting_id": {
+          "type": "UUID",
+          "nullable": false,
+          "foreign_key": "job_postings.id",
+          "on_delete": "CASCADE",
+          "description": "Reference to job posting"
+        },
+        "job_type_id": {
+          "type": "UUID",
+          "nullable": false,
+          "foreign_key": "job_types.id",
+          "on_delete": "CASCADE",
+          "description": "Reference to job type"
+        },
+        "created_at": {
+          "type": "TIMESTAMPTZ",
+          "nullable": false,
+          "default": "NOW()"
+        }
+      },
+      "constraints": [
+        "UNIQUE(job_posting_id, job_type_id)"
+      ]
+    },
+
+    "search_queries": {
+      "description": "Saved search queries for scraping",
+      "primary_key": "id",
+      "columns": {
+        "id": {
+          "type": "UUID",
+          "nullable": false,
+          "description": "Primary key"
+        },
+        "search_query": {
+          "type": "TEXT",
+          "nullable": false,
+          "description": "Search query string"
+        },
+        "location": {
+          "type": "TEXT",
+          "nullable": false,
+          "description": "Location string"
+        },
+        "job_type_id": {
+          "type": "UUID",
+          "nullable": true,
+          "foreign_key": "job_types.id",
+          "description": "Associated job type"
+        },
+        "source": {
+          "type": "TEXT",
+          "nullable": false,
+          "description": "Source platform: 'linkedin' or 'indeed'"
+        },
+        "is_active": {
+          "type": "BOOLEAN",
+          "nullable": false,
+          "default": true,
+          "description": "Whether query is active"
+        },
+        "created_at": {
+          "type": "TIMESTAMPTZ",
+          "nullable": false,
+          "default": "NOW()"
+        },
+        "updated_at": {
+          "type": "TIMESTAMPTZ",
+          "nullable": false,
+          "default": "NOW()"
+        }
+      }
+    },
+
+    "scrape_runs": {
+      "description": "History of scrape runs",
+      "primary_key": "id",
+      "columns": {
+        "id": {
+          "type": "UUID",
+          "nullable": false,
+          "description": "Primary key"
+        },
+        "search_query_id": {
+          "type": "UUID",
+          "nullable": true,
+          "foreign_key": "search_queries.id",
+          "description": "Reference to search query"
+        },
+        "search_query": {
+          "type": "TEXT",
+          "nullable": false,
+          "description": "Search query string (denormalized)"
+        },
+        "location": {
+          "type": "TEXT",
+          "nullable": false,
+          "description": "Location string (denormalized)"
+        },
+        "platform": {
+          "type": "TEXT",
+          "nullable": false,
+          "description": "Platform: 'linkedin_brightdata' or 'indeed_brightdata'"
+        },
+        "status": {
+          "type": "TEXT",
+          "nullable": false,
+          "description": "Status: 'pending', 'running', 'completed', 'failed'"
+        },
+        "jobs_found": {
+          "type": "INTEGER",
+          "nullable": true,
+          "description": "Number of jobs found"
+        },
+        "jobs_new": {
+          "type": "INTEGER",
+          "nullable": true,
+          "description": "Number of new jobs"
+        },
+        "jobs_updated": {
+          "type": "INTEGER",
+          "nullable": true,
+          "description": "Number of updated jobs"
+        },
+        "error_message": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "Error message if failed"
+        },
+        "started_at": {
+          "type": "TIMESTAMPTZ",
+          "nullable": false,
+          "default": "NOW()",
+          "description": "When scrape started"
+        },
+        "completed_at": {
+          "type": "TIMESTAMPTZ",
+          "nullable": true,
+          "description": "When scrape completed"
+        }
+      },
+      "indexes": [
+        "idx_scrape_runs_status",
+        "idx_scrape_runs_started_at"
+      ]
+    },
+
+    "job_scrape_history": {
+      "description": "Many-to-many relationship between jobs and scrape runs",
+      "primary_key": ["job_posting_id", "scrape_run_id"],
+      "columns": {
+        "job_posting_id": {
+          "type": "UUID",
+          "nullable": false,
+          "foreign_key": "job_postings.id",
+          "on_delete": "CASCADE",
+          "description": "Reference to job posting"
+        },
+        "scrape_run_id": {
+          "type": "UUID",
+          "nullable": false,
+          "foreign_key": "scrape_runs.id",
+          "on_delete": "CASCADE",
+          "description": "Reference to scrape run"
+        }
+      },
+      "indexes": [
+        "idx_job_scrape_history_job_id",
+        "idx_job_scrape_history_run_id"
+      ]
+    },
+
+    "llm_enrichment": {
+      "description": "AI enrichment data for jobs",
+      "primary_key": "id",
+      "columns": {
+        "id": {
+          "type": "UUID",
+          "nullable": false,
+          "description": "Primary key"
+        },
+        "job_posting_id": {
+          "type": "UUID",
+          "nullable": false,
+          "foreign_key": "job_postings.id",
+          "on_delete": "CASCADE",
+          "unique": true,
+          "description": "Reference to job posting"
+        },
+        "skills_must_have_nl": {
+          "type": "TEXT[]",
+          "nullable": true,
+          "description": "Must-have skills extracted by LLM (Dutch)"
+        },
+        "skills_must_have_fr": {
+          "type": "TEXT[]",
+          "nullable": true,
+          "description": "Must-have skills extracted by LLM (French)"
+        },
+        "skills_must_have_en": {
+          "type": "TEXT[]",
+          "nullable": true,
+          "description": "Must-have skills extracted by LLM (English)"
+        },
+        "skills_nice_to_have_nl": {
+          "type": "TEXT[]",
+          "nullable": true,
+          "description": "Nice-to-have skills extracted by LLM (Dutch)"
+        },
+        "skills_nice_to_have_fr": {
+          "type": "TEXT[]",
+          "nullable": true,
+          "description": "Nice-to-have skills extracted by LLM (French)"
+        },
+        "skills_nice_to_have_en": {
+          "type": "TEXT[]",
+          "nullable": true,
+          "description": "Nice-to-have skills extracted by LLM (English)"
+        },
+        "samenvatting_kort_nl": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "Short summary generated by LLM (Dutch)"
+        },
+        "samenvatting_kort_fr": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "Short summary generated by LLM (French)"
+        },
+        "samenvatting_kort_en": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "Short summary generated by LLM (English)"
+        },
+        "samenvatting_lang_nl": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "Long summary generated by LLM (Dutch)"
+        },
+        "samenvatting_lang_fr": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "Long summary generated by LLM (French)"
+        },
+        "samenvatting_lang_en": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "Long summary generated by LLM (English)"
+        },
+        "labels": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "JSON string with structured labels (data_role_type, role_level, seniority, contract, sourcing_type, remote_work_policy, etc.) in multiple languages"
+        },
+        "type_datarol": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "AI-determined data role type (DEPRECATED - use labels.data_role_type)"
+        },
+        "rolniveau": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "AI-determined role level (DEPRECATED - use labels.role_level)"
+        },
+        "enrichment_started_at": {
+          "type": "TIMESTAMPTZ",
+          "nullable": true,
+          "description": "When enrichment started"
+        },
+        "enrichment_completed_at": {
+          "type": "TIMESTAMPTZ",
+          "nullable": true,
+          "description": "When enrichment completed"
+        },
+        "enrichment_error": {
+          "type": "TEXT",
+          "nullable": true,
+          "description": "Error message if enrichment failed"
+        },
+        "perks": {
+          "type": "JSONB",
+          "nullable": true,
+          "description": "Array of 6 job perks (v15). Each perk: {key: string, found: boolean}. Keys (fixed order): remote_policy, salary_range, company_car, hospitalization_insurance, training_budget, team_events. All perk labels (NL/EN/FR) stored in labels.nl.perks, labels.en.perks, labels.fr.perks"
+        },
+        "created_at": {
+          "type": "TIMESTAMPTZ",
+          "nullable": false,
+          "default": "NOW()"
+        },
+        "updated_at": {
+          "type": "TIMESTAMPTZ",
+          "nullable": false,
+          "default": "NOW()"
+        }
+      }
+    }
+  },
+
+  "relationships": {
+    "job_postings_to_companies": "Many-to-One (job_postings.company_id → companies.id)",
+    "job_postings_to_locations": "Many-to-One (job_postings.location_id → locations.id)",
+    "job_postings_to_job_sources": "One-to-Many (job_postings.id → job_sources.job_posting_id)",
+    "job_postings_to_job_descriptions": "One-to-One (job_postings.id → job_descriptions.job_posting_id)",
+    "job_postings_to_job_posters": "One-to-One (job_postings.id → job_posters.job_posting_id)",
+    "job_postings_to_job_types": "Many-to-Many via job_type_assignments",
+    "job_postings_to_scrape_runs": "Many-to-Many via job_scrape_history",
+    "job_postings_to_llm_enrichment": "One-to-One (job_postings.id → llm_enrichment.job_posting_id)",
+    "search_queries_to_job_types": "Many-to-One (search_queries.job_type_id → job_types.id)",
+    "scrape_runs_to_search_queries": "Many-to-One (scrape_runs.search_query_id → search_queries.id)"
+  },
+
+  "key_features": {
+    "multi_source_support": "Jobs can come from multiple sources (LinkedIn and Indeed) via job_sources table",
+    "deduplication": "Jobs are deduplicated based on title + company using dedup_key",
+    "ai_classification": "Jobs are classified as 'Data' or 'NIS' (Not In Scope) using AI",
+    "ai_enrichment": "Jobs can be enriched with additional AI-generated metadata",
+    "scrape_tracking": "Full history of scrape runs and which jobs were found in each run",
+    "active_monitoring": "Jobs are marked as inactive when no longer found in scrapes"
+  },
+
+  "migrations": [
+    "027_add_indeed_support.sql - Added Indeed support with source column and indeed_job_id",
+    "028_add_source_to_search_queries.sql - Added source column to search_queries",
+    "029_fix_linkedin_job_id_nullable.sql - Made linkedin_job_id nullable for Indeed jobs",
+    "030_source_as_many_to_many.sql - Added job_sources table for multi-source support and dedup_key"
+  ]
+}

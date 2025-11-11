@@ -17,13 +17,14 @@ client = OpenAI(
 )
 
 # Prompt ID for unified company enrichment (includes both info + size classification)
-# Version 12: Latest version with weetjes (factlets) improvements
-#             1-3 multilingual factlets with category, source, confidence, date_verified
-#             At least 1 static factlet required; no ISO/certification factlets
-#             Categories: Startup, Scaleup, SME, Midmarket, Corporate, Subsidiary, Government, Unknown
-#             Multilingual sector (EN/NL/FR) and category
+# Version 15: Added hiring_model field to distinguish recruitment vs direct hiring companies
+#             - hiring_model: "recruitment" | "direct" | "unknown"
+#             - Multilingual: hiring_model_en/nl/fr
+#             - Detection: recruitment = staffing/interim/headhunting/RPO/"for our client"
+#             - Detection: direct = normal organizations hiring for themselves
+#             - All v14 features: sectors, factlets, multilingual categories
 COMPANY_ENRICHMENT_PROMPT_ID = "pmpt_68fd06175d7c8190bd8767fddcb5486a0e87d16aa5f38bc2"
-COMPANY_ENRICHMENT_PROMPT_VERSION = "12"
+COMPANY_ENRICHMENT_PROMPT_VERSION = "15"
 
 
 def enrich_company(company_id: str, company_name: str, company_url: Optional[str] = None) -> Dict[str, Any]:
@@ -137,41 +138,84 @@ def save_enrichment_to_db(company_id: str, enrichment_data: Dict[str, Any]) -> b
         True if successful, False otherwise
     """
     try:
+        # Extract maturity data (prompt v12 nests it under "maturity")
+        maturity = enrichment_data.get("maturity", {})
+        
+        # Extract category data (prompt v12 can also nest categories as object: {en, nl, fr})
+        category_obj = enrichment_data.get("category", {})
+        
+        # Map field names from prompt v12 output to database columns
+        # Prompt v12 uses: website, careers_page, description_en/nl/fr, employee_count_range, factlets
+        # Database uses: bedrijfswebsite, jobspagina, bedrijfsomschrijving_en/nl/fr, aantal_werknemers, weetjes
+        
+        # Extract category values from nested object or direct fields
+        # Prompt v14 uses flat structure: maturity_en, maturity_nl, maturity_fr
+        # Prompt v12 uses nested: maturity.category_en or category.en
+        category_en = (
+            enrichment_data.get("maturity_en") or  # v14 flat
+            maturity.get("category_en") or         # v12 nested in maturity
+            category_obj.get("en") or              # v12 nested in category
+            enrichment_data.get("category_en")     # v12 flat fallback
+        )
+        category_nl = (
+            enrichment_data.get("maturity_nl") or
+            maturity.get("category_nl") or
+            category_obj.get("nl") or
+            enrichment_data.get("category_nl")
+        )
+        category_fr = (
+            enrichment_data.get("maturity_fr") or
+            maturity.get("category_fr") or
+            category_obj.get("fr") or
+            enrichment_data.get("category_fr")
+        )
+        
         # Prepare data for database (includes both company info and size classification)
         db_data = {
             "company_id": company_id,
-            # Company info fields
-            "bedrijfswebsite": enrichment_data.get("bedrijfswebsite"),
-            "jobspagina": enrichment_data.get("jobspagina"),
+            # Company info fields - map from prompt v12 field names
+            "bedrijfswebsite": enrichment_data.get("website") or enrichment_data.get("bedrijfswebsite"),
+            "jobspagina": enrichment_data.get("careers_page") or enrichment_data.get("jobspagina"),
             "email_hr": enrichment_data.get("email_hr"),
             "email_hr_bron": enrichment_data.get("email_hr_bron"),
             "email_algemeen": enrichment_data.get("email_algemeen"),
-            "bedrijfsomschrijving_nl": enrichment_data.get("bedrijfsomschrijving_nl"),
-            "bedrijfsomschrijving_fr": enrichment_data.get("bedrijfsomschrijving_fr"),
-            "bedrijfsomschrijving_en": enrichment_data.get("bedrijfsomschrijving_en"),
+            "bedrijfsomschrijving_nl": enrichment_data.get("description_nl") or enrichment_data.get("bedrijfsomschrijving_nl"),
+            "bedrijfsomschrijving_fr": enrichment_data.get("description_fr") or enrichment_data.get("bedrijfsomschrijving_fr"),
+            "bedrijfsomschrijving_en": enrichment_data.get("description_en") or enrichment_data.get("bedrijfsomschrijving_en"),
             # Multilingual sector fields (prompt v6+)
             "sector_en": enrichment_data.get("sector_en"),
             "sector_nl": enrichment_data.get("sector_nl"),
             "sector_fr": enrichment_data.get("sector_fr"),
-            "aantal_werknemers": enrichment_data.get("aantal_werknemers"),
-            # Weetjes (factlets) - prompt v11+
-            "weetjes": enrichment_data.get("weetjes"),
+            # Hiring model fields (prompt v15+)
+            "hiring_model": enrichment_data.get("hiring_model"),
+            "hiring_model_en": enrichment_data.get("hiring_model_en"),
+            "hiring_model_nl": enrichment_data.get("hiring_model_nl"),
+            "hiring_model_fr": enrichment_data.get("hiring_model_fr"),
+            "aantal_werknemers": enrichment_data.get("employee_count_range") or enrichment_data.get("aantal_werknemers"),
+            # Weetjes (factlets) - prompt v12 uses "factlets" instead of "weetjes"
+            "weetjes": enrichment_data.get("factlets") or enrichment_data.get("weetjes"),
             "ai_enriched": True,
             "ai_enriched_at": datetime.utcnow().isoformat(),
             "ai_enrichment_error": None,
-            # Size classification fields (from unified prompt v9)
+            # Size classification fields (from unified prompt v12 - nested in "maturity" or "category")
             # Store category_en directly (no constraint, flexible values from LLM)
-            "size_category": enrichment_data.get("category_en"),
-            # Multilingual category fields (v9)
-            "category_en": enrichment_data.get("category_en"),
-            "category_nl": enrichment_data.get("category_nl"),
-            "category_fr": enrichment_data.get("category_fr"),
-            "size_confidence": enrichment_data.get("confidence"),
+            "size_category": category_en,
+            # Multilingual category fields (v9+)
+            "category_en": category_en,
+            "category_nl": category_nl,
+            "category_fr": category_fr,
+            "size_confidence": maturity.get("confidence") or enrichment_data.get("confidence"),
             # Note: summary fields removed from prompt output (no longer generated)
             # Store arrays as JSONB (Supabase handles Python lists directly)
-            "size_key_arguments": enrichment_data.get("key_arguments"),
-            "size_sources": enrichment_data.get("sources"),
-            "size_enriched_at": datetime.utcnow().isoformat() if enrichment_data.get("category_en") else None,
+            # Prompt v14 uses key_arguments_en or arguments_en, v12 uses key_arguments
+            "size_key_arguments": (
+                enrichment_data.get("key_arguments_en") or 
+                enrichment_data.get("arguments_en") or 
+                maturity.get("key_arguments") or 
+                enrichment_data.get("key_arguments")
+            ),
+            "size_sources": maturity.get("sources") or enrichment_data.get("sources"),
+            "size_enriched_at": datetime.utcnow().isoformat() if category_en else None,
             "size_enrichment_error": None
         }
         
@@ -257,32 +301,60 @@ def enrich_companies_batch(company_ids: list) -> Dict[str, Any]:
     return stats
 
 
-def get_unenriched_companies(limit: int = 100) -> list:
+def get_unenriched_companies(limit: int = 100, include_retries: bool = True) -> list:
     """
     Get list of companies that haven't been enriched yet.
+    Includes automatic retry for quota errors after 24h.
     
     Args:
         limit: Maximum number of companies to return
+        include_retries: If True, include companies with old errors (>24h) for retry
         
     Returns:
         List of company IDs
     """
     try:
-        # Get companies without master data or with ai_enriched = false
-        result = db.client.table("companies")\
-            .select("id, company_master_data!left(ai_enriched)")\
-            .limit(limit)\
-            .execute()
+        from datetime import datetime, timedelta
         
-        unenriched_ids = []
-        for company in result.data:
-            master_data = company.get("company_master_data")
+        if include_retries:
+            # Calculate retry cutoff (24 hours ago)
+            retry_cutoff = (datetime.utcnow() - timedelta(hours=24)).isoformat()
             
-            # Include if no master data or ai_enriched is False/None
-            if not master_data or not master_data.get("ai_enriched"):
-                unenriched_ids.append(company["id"])
+            # Get companies that need enrichment:
+            # 1. No master data
+            # 2. ai_enriched = false AND no error
+            # 3. Has error AND error is old enough to retry (>24h)
+            result = db.client.table("company_master_data")\
+                .select("company_id, ai_enriched, ai_enrichment_error, ai_enriched_at")\
+                .or_(
+                    f"ai_enriched.is.null,"
+                    f"and(ai_enriched.eq.false,ai_enrichment_error.is.null),"
+                    f"and(ai_enrichment_error.not.is.null,ai_enriched_at.lt.{retry_cutoff})"
+                )\
+                .limit(limit)\
+                .execute()
+            
+            unenriched_ids = [row["company_id"] for row in result.data]
+            
+            retry_count = sum(1 for row in result.data if row.get("ai_enrichment_error"))
+            logger.info(f"Found {len(unenriched_ids)} unenriched companies ({len(unenriched_ids) - retry_count} new, {retry_count} retries)")
+        else:
+            # Original behavior: only new companies
+            result = db.client.table("companies")\
+                .select("id, company_master_data!left(ai_enriched, ai_enrichment_error)")\
+                .limit(limit)\
+                .execute()
+            
+            unenriched_ids = []
+            for company in result.data:
+                master_data = company.get("company_master_data")
+                
+                # Include if no master data or ai_enriched is False/None AND no error
+                if not master_data or (not master_data.get("ai_enriched") and not master_data.get("ai_enrichment_error")):
+                    unenriched_ids.append(company["id"])
+            
+            logger.info(f"Found {len(unenriched_ids)} unenriched companies")
         
-        logger.info(f"Found {len(unenriched_ids)} unenriched companies")
         return unenriched_ids
         
     except Exception as e:

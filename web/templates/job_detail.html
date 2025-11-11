@@ -303,9 +303,15 @@
                     <h3 class="text-lg font-semibold text-gray-900 mb-2">AI Enrichment</h3>
                     <p class="text-gray-600 mb-4">This job hasn't been analyzed yet</p>
                     <button @click="enrichJob" :disabled="enriching"
-                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center">
                         <span x-show="!enriching">Enrich Now</span>
-                        <span x-show="enriching">Enriching...</span>
+                        <span x-show="enriching" class="flex items-center">
+                            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Analyzing with AI...
+                        </span>
                     </button>
                 </div>
             </template>
@@ -323,9 +329,15 @@
                                 Analyzed <span x-text="formatDate(enrichment.enrichment_completed_at)"></span>
                             </div>
                             <button @click="enrichJob(true)" :disabled="enriching"
-                                    class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50">
+                                    class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50 flex items-center">
                                 <span x-show="!enriching">Re-analyze</span>
-                                <span x-show="enriching">Analyzing...</span>
+                                <span x-show="enriching" class="flex items-center">
+                                    <svg class="animate-spin -ml-1 mr-2 h-3 w-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Analyzing...
+                                </span>
                             </button>
                         </div>
                     </div>
@@ -521,6 +533,124 @@
                                 </div>
                             </div>
                         </div>
+                        
+                        <!-- Perks (v17 individual fields) -->
+                        <div class="bg-pink-50 rounded-lg p-4 md:col-span-2">
+                            <h4 class="text-sm font-semibold text-pink-900 mb-3 flex items-center">
+                                <i data-lucide="gift" class="w-4 h-4 mr-2"></i>
+                                Job Perks
+                            </h4>
+                            <div class="grid grid-cols-2 gap-3">
+                                <!-- Remote Policy -->
+                                <div>
+                                    <span class="text-xs text-pink-700 font-medium">Remote Work</span>
+                                    <div class="mt-1">
+                                        <template x-if="enrichment.perk_remote_policy">
+                                            <span class="px-2 py-1 bg-pink-200 text-pink-800 rounded text-xs font-medium" x-text="getCurrentPerkLabel('perk_remote_policy')"></span>
+                                        </template>
+                                        <template x-if="!enrichment.perk_remote_policy">
+                                            <span class="text-xs text-gray-500">Not mentioned</span>
+                                        </template>
+                                    </div>
+                                </div>
+                                
+                                <!-- Salary Range -->
+                                <div>
+                                    <span class="text-xs text-pink-700 font-medium">Salary Range</span>
+                                    <div class="mt-1">
+                                        <template x-if="enrichment.perk_salary_range">
+                                            <span class="px-2 py-1 bg-pink-200 text-pink-800 rounded text-xs font-medium" x-text="getCurrentPerkLabel('perk_salary_range')"></span>
+                                        </template>
+                                        <template x-if="!enrichment.perk_salary_range">
+                                            <span class="text-xs text-gray-500">Not mentioned</span>
+                                        </template>
+                                    </div>
+                                </div>
+                                
+                                <!-- Company Car -->
+                                <div>
+                                    <span class="text-xs text-pink-700 font-medium">Company Car</span>
+                                    <div class="mt-1">
+                                        <template x-if="enrichment.perk_company_car">
+                                            <span class="px-2 py-1 bg-pink-200 text-pink-800 rounded text-xs font-medium" x-text="getCurrentPerkLabel('perk_company_car')"></span>
+                                        </template>
+                                        <template x-if="!enrichment.perk_company_car">
+                                            <span class="text-xs text-gray-500">Not mentioned</span>
+                                        </template>
+                                    </div>
+                                </div>
+                                
+                                <!-- Health Insurance -->
+                                <div>
+                                    <span class="text-xs text-pink-700 font-medium">Health Insurance</span>
+                                    <div class="mt-1">
+                                        <template x-if="enrichment.perk_hospitalization_insurance">
+                                            <span class="px-2 py-1 bg-pink-200 text-pink-800 rounded text-xs font-medium" x-text="getCurrentPerkLabel('perk_hospitalization_insurance')"></span>
+                                        </template>
+                                        <template x-if="!enrichment.perk_hospitalization_insurance">
+                                            <span class="text-xs text-gray-500">Not mentioned</span>
+                                        </template>
+                                    </div>
+                                </div>
+                                
+                                <!-- Training Budget -->
+                                <div>
+                                    <span class="text-xs text-pink-700 font-medium">Training Budget</span>
+                                    <div class="mt-1">
+                                        <template x-if="enrichment.perk_training_budget">
+                                            <span class="px-2 py-1 bg-pink-200 text-pink-800 rounded text-xs font-medium" x-text="getCurrentPerkLabel('perk_training_budget')"></span>
+                                        </template>
+                                        <template x-if="!enrichment.perk_training_budget">
+                                            <span class="text-xs text-gray-500">Not mentioned</span>
+                                        </template>
+                                    </div>
+                                </div>
+                                
+                                <!-- Team Events -->
+                                <div>
+                                    <span class="text-xs text-pink-700 font-medium">Team Events</span>
+                                    <div class="mt-1">
+                                        <template x-if="enrichment.perk_team_events">
+                                            <span class="px-2 py-1 bg-pink-200 text-pink-800 rounded text-xs font-medium" x-text="getCurrentPerkLabel('perk_team_events')"></span>
+                                        </template>
+                                        <template x-if="!enrichment.perk_team_events">
+                                            <span class="text-xs text-gray-500">Not mentioned</span>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Remote Work Policy -->
+                        <div class="bg-teal-50 rounded-lg p-4">
+                            <h4 class="text-sm font-semibold text-teal-900 mb-2">Remote Work Policy</h4>
+                            <template x-if="enrichment.remote_work_policy">
+                                <span class="px-2 py-1 bg-teal-200 text-teal-800 rounded text-xs font-medium" x-text="getCurrentLabel('remote_work_policy')"></span>
+                            </template>
+                            <template x-if="!enrichment.remote_work_policy">
+                                <span class="text-sm text-gray-500">Not specified</span>
+                            </template>
+                        </div>
+                        
+                        <!-- Metadata -->
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <h4 class="text-sm font-semibold text-gray-900 mb-3">Enrichment Metadata</h4>
+                            <div class="space-y-2 text-xs">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Model Version:</span>
+                                    <span class="font-medium" x-text="enrichment.enrichment_model_version || 'N/A'"></span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Completed At:</span>
+                                    <span class="font-medium" x-text="enrichment.enrichment_completed_at ? new Date(enrichment.enrichment_completed_at).toLocaleString() : 'N/A'"></span>
+                                </div>
+                                <template x-if="enrichment.enrichment_error">
+                                    <div class="mt-2 p-2 bg-red-50 border border-red-200 rounded">
+                                        <span class="text-red-700 text-xs" x-text="enrichment.enrichment_error"></span>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </template>
@@ -627,6 +757,78 @@ function jobDetailPage(jobId) {
             return '-';
         },
         
+        getCurrentPerkLabel(perkField) {
+            // Get perk label in current language from labels (v17 format)
+            if (!this.enrichment) return '-';
+            
+            // Try to parse labels JSONB field
+            let labels = null;
+            if (this.enrichment.labels) {
+                try {
+                    labels = typeof this.enrichment.labels === 'string' 
+                        ? JSON.parse(this.enrichment.labels) 
+                        : this.enrichment.labels;
+                } catch (e) {
+                    console.error('Failed to parse labels:', e);
+                }
+            }
+            
+            // Get perk label for current language from labels.{lang}.perk_*
+            if (labels && labels[this.enrichmentLang]) {
+                const value = labels[this.enrichmentLang][perkField];
+                if (value !== undefined && value !== null) {
+                    return value;
+                }
+            }
+            
+            // Fallback to canonical English value from enrichment field
+            const canonicalValue = this.enrichment[perkField];
+            return canonicalValue || '-';
+        },
+        
+        getPerkLabel(perkKey) {
+            // OLD FORMAT - Get perk label in current language from labels.{lang}.perks array
+            // Kept for backward compatibility with v16 data
+            if (!this.enrichment) return perkKey;
+            
+            // Try to parse labels JSONB field
+            let labels = null;
+            if (this.enrichment.labels) {
+                try {
+                    labels = typeof this.enrichment.labels === 'string' 
+                        ? JSON.parse(this.enrichment.labels) 
+                        : this.enrichment.labels;
+                } catch (e) {
+                    console.error('Failed to parse labels:', e);
+                }
+            }
+            
+            // Get perk label for current language
+            if (labels && labels[this.enrichmentLang] && labels[this.enrichmentLang].perks) {
+                const perkLabels = labels[this.enrichmentLang].perks;
+                const perk = perkLabels.find(p => p.key === perkKey);
+                if (perk && perk.label) {
+                    return perk.label;
+                }
+            }
+            
+            // Fallback to key name (formatted)
+            return perkKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        },
+        
+        getPerkIcon(perkKey) {
+            // Return emoji icon for each perk type
+            const icons = {
+                'remote_policy': '🏠',
+                'salary_range': '💰',
+                'company_car': '🚗',
+                'hospitalization_insurance': '🏥',
+                'training_budget': '📚',
+                'team_events': '🎉'
+            };
+            return icons[perkKey] || '✨';
+        },
+        
         async loadEnrichment() {
             try {
                 const response = await fetch(`/api/jobs/${this.jobId}`);
@@ -666,6 +868,9 @@ function jobDetailPage(jobId) {
             this.enriching = true;
             
             try {
+                // Store current enrichment timestamp to detect changes
+                const beforeTimestamp = this.enrichment?.enrichment_completed_at;
+                
                 const url = `/api/jobs/${this.jobId}/enrich${isReEnrich ? '?force=true' : ''}`;
                 const response = await fetch(url, {
                     method: 'POST'
@@ -676,9 +881,36 @@ function jobDetailPage(jobId) {
                     throw new Error(error.detail || 'Enrichment failed');
                 }
                 
-                alert(isReEnrich ? 'Job re-analyzed successfully!' : 'Job enriched successfully!');
-                await this.loadEnrichment();
-                this.$nextTick(() => lucide.createIcons());
+                // Poll for completion (background task)
+                console.log('Enrichment started in background, polling for completion...');
+                let attempts = 0;
+                const maxAttempts = 60; // 60 seconds max
+                
+                while (attempts < maxAttempts) {
+                    await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+                    await this.loadEnrichment();
+                    
+                    const afterTimestamp = this.enrichment?.enrichment_completed_at;
+                    
+                    // Check if enrichment completed (timestamp changed or error present)
+                    if (afterTimestamp && afterTimestamp !== beforeTimestamp) {
+                        console.log('Enrichment completed!');
+                        alert(isReEnrich ? 'Job re-analyzed successfully!' : 'Job enriched successfully!');
+                        this.$nextTick(() => lucide.createIcons());
+                        return;
+                    }
+                    
+                    // Check for errors
+                    if (this.enrichment?.enrichment_error) {
+                        throw new Error(this.enrichment.enrichment_error);
+                    }
+                    
+                    attempts++;
+                }
+                
+                // Timeout
+                throw new Error('Enrichment timeout - taking longer than expected. Check logs.');
+                
             } catch (error) {
                 console.error('Failed to enrich job:', error);
                 alert('Failed to enrich job: ' + error.message);
