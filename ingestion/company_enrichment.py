@@ -11,8 +11,10 @@ from database.client import db
 
 
 # Initialize OpenAI client with extended timeout (5 minutes for long responses)
+# Note: We read from os.environ directly to avoid caching issues when API key is updated
+import os
 client = OpenAI(
-    api_key=settings.openai_api_key,
+    api_key=os.environ.get("OPENAI_API_KEY") or settings.openai_api_key,
     timeout=300.0  # 5 minutes timeout
 )
 

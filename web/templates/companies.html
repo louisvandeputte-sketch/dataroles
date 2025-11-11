@@ -115,7 +115,8 @@
                                 <input type="checkbox" @change="toggleAll" class="rounded border-gray-300">
                             </th>
                             <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
-                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Industry</th>
+                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hiring Model</th>
+                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sector</th>
                             <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
                             <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Website</th>
                             <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jobs Page</th>
@@ -145,9 +146,24 @@
                                     <div class="text-sm font-medium text-gray-900 truncate" x-text="company.name"></div>
                                 </div>
                             </td>
-                            <!-- Industry -->
+                            <!-- Hiring Model -->
                             <td class="px-2 py-2">
-                                <div class="text-xs text-gray-600 truncate max-w-[120px]" :title="company.industry" x-text="company.industry || '-'"></div>
+                                <span x-show="company.company_master_data?.hiring_model" 
+                                      class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                                      :class="{
+                                          'bg-green-100 text-green-800': company.company_master_data?.hiring_model === 'direct',
+                                          'bg-orange-100 text-orange-800': company.company_master_data?.hiring_model === 'recruitment',
+                                          'bg-gray-100 text-gray-800': company.company_master_data?.hiring_model === 'unknown'
+                                      }"
+                                      x-text="company.company_master_data?.hiring_model_en || company.company_master_data?.hiring_model">
+                                </span>
+                                <span x-show="!company.company_master_data?.hiring_model" class="text-xs text-gray-400">-</span>
+                            </td>
+                            <!-- Sector -->
+                            <td class="px-2 py-2">
+                                <div class="text-xs text-gray-600 truncate max-w-[120px]" 
+                                     :title="company.company_master_data?.sector_en || company.company_master_data?.sector_nl" 
+                                     x-text="company.company_master_data?.sector_en || company.company_master_data?.sector_nl || '-'"></div>
                             </td>
                             <!-- Size Category -->
                             <td class="px-2 py-2">
