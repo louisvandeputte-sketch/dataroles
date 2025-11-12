@@ -32,11 +32,13 @@ def get_unenriched_data_jobs(limit: int = 1000):
     
     # Get all Data jobs with their descriptions
     # We'll check enrichment status individually to avoid large NOT IN queries
+    # Fetch more jobs to ensure we find enough unenriched ones
+    fetch_limit = min(limit * 10, 1000)  # Fetch 10x limit, max 1000
     result = db.client.table("job_postings")\
         .select("id, title")\
         .eq("title_classification", "Data")\
         .eq("is_active", True)\
-        .limit(limit * 2)\
+        .limit(fetch_limit)\
         .execute()
     
     all_jobs = result.data if result.data else []
