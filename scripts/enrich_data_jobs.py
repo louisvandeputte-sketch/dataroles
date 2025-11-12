@@ -30,43 +30,49 @@ def get_unenriched_data_jobs(limit: int = 1000):
     """
     logger.info(f"Fetching up to {limit} unenriched Data jobs...")
     
-    # First get unenriched job IDs
-    result = db.client.table("llm_enrichment")\
-        .select("job_posting_id")\
-        .not_.is_("enrichment_completed_at", "null")\
-        .execute()
-    
-    enriched_job_ids = [row["job_posting_id"] for row in result.data] if result.data else []
-    
-    # Get Data jobs that are not enriched
-    query = db.client.table("job_postings")\
+    # Get all Data jobs with their descriptions
+    # We'll check enrichment status individually to avoid large NOT IN queries
+    result = db.client.table("job_postings")\
         .select("id, title")\
         .eq("title_classification", "Data")\
-        .eq("is_active", True)
+        .eq("is_active", True)\
+        .limit(limit * 2)\
+        .execute()
     
-    # Exclude already enriched jobs
-    if enriched_job_ids:
-        query = query.not_.in_("id", enriched_job_ids)
+    all_jobs = result.data if result.data else []
+    logger.info(f"Found {len(all_jobs)} active Data jobs")
     
-    result = query.limit(limit).execute()
-    
-    jobs = result.data if result.data else []
-    logger.info(f"Found {len(jobs)} unenriched Data jobs")
-    
-    # Get descriptions for each job
+    # Filter out enriched jobs and get descriptions
     jobs_with_descriptions = []
-    for job in jobs:
-        desc_result = db.client.table("job_descriptions")\
-            .select("full_description_text")\
-            .eq("job_posting_id", job["id"])\
-            .single()\
+    
+    for job in all_jobs:
+        if len(jobs_with_descriptions) >= limit:
+            break
+            
+        job_id = job["id"]
+        
+        # Check if already enriched
+        enrich_check = db.client.table("llm_enrichment")\
+            .select("enrichment_completed_at")\
+            .eq("job_posting_id", job_id)\
+            .not_.is_("enrichment_completed_at", "null")\
             .execute()
         
-        if desc_result.data:
-            job["description"] = desc_result.data.get("full_description_text", "")
+        if enrich_check.data:
+            # Already enriched, skip
+            continue
+        
+        # Get description
+        desc_result = db.client.table("job_descriptions")\
+            .select("full_description_text")\
+            .eq("job_posting_id", job_id)\
+            .execute()
+        
+        if desc_result.data and desc_result.data[0].get("full_description_text"):
+            job["description"] = desc_result.data[0]["full_description_text"]
             jobs_with_descriptions.append(job)
     
-    logger.info(f"Retrieved descriptions for {len(jobs_with_descriptions)} jobs")
+    logger.info(f"Found {len(jobs_with_descriptions)} unenriched Data jobs with descriptions")
     
     return jobs_with_descriptions
 
