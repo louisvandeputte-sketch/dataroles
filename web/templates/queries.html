@@ -584,6 +584,27 @@ function queriesPage() {
         
         async saveSchedule() {
             try {
+                console.log('Saving schedule:', this.scheduleConfig);
+                
+                // Validate required fields
+                if (this.scheduleConfig.schedule_enabled) {
+                    if (!this.scheduleConfig.schedule_type) {
+                        alert('Please select a schedule type');
+                        return;
+                    }
+                    
+                    if (this.scheduleConfig.schedule_type === 'weekly') {
+                        if (!this.scheduleConfig.schedule_time) {
+                            alert('Please select a time');
+                            return;
+                        }
+                        if (!this.scheduleConfig.schedule_days_of_week || this.scheduleConfig.schedule_days_of_week.length === 0) {
+                            alert('Please select at least one day');
+                            return;
+                        }
+                    }
+                }
+                
                 const response = await fetch(`/api/queries/${this.selectedQueryForSchedule.id}/schedule`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -594,10 +615,14 @@ function queriesPage() {
                     this.showScheduleModal = false;
                     await this.loadQueries();
                     alert('Schedule saved successfully!');
+                } else {
+                    const error = await response.json();
+                    console.error('Server error:', error);
+                    alert(`Failed to save schedule: ${error.detail || 'Unknown error'}`);
                 }
             } catch (error) {
                 console.error('Failed to save schedule:', error);
-                alert('Failed to save schedule');
+                alert(`Failed to save schedule: ${error.message}`);
             }
         },
         
