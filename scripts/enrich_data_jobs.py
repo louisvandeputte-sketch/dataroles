@@ -51,15 +51,14 @@ def get_unenriched_data_jobs(limit: int = 1000):
             
         job_id = job["id"]
         
-        # Check if already enriched
+        # Check if already enriched (completed_at must be set)
         enrich_check = db.client.table("llm_enrichment")\
             .select("enrichment_completed_at")\
             .eq("job_posting_id", job_id)\
-            .not_.is_("enrichment_completed_at", "null")\
             .execute()
         
-        if enrich_check.data:
-            # Already enriched, skip
+        # Skip if enrichment is completed (not null)
+        if enrich_check.data and enrich_check.data[0].get("enrichment_completed_at"):
             continue
         
         # Get description
