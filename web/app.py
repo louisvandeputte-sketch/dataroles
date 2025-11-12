@@ -11,9 +11,24 @@ from contextlib import asynccontextmanager
 from loguru import logger
 
 from web.api import queries, runs, jobs, quality, job_types, companies, tech_stack, locations, indeed_queries, indeed_runs, ranking
-from scheduler import get_scheduler
-from ingestion.auto_enrich_service import get_auto_enrich_service
 import asyncio
+
+# Try to import background services - may fail if dependencies missing
+try:
+    from scheduler import get_scheduler
+    SCHEDULER_AVAILABLE = True
+except Exception as e:
+    logger.warning(f"Scheduler not available: {e}")
+    SCHEDULER_AVAILABLE = False
+    get_scheduler = None
+
+try:
+    from ingestion.auto_enrich_service import get_auto_enrich_service
+    AUTO_ENRICH_AVAILABLE = True
+except Exception as e:
+    logger.warning(f"Auto-enrich service not available: {e}")
+    AUTO_ENRICH_AVAILABLE = False
+    get_auto_enrich_service = None
 
 
 @asynccontextmanager
@@ -31,23 +46,32 @@ async def lifespan(app: FastAPI):
     auto_enrich_task = None
     
     # Start background services with error handling
-    if not disable_background_services:
+    if not disable_background_services and (SCHEDULER_AVAILABLE or AUTO_ENRICH_AVAILABLE):
         logger.info("🔄 Starting background services...")
         try:
-            # Start scheduler
-            scheduler = get_scheduler()
-            scheduler.start()
-            logger.info("✅ Scheduler started")
+            # Start scheduler if available
+            if SCHEDULER_AVAILABLE and get_scheduler:
+                scheduler = get_scheduler()
+                scheduler.start()
+                logger.info("✅ Scheduler started")
+            else:
+                logger.warning("⏭️  Scheduler not available, skipping")
             
-            # Start auto-enrichment service
-            auto_enrich_service = get_auto_enrich_service()
-            auto_enrich_task = asyncio.create_task(auto_enrich_service.start())
-            logger.info("✅ Auto-enrichment service started")
+            # Start auto-enrichment service if available
+            if AUTO_ENRICH_AVAILABLE and get_auto_enrich_service:
+                auto_enrich_service = get_auto_enrich_service()
+                auto_enrich_task = asyncio.create_task(auto_enrich_service.start())
+                logger.info("✅ Auto-enrichment service started")
+            else:
+                logger.warning("⏭️  Auto-enrich service not available, skipping")
         except Exception as e:
             logger.error(f"⚠️ Failed to start background services: {e}")
             logger.error("App will continue without background services")
     else:
-        logger.info("⏸️  Background services disabled (local development mode)")
+        if disable_background_services:
+            logger.info("⏸️  Background services disabled via DISABLE_BACKGROUND_SERVICES")
+        else:
+            logger.info("⏸️  Background services not available")
     
     yield
     
