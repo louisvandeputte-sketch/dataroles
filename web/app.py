@@ -149,9 +149,15 @@ app.include_router(ranking.router, prefix="/api/ranking", tags=["ranking"])
 
 
 # Main pages
-@app.get("/", response_class=HTMLResponse)
-async def index(request: Request):
-    """Redirect to queries page."""
+@app.get("/health")
+async def health():
+    """Health check endpoint for Railway."""
+    return {"status": "healthy", "service": "dataroles"}
+
+
+@app.get("/")
+async def root(request: Request):
+    """Root endpoint - redirect to queries page."""
     return templates.TemplateResponse("queries.html", {"request": request})
 
 
