@@ -22,32 +22,49 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("🚀 Starting DataRoles application")
     
-    # Start scheduler
-    scheduler = get_scheduler()
-    scheduler.start()
-    logger.info("✅ Scheduler started")
+    # Check if we should start background services
+    import os
+    disable_background_services = os.getenv("DISABLE_BACKGROUND_SERVICES", "false").lower() == "true"
     
-    # Start auto-enrichment service
-    auto_enrich_service = get_auto_enrich_service()
-    auto_enrich_task = asyncio.create_task(auto_enrich_service.start())
-    logger.info("✅ Auto-enrichment service started")
+    scheduler = None
+    auto_enrich_service = None
+    auto_enrich_task = None
+    
+    if not disable_background_services:
+        # Start scheduler
+        scheduler = get_scheduler()
+        scheduler.start()
+        logger.info("✅ Scheduler started")
+        
+        # Start auto-enrichment service
+        auto_enrich_service = get_auto_enrich_service()
+        auto_enrich_task = asyncio.create_task(auto_enrich_service.start())
+        logger.info("✅ Auto-enrichment service started")
+    else:
+        logger.info("⏸️  Background services disabled (local development mode)")
     
     yield
     
     # Shutdown
     logger.info("🛑 Shutting down DataRoles application")
     
-    # Stop auto-enrichment service
-    auto_enrich_service.stop()
-    auto_enrich_task.cancel()
-    try:
-        await auto_enrich_task
-    except asyncio.CancelledError:
-        pass
-    logger.info("✅ Auto-enrichment service stopped")
-    
-    scheduler.shutdown()
-    logger.info("✅ Scheduler stopped")
+    if not disable_background_services:
+        # Stop auto-enrichment service
+        if auto_enrich_service:
+            auto_enrich_service.stop()
+        if auto_enrich_task:
+            auto_enrich_task.cancel()
+            try:
+                await auto_enrich_task
+            except asyncio.CancelledError:
+                pass
+        logger.info("✅ Auto-enrichment service stopped")
+        
+        if scheduler:
+            scheduler.shutdown()
+            logger.info("✅ Scheduler stopped")
+    else:
+        logger.info("⏸️  Background services were disabled")
 
 
 # Create FastAPI app
