@@ -381,8 +381,42 @@ class JobRankingSystem:
         
         return sorted_jobs
     
+    def calculate_hourly_variance(self, job: JobData) -> float:
+        """
+        Bereken kleine hourly variance voor freshness.
+        - Recente jobs krijgen kleine boost die elk uur iets verandert
+        - Stabiel binnen hetzelfde uur, verandert elk uur
+        - Max impact: ~2-3 punten op final score
+        """
+        import hashlib
+        
+        variance = 0.0
+        
+        # 1. Time-based freshness boost (afneemt over tijd)
+        if job.posted_date:
+            hours_since_posted = (datetime.now() - job.posted_date).total_seconds() / 3600
+            
+            # Boost voor jobs < 48 uur oud
+            if hours_since_posted < 48:
+                freshness_boost = max(0, 3 - (hours_since_posted / 16))  # Max 3 punten
+                variance += freshness_boost
+        
+        # 2. Hourly rotation factor (kleine variatie per uur)
+        current_hour = datetime.now().hour
+        hour_factor = (current_hour % 4) * 0.5  # 0, 0.5, 1.0, of 1.5 punten
+        variance += hour_factor
+        
+        # 3. Daily tie-breaker (stabiel per dag, subtiele variatie)
+        date_str = datetime.now().strftime('%Y-%m-%d')
+        seed_str = f"{date_str}-{job.id}"
+        hash_val = int(hashlib.md5(seed_str.encode()).hexdigest()[:8], 16)
+        tiebreaker = (hash_val % 100) / 200  # -0.5 tot +0.5 punten
+        variance += tiebreaker
+        
+        return variance
+    
     def apply_diversity_modifiers(self, jobs: List[JobData]) -> List[JobData]:
-        """Pas diversity modifiers toe"""
+        """Pas diversity modifiers en hourly variance toe"""
         for job in jobs:
             score = job.base_score
             
@@ -404,6 +438,10 @@ class JobRankingSystem:
             seniority_modifier = 1 - (job.seniority_rank - 1) * self.SENIORITY_PENALTY_PER_EXTRA
             seniority_modifier = max(0.5, seniority_modifier)
             score *= seniority_modifier
+            
+            # Add hourly variance for freshness
+            hourly_variance = self.calculate_hourly_variance(job)
+            score += hourly_variance
             
             job.final_score = score
         
