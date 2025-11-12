@@ -494,7 +494,11 @@ def load_jobs_from_database(only_needs_ranking: bool = False) -> List[JobData]:
             faang_companies = ['google', 'microsoft', 'meta', 'amazon', 'apple', 'netflix', 'facebook', 'alphabet']
             is_faang = company.get('name', '').lower() in faang_companies
             
-            # Parse labels JSON if exists
+            # Use type_datarol column (English canonical value) for consistent matching
+            # This ensures 'Other' matches correctly in penalty logic
+            data_role_type = enrichment.get('type_datarol')
+            
+            # Parse labels JSON for seniority
             labels = enrichment.get('labels')
             if isinstance(labels, str):
                 import json
@@ -503,15 +507,13 @@ def load_jobs_from_database(only_needs_ranking: bool = False) -> List[JobData]:
                 except:
                     labels = {}
             
-            data_role_type = None
             seniority = None
             if labels:
-                # Try different language keys
+                # Try different language keys for seniority
                 for lang in ['nl', 'en', 'fr']:
                     if lang in labels:
-                        data_role_type = labels[lang].get('data_role_type')
                         seniority = labels[lang].get('seniority')
-                        if data_role_type:
+                        if seniority:
                             break
             
             job = JobData(
