@@ -30,16 +30,22 @@ async def lifespan(app: FastAPI):
     auto_enrich_service = None
     auto_enrich_task = None
     
+    # Start background services with error handling
     if not disable_background_services:
-        # Start scheduler
-        scheduler = get_scheduler()
-        scheduler.start()
-        logger.info("✅ Scheduler started")
-        
-        # Start auto-enrichment service
-        auto_enrich_service = get_auto_enrich_service()
-        auto_enrich_task = asyncio.create_task(auto_enrich_service.start())
-        logger.info("✅ Auto-enrichment service started")
+        logger.info("🔄 Starting background services...")
+        try:
+            # Start scheduler
+            scheduler = get_scheduler()
+            scheduler.start()
+            logger.info("✅ Scheduler started")
+            
+            # Start auto-enrichment service
+            auto_enrich_service = get_auto_enrich_service()
+            auto_enrich_task = asyncio.create_task(auto_enrich_service.start())
+            logger.info("✅ Auto-enrichment service started")
+        except Exception as e:
+            logger.error(f"⚠️ Failed to start background services: {e}")
+            logger.error("App will continue without background services")
     else:
         logger.info("⏸️  Background services disabled (local development mode)")
     
