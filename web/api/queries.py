@@ -47,10 +47,12 @@ async def list_queries(
     limit: int = 50,
     offset: int = 0
 ):
-    """List all search queries with stats."""
+    """List all LinkedIn search queries with stats."""
     try:
-        # Get all queries from search_queries table
-        query_builder = db.client.table("search_queries").select("*")
+        # Get LinkedIn queries only (filter by source)
+        query_builder = db.client.table("search_queries")\
+            .select("*")\
+            .or_("source.eq.linkedin,source.is.null")  # Include null for backward compatibility
         
         if status == "active":
             query_builder = query_builder.eq("is_active", True)
@@ -127,7 +129,8 @@ async def create_query(query: QueryCreate):
                 "search_query": query.search_query,
                 "location_query": query.location_query,
                 "lookback_days": query.lookback_days,
-                "is_active": query.is_active
+                "is_active": query.is_active,
+                "source": "linkedin"  # Set source to differentiate from Indeed
             })\
             .execute()
         
