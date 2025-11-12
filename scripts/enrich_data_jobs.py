@@ -26,21 +26,49 @@ def get_unenriched_data_jobs(limit: int = 1000):
         limit: Maximum number of jobs to fetch
         
     Returns:
-        List of job dictionaries
+        List of job dictionaries with descriptions
     """
     logger.info(f"Fetching up to {limit} unenriched Data jobs...")
     
-    result = db.client.table("job_postings")\
-        .select("id, title, description")\
-        .eq("title_classification", "Data")\
-        .or_("llm_enriched.is.null,llm_enriched.eq.false")\
-        .limit(limit)\
+    # First get unenriched job IDs
+    result = db.client.table("llm_enrichment")\
+        .select("job_posting_id")\
+        .not_.is_("enrichment_completed_at", "null")\
         .execute()
+    
+    enriched_job_ids = [row["job_posting_id"] for row in result.data] if result.data else []
+    
+    # Get Data jobs that are not enriched
+    query = db.client.table("job_postings")\
+        .select("id, title")\
+        .eq("title_classification", "Data")\
+        .eq("is_active", True)
+    
+    # Exclude already enriched jobs
+    if enriched_job_ids:
+        query = query.not_.in_("id", enriched_job_ids)
+    
+    result = query.limit(limit).execute()
     
     jobs = result.data if result.data else []
     logger.info(f"Found {len(jobs)} unenriched Data jobs")
     
-    return jobs
+    # Get descriptions for each job
+    jobs_with_descriptions = []
+    for job in jobs:
+        desc_result = db.client.table("job_descriptions")\
+            .select("full_description_text")\
+            .eq("job_posting_id", job["id"])\
+            .single()\
+            .execute()
+        
+        if desc_result.data:
+            job["description"] = desc_result.data.get("full_description_text", "")
+            jobs_with_descriptions.append(job)
+    
+    logger.info(f"Retrieved descriptions for {len(jobs_with_descriptions)} jobs")
+    
+    return jobs_with_descriptions
 
 
 def enrich_data_jobs_batch(
