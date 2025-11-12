@@ -160,12 +160,14 @@ class JobRankingSystem:
             return 20
     
     def calculate_quality_score(self, job: JobData) -> float:
-        """Bereken kwaliteit score (0-100) met tech stack bonus"""
+        """Bereken kwaliteit score (0-100) met tech stack bonus en zware straf voor geen skills"""
         score = 0
         
-        # Skills: 20 punten (reduced from 25 to make room for tech stack)
+        # Skills: 20 punten - ZWARE STRAF als geen skills
         if job.skills_must_have and len(job.skills_must_have) >= 3:
             score += 20
+        elif not job.skills_must_have or len(job.skills_must_have) == 0:
+            score -= 30  # NIEUWE STRAF: -30 punten voor geen skills
         
         # Salaris: 25 punten
         if job.base_salary_min is not None and job.base_salary_max is not None:
@@ -229,15 +231,17 @@ class JobRankingSystem:
         return score
     
     def calculate_role_match_score(self, job: JobData) -> float:
-        """Bereken data role match score (0-100) met zware straffen voor NIS/Other"""
+        """Bereken data role match score (0-100) met EXTRA zware straffen voor NIS/Other"""
         role_type = job.data_role_type
         
         if not role_type:
-            return 50
+            return 30  # Verlaagd van 50 naar 30
         
-        # ZWARE STRAF: NIS en Other roles (niet-data roles)
-        if role_type in ['NIS', 'Other']:
-            return 0  # Zwaarste straf: 0 punten (was 70, nu 0)
+        # EXTRA ZWARE STRAF: NIS en Other roles (niet-data roles)
+        if role_type == 'Other':
+            return -50  # NIEUWE STRAF: -50 punten voor 'Other' (was 0)
+        if role_type == 'NIS':
+            return -30  # NIEUWE STRAF: -30 punten voor 'NIS' (was 0)
         
         # Tier 1: Top data roles
         if role_type in ['Data Engineer', 'Data Scientist']:
