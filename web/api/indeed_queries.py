@@ -9,6 +9,7 @@ from loguru import logger
 
 from database import db
 from scraper import execute_scrape_run
+from scheduler.query_scheduler import get_scheduler
 
 router = APIRouter()
 
@@ -29,6 +30,15 @@ class IndeedQueryUpdate(BaseModel):
     location_query: Optional[str] = None
     lookback_days: Optional[int] = None
     is_active: Optional[bool] = None
+
+
+class ScheduleConfig(BaseModel):
+    """Schema for schedule configuration."""
+    schedule_enabled: bool
+    schedule_type: Optional[str] = None  # 'daily', 'interval', 'weekly'
+    schedule_time: Optional[str] = None  # HH:MM for daily/weekly
+    schedule_interval_hours: Optional[int] = None  # For interval type
+    schedule_days_of_week: Optional[List[int]] = None  # For weekly (0=Sun, 6=Sat)
 
 
 @router.get("/")
@@ -186,3 +196,67 @@ async def run_indeed_query(query_id: str, background_tasks: BackgroundTasks):
     except Exception as e:
         logger.error(f"Error running Indeed query: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{query_id}/schedule")
+async def update_schedule(query_id: str, schedule: ScheduleConfig):
+    """Update schedule configuration for an Indeed query."""
+    try:
+        # Validate schedule config
+        if schedule.schedule_enabled:
+            if not schedule.schedule_type:
+                raise HTTPException(status_code=400, detail="schedule_type required when enabled")
+            
+            if schedule.schedule_type == "daily" and not schedule.schedule_time:
+                raise HTTPException(status_code=400, detail="schedule_time required for daily schedule")
+            
+            if schedule.schedule_type == "interval" and not schedule.schedule_interval_hours:
+                raise HTTPException(status_code=400, detail="schedule_interval_hours required for interval schedule")
+            
+            if schedule.schedule_type == "weekly":
+                if not schedule.schedule_time or not schedule.schedule_days_of_week:
+                    raise HTTPException(status_code=400, detail="schedule_time and schedule_days_of_week required for weekly schedule")
+        
+        # Update database
+        update_data = schedule.model_dump()
+        result = db.client.table("search_queries")\
+            .update(update_data)\
+            .eq("id", query_id)\
+            .eq("source", "indeed")\
+            .execute()
+        
+        if not result.data:
+            raise HTTPException(status_code=404, detail="Query not found")
+        
+        # Update scheduler
+        scheduler = get_scheduler()
+        if schedule.schedule_enabled:
+            scheduler.schedule_query(result.data[0])
+            logger.info(f"Scheduled Indeed query {query_id}")
+        else:
+            scheduler.unschedule_query(query_id)
+            logger.info(f"Unscheduled Indeed query {query_id}")
+        
+        return result.data[0]
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to update Indeed schedule: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{query_id}/schedule")
+async def get_schedule(query_id: str):
+    """Get schedule information for an Indeed query."""
+    try:
+        result = db.client.table("search_queries")\
+            .select("schedule_enabled, schedule_type, schedule_time, schedule_interval_hours, schedule_days_of_week")\
+            .eq("id", query_id)\
+            .eq("source", "indeed")\
+            .single()\
+            .execute()
+        
+        return result.data
+    except Exception as e:
+        logger.error(f"Failed to get Indeed schedule: {e}")
+        raise HTTPException(status_code=404, detail="Query not found")
