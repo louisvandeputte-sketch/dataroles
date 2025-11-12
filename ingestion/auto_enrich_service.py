@@ -22,6 +22,8 @@ class AutoEnrichService:
     def __init__(self):
         self.running = False
         self.check_interval = 60  # Check every 60 seconds
+        self.retry_check_interval = 3600  # Check for retries every hour (3600 seconds)
+        self.last_retry_check = datetime.utcnow()
     
     async def start(self):
         """Start the auto-enrichment service."""
@@ -39,6 +41,14 @@ class AutoEnrichService:
                 await self.process_pending_job_titles()
                 await self.process_pending_data_jobs()
                 await self.process_pending_tech_scores()
+                
+                # Check if it's time for hourly retry check
+                time_since_last_retry = (datetime.utcnow() - self.last_retry_check).total_seconds()
+                if time_since_last_retry >= self.retry_check_interval:
+                    logger.info("⏰ Running hourly retry check for failed enrichments")
+                    await self.retry_failed_enrichments()
+                    self.last_retry_check = datetime.utcnow()
+                    
             except Exception as e:
                 logger.error(f"Error in auto-enrichment service: {e}")
             
@@ -194,7 +204,7 @@ class AutoEnrichService:
             if enriched_job_ids:
                 query = query.not_.in_("id", enriched_job_ids)
             
-            result = query.limit(5).execute()  # Process 5 at a time to avoid overload
+            result = query.limit(20).execute()  # Process 20 at a time for faster bulk processing
             
             jobs = result.data if result.data else []
             
@@ -303,6 +313,68 @@ class AutoEnrichService:
         
         except Exception as e:
             logger.error(f"Failed to fetch pending tech items: {e}")
+    
+    async def retry_failed_enrichments(self):
+        """
+        Retry enrichments for Data jobs with empty AI column (no type_datarol).
+        This runs every hour to catch failed enrichments.
+        """
+        try:
+            logger.info("🔄 Checking for Data jobs with empty AI column...")
+            
+            # Find Data jobs with enrichment records but no type_datarol (empty AI column)
+            result = db.client.table("llm_enrichment")\
+                .select("job_posting_id, enrichment_error, job_postings!inner(title, title_classification)")\
+                .eq("job_postings.title_classification", "Data")\
+                .is_("type_datarol", "null")\
+                .limit(50)\
+                .execute()
+            
+            jobs = result.data if result.data else []
+            
+            if not jobs:
+                logger.info("✅ No Data jobs with empty AI column found")
+                return
+            
+            logger.info(f"🔄 Found {len(jobs)} Data jobs with empty AI column - retrying enrichment")
+            
+            # Retry enrichment for each job
+            retry_count = 0
+            for job in jobs:
+                try:
+                    job_id = job["job_posting_id"]
+                    title = job.get("job_postings", {}).get("title", "Unknown")
+                    error = job.get("enrichment_error")
+                    
+                    if error:
+                        logger.info(f"Retrying (had error): {title}")
+                    else:
+                        logger.info(f"Retrying (incomplete): {title}")
+                    
+                    # Force re-enrichment
+                    success = await asyncio.to_thread(
+                        process_job_enrichment,
+                        job_id,
+                        force=True  # Force re-enrichment
+                    )
+                    
+                    if success:
+                        retry_count += 1
+                        logger.success(f"✅ Retry successful: {title}")
+                    else:
+                        logger.warning(f"⚠️ Retry failed: {title}")
+                    
+                    # Delay between retries
+                    await asyncio.sleep(2)
+                
+                except Exception as e:
+                    logger.error(f"Failed to retry enrichment for job: {e}")
+                    continue
+            
+            logger.info(f"✅ Retry complete: {retry_count}/{len(jobs)} successful")
+        
+        except Exception as e:
+            logger.error(f"Failed to retry failed enrichments: {e}")
 
 
 # Global service instance
