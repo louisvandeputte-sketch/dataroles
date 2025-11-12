@@ -11,6 +11,7 @@ from loguru import logger
 
 from database import db
 from scraper import execute_scrape_run
+from scheduler.retry_service import get_retry_service
 
 
 class SchedulerService:
@@ -27,6 +28,24 @@ class SchedulerService:
             self.scheduler.start()
             self.is_running = True
             logger.info("📅 Scheduler started")
+            
+            # Add stuck run checker (runs every hour)
+            self.scheduler.add_job(
+                self._check_stuck_runs,
+                trigger=IntervalTrigger(hours=1),
+                id="stuck_run_checker",
+                replace_existing=True
+            )
+            logger.info("🔍 Stuck run checker scheduled (every 1 hour)")
+            
+            # Add retry processor (runs every 30 minutes)
+            self.scheduler.add_job(
+                self._process_retries,
+                trigger=IntervalTrigger(minutes=30),
+                id="retry_processor",
+                replace_existing=True
+            )
+            logger.info("🔄 Retry processor scheduled (every 30 minutes)")
             
             # Load and schedule all active queries
             self._load_scheduled_queries()
@@ -195,6 +214,36 @@ class SchedulerService:
                 "trigger": str(job.trigger)
             }
         return None
+    
+    async def _check_stuck_runs(self):
+        """Check for stuck runs and schedule retries."""
+        logger.info("🔍 Checking for stuck runs...")
+        
+        try:
+            # Import here to avoid circular dependency
+            import sys
+            from pathlib import Path
+            sys.path.insert(0, str(Path(__file__).parent.parent))
+            from scripts.fix_stuck_runs_with_retry import fix_stuck_runs_with_retry
+            
+            # Run the stuck run fixer
+            fix_stuck_runs_with_retry(
+                max_duration_hours=1,
+                retry_delay_hours=4,
+                max_retries=4
+            )
+        except Exception as e:
+            logger.error(f"Error checking stuck runs: {e}")
+    
+    async def _process_retries(self):
+        """Process pending retry runs."""
+        logger.info("🔄 Processing pending retries...")
+        
+        try:
+            retry_service = get_retry_service()
+            await retry_service.process_pending_retries()
+        except Exception as e:
+            logger.error(f"Error processing retries: {e}")
 
 
 # Global scheduler instance
