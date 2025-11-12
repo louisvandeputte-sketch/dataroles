@@ -1,6 +1,19 @@
 # DataRoles
 
-A job aggregation platform that collects, normalizes, and stores job postings from LinkedIn via Bright Data scraper API.
+Job aggregation and enrichment platform.
+
+## 🚀 Deployment
+
+**Production:** Deployed on Railway.app
+- All scraping and enrichment runs on Railway 24/7
+- Automatic deploys from `main` branch
+- URL: Check Railway dashboard for your app URL
+
+## 💻 Local Development
+
+**Local = Monitoring Only (No Scraping!)**
+
+To avoid duplicate scrapes and API costs, local development only runs the web interface for monitoring.
 
 ## Architecture
 
