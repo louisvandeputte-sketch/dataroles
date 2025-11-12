@@ -23,7 +23,9 @@ class AutoEnrichService:
         self.running = False
         self.check_interval = 60  # Check every 60 seconds
         self.retry_check_interval = 3600  # Check for retries every hour (3600 seconds)
+        self.ranking_check_interval = 3600  # Calculate rankings every hour (3600 seconds)
         self.last_retry_check = datetime.utcnow()
+        self.last_ranking_check = datetime.utcnow()
     
     async def start(self):
         """Start the auto-enrichment service."""
@@ -48,6 +50,13 @@ class AutoEnrichService:
                     logger.info("⏰ Running hourly retry check for failed enrichments")
                     await self.retry_failed_enrichments()
                     self.last_retry_check = datetime.utcnow()
+                
+                # Check if it's time for hourly ranking calculation
+                time_since_last_ranking = (datetime.utcnow() - self.last_ranking_check).total_seconds()
+                if time_since_last_ranking >= self.ranking_check_interval:
+                    logger.info("⏰ Running hourly ranking calculation")
+                    await self.calculate_rankings()
+                    self.last_ranking_check = datetime.utcnow()
                     
             except Exception as e:
                 logger.error(f"Error in auto-enrichment service: {e}")
@@ -375,6 +384,37 @@ class AutoEnrichService:
         
         except Exception as e:
             logger.error(f"Failed to retry failed enrichments: {e}")
+    
+    async def calculate_rankings(self):
+        """
+        Calculate rankings for jobs that need it.
+        Runs every hour to update rankings after enrichments.
+        """
+        try:
+            from ranking.job_ranker import calculate_and_save_rankings
+            
+            # Check how many jobs need ranking
+            result = db.client.table("job_postings")\
+                .select("id", count="exact")\
+                .eq("is_active", True)\
+                .eq("needs_ranking", True)\
+                .execute()
+            
+            jobs_needing_ranking = result.count or 0
+            
+            if jobs_needing_ranking == 0:
+                logger.info("✅ No jobs need ranking - all rankings up to date")
+                return
+            
+            logger.info(f"📊 Calculating rankings for {jobs_needing_ranking} jobs...")
+            
+            # Run ranking calculation in thread to avoid blocking
+            num_ranked = await asyncio.to_thread(calculate_and_save_rankings)
+            
+            logger.success(f"✅ Ranked {num_ranked} jobs successfully")
+        
+        except Exception as e:
+            logger.error(f"Failed to calculate rankings: {e}")
 
 
 # Global service instance

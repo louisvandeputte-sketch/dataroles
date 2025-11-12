@@ -262,7 +262,13 @@ def save_enrichment_to_db(job_id: str, enrichment_data: Dict[str, Any]) -> bool:
             .execute()
         
         if result.data:
-            logger.success(f"Saved enrichment for job {job_id}")
+            # Mark job for re-ranking after enrichment
+            db.client.table("job_postings")\
+                .update({"needs_ranking": True})\
+                .eq("id", job_id)\
+                .execute()
+            
+            logger.success(f"Saved enrichment for job {job_id} and marked for re-ranking")
             return True
         else:
             logger.error(f"No enrichment record found for job {job_id}")
