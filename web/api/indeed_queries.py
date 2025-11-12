@@ -9,7 +9,7 @@ from loguru import logger
 
 from database import db
 from scraper import execute_scrape_run
-from scheduler.query_scheduler import get_scheduler
+from scheduler.service import get_scheduler
 
 router = APIRouter()
 
