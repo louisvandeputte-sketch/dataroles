@@ -53,12 +53,15 @@
                 <div class="mt-3 text-sm text-gray-600">
                     Posted <span x-text="formatDate(job.posted_date)"></span> • 
                     <span x-text="job.applicant_count || 0"></span> applicants • 
-                    LinkedIn Job ID: <span x-text="job.linkedin_job_id"></span>
+                    <span x-show="job.source === 'linkedin'">LinkedIn Job ID: <span x-text="job.linkedin_job_id"></span></span>
+                    <span x-show="job.source === 'indeed'">Indeed Job ID: <span x-text="job.indeed_job_id"></span></span>
                 </div>
                 <div class="mt-4 flex space-x-3">
                     <a :href="job.job_url" target="_blank" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                         <i data-lucide="external-link" class="w-4 h-4 mr-2"></i>
-                        View on LinkedIn
+                        <span x-show="job.source === 'linkedin'">View on LinkedIn</span>
+                        <span x-show="job.source === 'indeed'">View on Indeed</span>
+                        <span x-show="!job.source || (job.source !== 'linkedin' && job.source !== 'indeed')">View Job</span>
                     </a>
                     <button @click="copyLink" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
                         <i data-lucide="copy" class="w-4 h-4 mr-2"></i>
