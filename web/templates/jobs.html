@@ -1015,10 +1015,24 @@ function jobsPage() {
                 
                 // Reload jobs after a delay to see updated rankings
                 setTimeout(async () => {
-                    console.log('🔄 Reloading jobs to show new rankings...');
+                    console.log('🔄 Clearing cache and reloading jobs with new rankings...');
+                    
+                    // Clear ALL cache to force fresh data
+                    this.clearCache();
+                    
+                    // Reset to page 1 to see top rankings
+                    this.currentPage = 1;
+                    
+                    // Force reload from API (cache is now cleared)
                     await this.loadJobs();
+                    
+                    // Refresh icons
                     this.$nextTick(() => lucide.createIcons());
-                    console.log('✅ Jobs reloaded with new rankings');
+                    
+                    console.log('✅ Jobs reloaded with new rankings from database');
+                    
+                    // Show confirmation
+                    alert('✅ Rankings updated!\n\nThe table now shows the latest rankings.\nNon-enriched jobs should now be at the bottom.');
                 }, 10000);  // Wait 10 seconds for ranking to complete
                 
             } catch (error) {
