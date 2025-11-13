@@ -387,31 +387,23 @@ class AutoEnrichService:
     
     async def calculate_rankings(self):
         """
-        Calculate rankings for jobs that need it.
-        Runs every hour to update rankings after enrichments.
+        Calculate rankings for ALL enriched Data jobs.
+        Runs every hour to update rankings with fresh hourly variance.
+        
+        Non-enriched jobs get very high rank numbers (bottom of list).
         """
         try:
             from ranking.job_ranker import calculate_and_save_rankings
             
-            # Check how many jobs need ranking
-            result = db.client.table("job_postings")\
-                .select("id", count="exact")\
-                .eq("is_active", True)\
-                .eq("needs_ranking", True)\
-                .execute()
-            
-            jobs_needing_ranking = result.count or 0
-            
-            if jobs_needing_ranking == 0:
-                logger.info("✅ No jobs need ranking - all rankings up to date")
-                return
-            
-            logger.info(f"📊 Calculating rankings for {jobs_needing_ranking} jobs...")
+            logger.info("📊 Running hourly ranking calculation for ALL enriched Data jobs...")
+            logger.info("   This includes hourly variance for dynamic rankings")
             
             # Run ranking calculation in thread to avoid blocking
+            # This will rank ALL active Data jobs (enriched + non-enriched)
+            # Non-enriched jobs will rank low due to missing data
             num_ranked = await asyncio.to_thread(calculate_and_save_rankings)
             
-            logger.success(f"✅ Ranked {num_ranked} jobs successfully")
+            logger.success(f"✅ Ranked {num_ranked} jobs successfully (hourly refresh)")
         
         except Exception as e:
             logger.error(f"Failed to calculate rankings: {e}")

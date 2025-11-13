@@ -355,6 +355,11 @@ class JobRankingSystem:
                 job.completeness_score * self.WEIGHT_COMPLETENESS +
                 job.reputation_score * self.WEIGHT_REPUTATION
             )
+            
+            # MASSIVE PENALTY for non-enriched jobs (no AI enrichment)
+            # These should ALWAYS rank at the bottom
+            if not job.enrichment_completed_at:
+                job.base_score -= 100  # Subtract 100 points - pushes to bottom
         
         return jobs
     
@@ -384,10 +389,10 @@ class JobRankingSystem:
     
     def calculate_hourly_variance(self, job: JobData) -> float:
         """
-        Bereken kleine hourly variance voor freshness.
-        - Recente jobs krijgen kleine boost die elk uur iets verandert
-        - Stabiel binnen hetzelfde uur, verandert elk uur
-        - Max impact: ~2-3 punten op final score
+        Bereken hourly variance voor dynamische rankings.
+        - Elk uur verandert de ranking door nieuwe variance
+        - Recente jobs krijgen extra boost
+        - Max impact: ~5-8 punten op final score (was 2-3)
         """
         import hashlib
         
@@ -399,19 +404,19 @@ class JobRankingSystem:
             
             # Boost voor jobs < 48 uur oud
             if hours_since_posted < 48:
-                freshness_boost = max(0, 3 - (hours_since_posted / 16))  # Max 3 punten
+                freshness_boost = max(0, 5 - (hours_since_posted / 10))  # Max 5 punten (was 3)
                 variance += freshness_boost
         
-        # 2. Hourly rotation factor (kleine variatie per uur)
+        # 2. Hourly rotation factor (VERHOOGD voor meer variatie)
         current_hour = datetime.now().hour
-        hour_factor = (current_hour % 4) * 0.5  # 0, 0.5, 1.0, of 1.5 punten
+        hour_factor = (current_hour % 6) * 0.8  # 0, 0.8, 1.6, 2.4, 3.2, 4.0 punten (was max 1.5)
         variance += hour_factor
         
-        # 3. Daily tie-breaker (stabiel per dag, subtiele variatie)
-        date_str = datetime.now().strftime('%Y-%m-%d')
-        seed_str = f"{date_str}-{job.id}"
+        # 3. Hourly tie-breaker (verandert elk uur, stabiel binnen uur)
+        hour_str = datetime.now().strftime('%Y-%m-%d-%H')  # Include hour for hourly change
+        seed_str = f"{hour_str}-{job.id}"
         hash_val = int(hashlib.md5(seed_str.encode()).hexdigest()[:8], 16)
-        tiebreaker = (hash_val % 100) / 200  # -0.5 tot +0.5 punten
+        tiebreaker = (hash_val % 200) / 100  # -1.0 tot +1.0 punten (was -0.5 tot +0.5)
         variance += tiebreaker
         
         return variance
