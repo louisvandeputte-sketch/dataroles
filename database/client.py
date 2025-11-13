@@ -379,13 +379,14 @@ class SupabaseClient:
         source: Optional[str] = None,
         active_only: bool = True,
         job_ids: Optional[List[str]] = None,
-        sort_field: str = "posted_date",
-        sort_direction: str = "desc",
+        sort_field: str = "ranking_position",  # Changed from posted_date to ranking_position
+        sort_direction: str = "asc",  # Changed from desc to asc (lower rank = better)
         limit: int = 50,
         offset: int = 0
     ) -> tuple[List[Dict], int]:
         """
         Search jobs with filters. Returns (jobs, total_count).
+        Default sort is by ranking_position (ASC) to show best jobs first.
         """
         # Build query - include job_sources for multi-source support
         query = self.client.table("job_postings")\
