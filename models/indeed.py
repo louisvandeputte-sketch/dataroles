@@ -11,7 +11,7 @@ class IndeedJobPosting(BaseModel):
     """Indeed job posting model matching Indeed API JSON."""
     
     # Core fields
-    jobid: str
+    jobid: str = Field(alias='job_id')  # Bright Data uses 'job_id' not 'jobid'
     job_title: str
     company_name: str
     location: str
@@ -55,6 +55,9 @@ class IndeedJobPosting(BaseModel):
     domain: Optional[str] = None
     srcname: Optional[str] = None
     discovery_input: Optional[Any] = None
+    
+    class Config:
+        populate_by_name = True  # Allow both 'jobid' and 'job_id'
     
     @field_validator('date_posted_parsed', mode='before')
     @classmethod
