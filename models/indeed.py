@@ -1,7 +1,7 @@
 """Indeed job posting models."""
 
 import re
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from uuid import UUID
@@ -9,6 +9,8 @@ from uuid import UUID
 
 class IndeedJobPosting(BaseModel):
     """Indeed job posting model matching Indeed API JSON."""
+    
+    model_config = ConfigDict(populate_by_name=True)  # Allow both field names and aliases
     
     # Core fields - only job_id and url are truly required
     jobid: str = Field(alias='job_id')  # Bright Data uses 'job_id' not 'jobid'
@@ -57,9 +59,6 @@ class IndeedJobPosting(BaseModel):
     domain: Optional[str] = None
     srcname: Optional[str] = None
     discovery_input: Optional[Any] = None
-    
-    class Config:
-        populate_by_name = True  # Allow both 'jobid' and 'job_id'
     
     @field_validator('date_posted_parsed', mode='before')
     @classmethod
