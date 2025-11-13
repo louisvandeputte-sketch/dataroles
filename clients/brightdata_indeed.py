@@ -221,8 +221,19 @@ class BrightDataIndeedClient:
             if not isinstance(data, list):
                 raise BrightDataError(f"Expected list of jobs, got {type(data).__name__}")
             
-            logger.info(f"Downloaded {len(data)} Indeed jobs from snapshot {snapshot_id}")
-            return data
+            # Bright Data wraps each job in an object with 'input' field
+            # Extract the actual job data from the wrapper
+            jobs = []
+            for item in data:
+                if isinstance(item, dict) and 'input' in item:
+                    # This is a wrapper object - extract the input data
+                    jobs.append(item['input'])
+                else:
+                    # Direct job data (shouldn't happen but handle it)
+                    jobs.append(item)
+            
+            logger.info(f"Downloaded {len(jobs)} Indeed jobs from snapshot {snapshot_id}")
+            return jobs
             
         except httpx.HTTPStatusError as e:
             raise BrightDataError(f"Failed to download results: {e}")
