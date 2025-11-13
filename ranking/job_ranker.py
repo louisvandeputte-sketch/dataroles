@@ -78,6 +78,9 @@ class JobData:
     seniority: Optional[List[str]]
     enrichment_completed_at: Optional[datetime]
     
+    # Scraping data
+    scraped_at: Optional[datetime]  # When job was last scraped
+    
     # Description data
     description_text: Optional[str]
     
@@ -392,31 +395,45 @@ class JobRankingSystem:
         Bereken hourly variance voor dynamische rankings.
         - Elk uur verandert de ranking door nieuwe variance
         - Recente jobs krijgen extra boost
-        - Max impact: ~5-8 punten op final score (was 2-3)
+        - Recent gescrapete jobs krijgen GROTE bonus (binnen 26u)
+        - Max impact: ~10-15 punten op final score
         """
         import hashlib
         
         variance = 0.0
         
-        # 1. Time-based freshness boost (afneemt over tijd)
+        # 1. Recent scrape bonus (NIEUW - binnen 26 uur)
+        if job.scraped_at:
+            hours_since_scraped = (datetime.now() - job.scraped_at).total_seconds() / 3600
+            
+            # GROTE BONUS voor recent gescrapete jobs (< 26 uur)
+            if hours_since_scraped < 26:
+                # Linear decay: 10 punten bij 0u, 0 punten bij 26u
+                scrape_bonus = max(0, 10 * (1 - hours_since_scraped / 26))
+                variance += scrape_bonus
+                # Extra boost voor zeer recente scrapes (< 6 uur)
+                if hours_since_scraped < 6:
+                    variance += 5  # Extra 5 punten voor super fresh scrapes
+        
+        # 2. Time-based freshness boost (afneemt over tijd)
         if job.posted_date:
             hours_since_posted = (datetime.now() - job.posted_date).total_seconds() / 3600
             
             # Boost voor jobs < 48 uur oud
             if hours_since_posted < 48:
-                freshness_boost = max(0, 5 - (hours_since_posted / 10))  # Max 5 punten (was 3)
+                freshness_boost = max(0, 5 - (hours_since_posted / 10))  # Max 5 punten
                 variance += freshness_boost
         
-        # 2. Hourly rotation factor (VERHOOGD voor meer variatie)
+        # 3. Hourly rotation factor (VERHOOGD voor meer variatie)
         current_hour = datetime.now().hour
-        hour_factor = (current_hour % 6) * 0.8  # 0, 0.8, 1.6, 2.4, 3.2, 4.0 punten (was max 1.5)
+        hour_factor = (current_hour % 6) * 0.8  # 0, 0.8, 1.6, 2.4, 3.2, 4.0 punten
         variance += hour_factor
         
-        # 3. Hourly tie-breaker (verandert elk uur, stabiel binnen uur)
+        # 4. Hourly tie-breaker (verandert elk uur, stabiel binnen uur)
         hour_str = datetime.now().strftime('%Y-%m-%d-%H')  # Include hour for hourly change
         seed_str = f"{hour_str}-{job.id}"
         hash_val = int(hashlib.md5(seed_str.encode()).hexdigest()[:8], 16)
-        tiebreaker = (hash_val % 200) / 100  # -1.0 tot +1.0 punten (was -0.5 tot +0.5)
+        tiebreaker = (hash_val % 200) / 100  # -1.0 tot +1.0 punten
         variance += tiebreaker
         
         return variance
@@ -499,6 +516,7 @@ def load_jobs_from_database(only_needs_ranking: bool = False) -> List[JobData]:
     
     while True:
         # Query jobs in batches - join company_master_data for hiring_model
+        # Note: We'll fetch scrape history separately due to aggregation complexity
         query = db.client.table("job_postings")\
             .select("""
                 *,
@@ -597,6 +615,9 @@ def load_jobs_from_database(only_needs_ranking: bool = False) -> List[JobData]:
                 seniority=seniority,
                 enrichment_completed_at=parse_datetime(enrichment.get('enrichment_completed_at')),
                 
+                # Scraping data - will be populated in next step
+                scraped_at=None,  # Populated below
+                
                 # Tech stack data
                 must_have_programmeertalen=enrichment.get('must_have_programmeertalen', []),
                 nice_to_have_programmeertalen=enrichment.get('nice_to_have_programmeertalen', []),
@@ -615,6 +636,40 @@ def load_jobs_from_database(only_needs_ranking: bool = False) -> List[JobData]:
         
         # Move to next page
         offset += page_size
+    
+    # Now fetch most recent scrape times for all jobs in one query
+    logger.info(f"Fetching most recent scrape times for {len(jobs)} jobs...")
+    if jobs:
+        job_ids = [job.id for job in jobs]
+        
+        # Get most recent detected_at for each job from job_scrape_history
+        # We'll do this in batches to avoid query size limits
+        batch_size = 100
+        job_scrape_times = {}
+        
+        for i in range(0, len(job_ids), batch_size):
+            batch_ids = job_ids[i:i + batch_size]
+            
+            # Query for this batch
+            scrape_result = db.client.table("job_scrape_history")\
+                .select("job_posting_id, detected_at")\
+                .in_("job_posting_id", batch_ids)\
+                .order("detected_at", desc=True)\
+                .execute()
+            
+            # Get most recent scrape for each job
+            for row in scrape_result.data:
+                job_id = row['job_posting_id']
+                if job_id not in job_scrape_times:
+                    # First (most recent) entry for this job
+                    job_scrape_times[job_id] = parse_datetime(row['detected_at'])
+        
+        # Update jobs with scrape times
+        for job in jobs:
+            if job.id in job_scrape_times:
+                job.scraped_at = job_scrape_times[job.id]
+        
+        logger.info(f"Found scrape times for {len(job_scrape_times)} jobs")
     
     logger.info(f"Loaded {len(jobs)} jobs from database")
     return jobs
