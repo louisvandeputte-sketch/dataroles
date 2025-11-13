@@ -143,6 +143,7 @@ async def get_run_detail(run_id: str):
     
     run = result.data
     
+    metadata = run.get("metadata", {})
     return {
         "id": str(run.get("id")),
         "search_query": run.get("search_query"),
@@ -153,7 +154,9 @@ async def get_run_detail(run_id: str):
         "jobs_found": run.get("jobs_found", 0),
         "jobs_new": run.get("jobs_new", 0),
         "jobs_updated": run.get("jobs_updated", 0),
-        "metadata": run.get("metadata", {}),
+        "jobs_error": metadata.get("jobs_error", 0),
+        "error_details": metadata.get("error_details", []),
+        "metadata": metadata,
         "jobs_skipped": 0
     }
 

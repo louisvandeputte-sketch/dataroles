@@ -65,6 +65,11 @@ class BatchResult:
     def job_ids(self) -> List[UUID]:
         """Get list of all successfully processed job IDs."""
         return [r.job_id for r in self.results if r.job_id is not None]
+    
+    @property
+    def error_details(self) -> List[Dict[str, str]]:
+        """Get list of all errors with details."""
+        return [{"error": r.error} for r in self.results if r.status == 'error']
 
 
 def process_job_posting(raw_job: Dict[str, Any], scrape_run_id: UUID, source: str = "linkedin") -> ProcessingResult:

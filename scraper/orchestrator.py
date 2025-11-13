@@ -170,7 +170,9 @@ async def execute_scrape_run(
                 "lookback_days": expected_lookback,
                 "snapshot_id": snapshot_id,
                 "duration_seconds": duration,
-                "batch_summary": batch_result.summary()
+                "batch_summary": batch_result.summary(),
+                "jobs_error": batch_result.error_count,
+                "error_details": batch_result.error_details if batch_result.error_count > 0 else []
             }
         })
         
