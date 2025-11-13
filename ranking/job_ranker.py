@@ -680,6 +680,10 @@ def save_rankings_to_database(ranked_jobs: List[JobData]):
     """Save ranking scores back to database"""
     logger.info(f"Saving rankings for {len(ranked_jobs)} jobs...")
     
+    # Use SINGLE timestamp for ALL jobs in this ranking run
+    # This is critical for queries that filter by latest ranking_updated_at
+    ranking_timestamp = datetime.now().isoformat()
+    
     for job in ranked_jobs:
         # Create metadata JSON
         metadata = {
@@ -696,11 +700,11 @@ def save_rankings_to_database(ranked_jobs: List[JobData]):
             'seniority_rank': job.seniority_rank
         }
         
-        # Update database
+        # Update database - use SAME timestamp for all jobs
         db.client.table("job_postings").update({
             'ranking_score': round(job.final_score, 2),
             'ranking_position': job.final_rank,
-            'ranking_updated_at': datetime.now().isoformat(),
+            'ranking_updated_at': ranking_timestamp,  # Same for all jobs!
             'ranking_metadata': metadata,
             'needs_ranking': False  # Mark as ranked
         }).eq('id', job.id).execute()
