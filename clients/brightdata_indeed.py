@@ -211,6 +211,12 @@ class BrightDataIndeedClient:
             response.raise_for_status()
             data = response.json()
             
+            # Log raw response for debugging
+            logger.info(f"Raw Bright Data response type: {type(data).__name__}")
+            if isinstance(data, list) and len(data) > 0:
+                logger.info(f"First item keys: {list(data[0].keys()) if isinstance(data[0], dict) else 'Not a dict'}")
+                logger.debug(f"First job raw data: {data[0]}")
+            
             # Validate response format
             if isinstance(data, dict):
                 if data.get("status") == "building":
