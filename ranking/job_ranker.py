@@ -359,10 +359,11 @@ class JobRankingSystem:
                 job.reputation_score * self.WEIGHT_REPUTATION
             )
             
-            # MASSIVE PENALTY for non-enriched jobs (no AI enrichment)
-            # These should ALWAYS rank at the bottom
+            # EXTREME PENALTY for non-enriched jobs (no AI enrichment)
+            # These should ALWAYS rank at the bottom, even with perfect other scores
+            # and recent scrape bonus (+15 max)
             if not job.enrichment_completed_at:
-                job.base_score -= 100  # Subtract 100 points - pushes to bottom
+                job.base_score = -9999  # Set to very negative - guarantees bottom rank
         
         return jobs
     
