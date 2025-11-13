@@ -231,17 +231,18 @@ class JobRankingSystem:
         return score
     
     def calculate_role_match_score(self, job: JobData) -> float:
-        """Bereken data role match score (0-100) met EXTRA zware straffen voor NIS/Other"""
+        """Bereken data role match score (0-100) met EXTREME straffen voor NIS/Other"""
         role_type = job.data_role_type
         
         if not role_type:
-            return 30  # Verlaagd van 50 naar 30
+            return 10  # Verlaagd van 30 naar 10 - geen enrichment is zeer slecht
         
-        # EXTRA ZWARE STRAF: NIS en Other roles (niet-data roles)
+        # EXTREME STRAF: NIS en Other roles (niet-data roles)
+        # Deze moeten ALTIJD onderaan komen, zelfs met perfecte andere scores
         if role_type == 'Other':
-            return -50  # NIEUWE STRAF: -50 punten voor 'Other' (was 0)
+            return -200  # VERHOOGD: -200 punten voor 'Other' (was -50)
         if role_type == 'NIS':
-            return -30  # NIEUWE STRAF: -30 punten voor 'NIS' (was 0)
+            return -150  # VERHOOGD: -150 punten voor 'NIS' (was -30)
         
         # Tier 1: Top data roles
         if role_type in ['Data Engineer', 'Data Scientist']:
