@@ -351,11 +351,6 @@
                     <th class="px-6 py-3 text-left">
                         <input type="checkbox" @change="toggleAll" class="rounded border-gray-300">
                     </th>
-                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" @click="sortBy('ranking_position')">
-                        Rank
-                        <i data-lucide="chevron-up" class="w-4 h-4 inline" x-show="sortField === 'ranking_position' && sortDirection === 'asc'"></i>
-                        <i data-lucide="chevron-down" class="w-4 h-4 inline" x-show="sortField === 'ranking_position' && sortDirection === 'desc'"></i>
-                    </th>
                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" @click="sortBy('ranking_score')">
                         Score
                         <i data-lucide="chevron-up" class="w-4 h-4 inline" x-show="sortField === 'ranking_score' && sortDirection === 'asc'"></i>
@@ -415,18 +410,6 @@
                     <tr class="hover:bg-gray-50 cursor-pointer" @click="viewJob(job.id)">
                         <td class="px-4 py-1.5" @click.stop>
                             <input type="checkbox" :value="job.id" x-model="selectedJobs" class="rounded border-gray-300">
-                        </td>
-                        <td class="px-3 py-1.5">
-                            <div class="text-sm font-medium text-gray-700">
-                                <span x-show="job.ranking_position" class="inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold"
-                                      :class="{
-                                          'bg-yellow-100 text-yellow-800': job.ranking_position <= 10,
-                                          'bg-blue-100 text-blue-800': job.ranking_position > 10 && job.ranking_position <= 50,
-                                          'bg-gray-100 text-gray-600': job.ranking_position > 50
-                                      }"
-                                      x-text="job.ranking_position"></span>
-                                <span x-show="!job.ranking_position" class="text-xs text-gray-400">-</span>
-                            </div>
                         </td>
                         <td class="px-3 py-1.5">
                             <div class="text-sm font-mono text-gray-900">
@@ -619,8 +602,8 @@ function jobsPage() {
         searchTimeout: null,
         currentPage: 1,
         pageSize: 50,
-        sortField: 'ranking_position',
-        sortDirection: 'asc',  // Low rank = best jobs first
+        sortField: 'ranking_score',
+        sortDirection: 'desc',  // High score = best jobs first
         stats: {
             total_jobs: 0,
             active_jobs: 0,

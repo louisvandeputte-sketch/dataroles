@@ -379,14 +379,14 @@ class SupabaseClient:
         source: Optional[str] = None,
         active_only: bool = True,
         job_ids: Optional[List[str]] = None,
-        sort_field: str = "ranking_position",  # Changed from posted_date to ranking_position
-        sort_direction: str = "asc",  # Changed from desc to asc (lower rank = better)
+        sort_field: str = "ranking_score",  # Sort by score
+        sort_direction: str = "desc",  # DESC = highest score first
         limit: int = 50,
         offset: int = 0
     ) -> tuple[List[Dict], int]:
         """
         Search jobs with filters. Returns (jobs, total_count).
-        Default sort is by ranking_position (ASC) to show best jobs first.
+        Default sort is by ranking_score (DESC) to show best jobs first.
         """
         # Build query - include job_sources for multi-source support
         query = self.client.table("job_postings")\
@@ -450,17 +450,10 @@ class SupabaseClient:
         # Apply sorting based on parameters
         is_desc = sort_direction.lower() == "desc"
         
-        # If sorting by ranking_position, add secondary sort by ranking_score DESC
-        # This ensures correct order even if there are duplicate positions
-        if sort_field == "ranking_position":
-            result = query.order(sort_field, desc=is_desc)\
-                .order("ranking_score", desc=True)\
-                .range(offset, offset + limit - 1)\
-                .execute()
-        else:
-            result = query.order(sort_field, desc=is_desc)\
-                .range(offset, offset + limit - 1)\
-                .execute()
+        # Apply sorting - simple single field sort
+        result = query.order(sort_field, desc=is_desc)\
+            .range(offset, offset + limit - 1)\
+            .execute()
         
         # Enrich jobs with their types and AI enrichment status
         jobs_with_types = []
