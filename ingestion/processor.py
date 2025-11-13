@@ -95,18 +95,29 @@ def process_job_posting(raw_job: Dict[str, Any], scrape_run_id: UUID, source: st
     """
     try:
         # Step 1: Parse and validate with Pydantic based on source
+        # Extract job_id_field first for error logging
+        if source == "linkedin":
+            job_id_field = raw_job.get('job_posting_id', 'unknown')
+        elif source == "indeed":
+            job_id_field = raw_job.get('jobid', 'unknown')
+        else:
+            job_id_field = 'unknown'
+        
         try:
             if source == "linkedin":
                 job = LinkedInJobPosting(**raw_job)
-                job_id_field = raw_job.get('job_posting_id')
             elif source == "indeed":
                 job = IndeedJobPosting(**raw_job)
-                job_id_field = raw_job.get('jobid')
             else:
                 raise ValueError(f"Unknown source: {source}")
         except ValidationError as e:
-            logger.error(f"Validation error for {source} job {job_id_field}: {e}")
-            return ProcessingResult(status='error', error=str(e))
+            error_msg = f"ValidationError for {source} job {job_id_field}: {str(e)}"
+            logger.error(error_msg)
+            # Return simplified error for metadata (first error only)
+            first_error = e.errors()[0] if e.errors() else {}
+            field = first_error.get('loc', ['unknown'])[0]
+            msg = first_error.get('msg', str(e))
+            return ProcessingResult(status='error', error=f"Field '{field}': {msg}")
         
         # Step 2: Process company
         if source == "linkedin":
