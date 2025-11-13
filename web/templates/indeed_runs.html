@@ -84,8 +84,8 @@
                         <div class="text-xs text-gray-600">Updated</div>
                     </div>
                     <div>
-                        <div class="text-2xl font-bold text-gray-600">0</div>
-                        <div class="text-xs text-gray-600">Dupes</div>
+                        <div class="text-2xl font-bold" :class="(run.metadata?.jobs_error || 0) > 0 ? 'text-red-600' : 'text-gray-600'" x-text="run.metadata?.jobs_error || 0"></div>
+                        <div class="text-xs text-gray-600">Failed</div>
                     </div>
                 </div>
                 
@@ -248,6 +248,28 @@
                                 </div>
                             </div>
                             
+                            <!-- Error Details (if any) -->
+                            <div x-show="selectedRun.jobs_error && selectedRun.jobs_error > 0" class="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
+                                <div class="flex items-start">
+                                    <i data-lucide="alert-circle" class="w-5 h-5 text-red-600 mr-2 mt-0.5"></i>
+                                    <div class="flex-1">
+                                        <h4 class="text-sm font-medium text-red-800 mb-2">
+                                            <span x-text="selectedRun.jobs_error"></span> job(s) failed to process
+                                        </h4>
+                                        <div x-show="selectedRun.error_details && selectedRun.error_details.length > 0" class="space-y-1">
+                                            <template x-for="(error, index) in selectedRun.error_details" :key="index">
+                                                <div class="text-xs text-red-700 font-mono bg-red-100 rounded px-2 py-1">
+                                                    <span x-text="error.error"></span>
+                                                </div>
+                                            </template>
+                                        </div>
+                                        <p x-show="!selectedRun.error_details || selectedRun.error_details.length === 0" class="text-xs text-red-700">
+                                            Jobs failed during processing (validation or database errors)
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <!-- Jobs Table -->
                             <div class="mb-4">
                                 <div class="flex items-center justify-between mb-3">
@@ -265,6 +287,9 @@
                                 <div x-show="!loadingJobs && runJobs.length === 0" class="text-center py-8 text-gray-500">
                                     <i data-lucide="inbox" class="w-8 h-8 mx-auto mb-2"></i>
                                     <p class="text-sm">No jobs found for this run</p>
+                                    <p x-show="selectedRun.jobs_error && selectedRun.jobs_error > 0" class="text-xs text-red-600 mt-2">
+                                        All jobs failed to process - see error details above
+                                    </p>
                                 </div>
                                 
                                 <div x-show="!loadingJobs && runJobs.length > 0" class="border rounded-lg overflow-hidden">
