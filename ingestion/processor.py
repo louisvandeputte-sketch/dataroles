@@ -108,12 +108,17 @@ def process_job_posting(raw_job: Dict[str, Any], scrape_run_id: UUID, source: st
             if source == "linkedin":
                 job = LinkedInJobPosting(**raw_job)
             elif source == "indeed":
+                # Log raw data for debugging
+                logger.debug(f"Raw Indeed job keys: {list(raw_job.keys())}")
                 job = IndeedJobPosting(**raw_job)
             else:
                 raise ValueError(f"Unknown source: {source}")
         except ValidationError as e:
             error_msg = f"ValidationError for {source} job {job_id_field}: {str(e)}"
             logger.error(error_msg)
+            # Log raw data on validation failure for debugging
+            import json
+            logger.error(f"Raw job data that failed validation: {json.dumps(raw_job, indent=2)}")
             # Return simplified error for metadata (first error only)
             first_error = e.errors()[0] if e.errors() else {}
             field = first_error.get('loc', ['unknown'])[0]
