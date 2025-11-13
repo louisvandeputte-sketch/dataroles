@@ -356,6 +356,14 @@
                         <i data-lucide="chevron-up" class="w-4 h-4 inline" x-show="sortField === 'ranking_position' && sortDirection === 'asc'"></i>
                         <i data-lucide="chevron-down" class="w-4 h-4 inline" x-show="sortField === 'ranking_position' && sortDirection === 'desc'"></i>
                     </th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" @click="sortBy('ranking_score')">
+                        Score
+                        <i data-lucide="chevron-up" class="w-4 h-4 inline" x-show="sortField === 'ranking_score' && sortDirection === 'asc'"></i>
+                        <i data-lucide="chevron-down" class="w-4 h-4 inline" x-show="sortField === 'ranking_score' && sortDirection === 'desc'"></i>
+                    </th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Calculation
+                    </th>
                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" @click="sortBy('title')">
                         Job Title
                         <i data-lucide="chevron-up" class="w-4 h-4 inline" x-show="sortField === 'title' && sortDirection === 'asc'"></i>
@@ -419,6 +427,35 @@
                                       x-text="job.ranking_position"></span>
                                 <span x-show="!job.ranking_position" class="text-xs text-gray-400">-</span>
                             </div>
+                        </td>
+                        <td class="px-3 py-1.5">
+                            <div class="text-sm font-mono text-gray-900">
+                                <span x-show="job.ranking_score !== null && job.ranking_score !== undefined" 
+                                      :class="{
+                                          'text-green-600 font-bold': job.ranking_score > 80,
+                                          'text-blue-600': job.ranking_score > 50 && job.ranking_score <= 80,
+                                          'text-gray-600': job.ranking_score > 0 && job.ranking_score <= 50,
+                                          'text-red-600 font-bold': job.ranking_score <= 0
+                                      }"
+                                      x-text="job.ranking_score?.toFixed(1)"></span>
+                                <span x-show="job.ranking_score === null || job.ranking_score === undefined" class="text-xs text-gray-400">-</span>
+                            </div>
+                        </td>
+                        <td class="px-3 py-1.5">
+                            <div class="text-xs text-gray-600 max-w-xs" x-show="job.ranking_metadata">
+                                <div class="space-y-0.5">
+                                    <div x-show="job.ranking_metadata?.base_score !== undefined">
+                                        Base: <span class="font-mono" x-text="job.ranking_metadata.base_score"></span>
+                                    </div>
+                                    <div x-show="job.ranking_metadata?.freshness_score !== undefined" class="text-xs">
+                                        F:<span class="font-mono" x-text="job.ranking_metadata.freshness_score"></span>
+                                        Q:<span class="font-mono" x-text="job.ranking_metadata.quality_score"></span>
+                                        T:<span class="font-mono" x-text="job.ranking_metadata.transparency_score"></span>
+                                        R:<span class="font-mono" x-text="job.ranking_metadata.role_match_score"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <span x-show="!job.ranking_metadata" class="text-xs text-gray-400">-</span>
                         </td>
                         <td class="px-3 py-1.5">
                             <div class="text-sm font-medium text-gray-900 truncate max-w-xs" x-text="job.title"></div>
