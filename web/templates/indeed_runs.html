@@ -212,9 +212,16 @@
                         <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
                             <div class="flex items-center justify-between">
                                 <h3 class="text-lg font-semibold text-gray-900">Scrape Run Details</h3>
-                                <button @click="showDetailModal = false" class="text-gray-400 hover:text-gray-600">
-                                    <i data-lucide="x" class="w-5 h-5"></i>
-                                </button>
+                                <div class="flex items-center space-x-2">
+                                    <button x-show="selectedRun.status === 'running' || selectedRun.status === 'pending'"
+                                            @click="stopScrape(selectedRun.id); showDetailModal = false"
+                                            class="px-3 py-1 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 text-sm font-medium">
+                                        Cancel Run
+                                    </button>
+                                    <button @click="showDetailModal = false" class="text-gray-400 hover:text-gray-600">
+                                        <i data-lucide="x" class="w-5 h-5"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         
@@ -493,7 +500,7 @@ function runsPage() {
         async stopScrape(runId) {
             console.log('Stopping scrape:', runId);
             
-            if (!confirm('Stop this scrape immediately?\n\nThis will mark the run as failed and stop tracking it.')) {
+            if (!confirm('Cancel this scrape run?\n\nThis will immediately stop the run and mark it as failed.')) {
                 return;
             }
             
@@ -504,25 +511,29 @@ function runsPage() {
             }
             
             try {
-                const response = await fetch(`/api/indeed/runs/${runId}/stop`, {
+                const response = await fetch(`/api/indeed/runs/${runId}/cancel`, {
                     method: 'POST'
                 });
                 
                 if (!response.ok) {
-                    throw new Error('Failed to stop scrape');
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to cancel run');
                 }
                 
                 const data = await response.json();
+                console.log('Run cancelled:', data);
                 
                 // Reload active runs to update UI
                 await this.loadActiveRuns();
                 await this.loadRuns();
                 
-                alert('Scrape stopped successfully!');
-                console.log('Scrape stopped successfully');
+                // Re-initialize icons
+                this.$nextTick(() => lucide.createIcons());
+                
+                console.log('Scrape cancelled successfully');
             } catch (error) {
-                console.error('Failed to stop scrape:', error);
-                alert('Failed to stop scrape: ' + error.message);
+                console.error('Failed to cancel scrape:', error);
+                alert('Failed to cancel run: ' + error.message);
                 
                 // Reset stopping flag on error
                 if (run) {

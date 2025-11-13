@@ -98,3 +98,64 @@ async def get_indeed_run_jobs(run_id: str, limit: int = 100, offset: int = 0):
     except Exception as e:
         logger.error(f"Error getting Indeed run jobs: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{run_id}/cancel")
+async def cancel_indeed_run(run_id: str):
+    """Cancel/kill a running Indeed scrape run."""
+    try:
+        from datetime import datetime
+        
+        # Check if run exists and is cancellable
+        run = db.client.table("scrape_runs")\
+            .select("id, status")\
+            .eq("id", run_id)\
+            .eq("platform", "indeed_brightdata")\
+            .single()\
+            .execute()
+        
+        if not run.data:
+            raise HTTPException(status_code=404, detail="Run not found")
+        
+        current_status = run.data.get("status")
+        if current_status not in ["pending", "running"]:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Cannot cancel run with status '{current_status}'. Only pending or running runs can be cancelled."
+            )
+        
+        # Update run to failed status with cancellation metadata
+        result = db.client.table("scrape_runs")\
+            .update({
+                "status": "failed",
+                "completed_at": datetime.utcnow().isoformat(),
+                "metadata": db.client.rpc(
+                    "jsonb_set",
+                    {
+                        "target": db.client.table("scrape_runs").select("metadata").eq("id", run_id).single().execute().data.get("metadata", {}),
+                        "path": ["cancelled_manually"],
+                        "new_value": True
+                    }
+                ) if False else {  # Simplified - just overwrite
+                    "cancelled_manually": True,
+                    "cancelled_at": datetime.utcnow().isoformat(),
+                    "previous_status": current_status
+                }
+            })\
+            .eq("id", run_id)\
+            .execute()
+        
+        logger.info(f"Cancelled Indeed run {run_id} (was {current_status})")
+        
+        return {
+            "success": True,
+            "message": f"Run cancelled successfully",
+            "run_id": run_id,
+            "previous_status": current_status
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error cancelling Indeed run {run_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
