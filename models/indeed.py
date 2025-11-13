@@ -10,15 +10,17 @@ from uuid import UUID
 class IndeedJobPosting(BaseModel):
     """Indeed job posting model matching Indeed API JSON."""
     
-    # Core fields
+    # Core fields - only job_id and url are truly required
     jobid: str = Field(alias='job_id')  # Bright Data uses 'job_id' not 'jobid'
-    job_title: str
-    company_name: str
-    location: str
-    url: str
+    url: str = Field(alias='job_url')  # Might be 'job_url' or 'url'
+    
+    # Important fields but optional (Bright Data might not always provide them)
+    job_title: Optional[str] = Field(default="Untitled Position", alias='title')
+    company_name: Optional[str] = Field(default="Unknown Company", alias='company')
+    location: Optional[str] = Field(default="Unknown Location", alias='job_location')
     
     # Description fields
-    description_text: str
+    description_text: Optional[str] = ""
     description: Optional[str] = None  # HTML version
     job_description_formatted: Optional[str] = None  # HTML formatted version
     
