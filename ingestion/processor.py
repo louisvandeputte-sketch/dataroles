@@ -99,8 +99,8 @@ def process_job_posting(raw_job: Dict[str, Any], scrape_run_id: UUID, source: st
         if source == "linkedin":
             job_id_field = raw_job.get('job_posting_id', 'unknown')
         elif source == "indeed":
-            # Bright Data uses 'job_id' not 'jobid'
-            job_id_field = raw_job.get('job_id') or raw_job.get('jobid', 'unknown')
+            # Bright Data uses 'jobid' (not 'job_id')
+            job_id_field = raw_job.get('jobid', 'unknown')
         else:
             job_id_field = 'unknown'
         

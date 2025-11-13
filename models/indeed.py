@@ -12,14 +12,14 @@ class IndeedJobPosting(BaseModel):
     
     model_config = ConfigDict(populate_by_name=True)  # Allow both field names and aliases
     
-    # Core fields - only job_id and url are truly required
-    jobid: str = Field(alias='job_id')  # Bright Data uses 'job_id' not 'jobid'
-    url: str = Field(alias='job_url')  # Might be 'job_url' or 'url'
+    # Core fields - Bright Data Indeed API uses these exact names
+    jobid: str  # Bright Data uses 'jobid' (not 'job_id')
+    url: str
     
     # Important fields but optional (Bright Data might not always provide them)
-    job_title: Optional[str] = Field(default="Untitled Position", alias='title')
-    company_name: Optional[str] = Field(default="Unknown Company", alias='company')
-    location: Optional[str] = Field(default="Unknown Location", alias='job_location')
+    job_title: Optional[str] = "Untitled Position"
+    company_name: Optional[str] = "Unknown Company"
+    location: Optional[str] = "Unknown Location"
     
     # Description fields
     description_text: Optional[str] = ""
