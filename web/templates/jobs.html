@@ -49,10 +49,14 @@
                 <!-- Calculate Rankings Button -->
                 <button @click="calculateRankings" 
                         :disabled="rankingCalculating"
-                        class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                        class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                        title="Recalculate rankings for all active jobs">
                     <i data-lucide="bar-chart-3" class="w-4 h-4 mr-2"></i>
-                    <span x-show="!rankingCalculating">Calculate Rankings</span>
-                    <span x-show="rankingCalculating">Calculating...</span>
+                    <span x-show="!rankingCalculating">Re-Rank All Jobs</span>
+                    <span x-show="rankingCalculating">
+                        <i data-lucide="loader" class="w-4 h-4 mr-2 animate-spin inline"></i>
+                        Ranking...
+                    </span>
                 </button>
                 <!-- Enrich All Button -->
                 <button @click="enrichAllUnenriched" 
@@ -986,7 +990,7 @@ function jobsPage() {
         },
         
         async calculateRankings() {
-            if (!confirm('Calculate rankings for all active jobs? This will run in the background.')) {
+            if (!confirm('Re-rank all active jobs?\n\nThis will:\n• Apply the latest ranking algorithm\n• Update all job positions\n• Take 1-2 minutes to complete\n\nContinue?')) {
                 return;
             }
             
@@ -1004,17 +1008,22 @@ function jobsPage() {
                 
                 const result = await response.json();
                 
-                alert('Ranking calculation started! This will run in the background and may take a few minutes.');
+                console.log('✅ Ranking calculation started:', result);
+                
+                // Show success message
+                alert('✅ Ranking calculation started!\n\nThis runs in the background and will complete in 1-2 minutes.\nThe page will auto-refresh to show updated rankings.');
                 
                 // Reload jobs after a delay to see updated rankings
                 setTimeout(async () => {
+                    console.log('🔄 Reloading jobs to show new rankings...');
                     await this.loadJobs();
                     this.$nextTick(() => lucide.createIcons());
-                }, 5000);
+                    console.log('✅ Jobs reloaded with new rankings');
+                }, 10000);  // Wait 10 seconds for ranking to complete
                 
             } catch (error) {
-                console.error('Failed to calculate rankings:', error);
-                alert('Failed to calculate rankings: ' + error.message);
+                console.error('❌ Failed to calculate rankings:', error);
+                alert('❌ Failed to calculate rankings:\n\n' + error.message);
             } finally {
                 this.rankingCalculating = false;
             }
