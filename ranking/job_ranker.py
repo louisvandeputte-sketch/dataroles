@@ -522,7 +522,7 @@ def load_jobs_from_database(only_needs_ranking: bool = False) -> List[JobData]:
             .select("""
                 *,
                 companies(*),
-                company_master_data!inner(hiring_model),
+                company_master_data(hiring_model),
                 locations(*),
                 llm_enrichment(*),
                 job_descriptions(description_text)

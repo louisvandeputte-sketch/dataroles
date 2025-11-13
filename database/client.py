@@ -449,9 +449,18 @@ class SupabaseClient:
         # Execute with pagination and sorting
         # Apply sorting based on parameters
         is_desc = sort_direction.lower() == "desc"
-        result = query.order(sort_field, desc=is_desc)\
-            .range(offset, offset + limit - 1)\
-            .execute()
+        
+        # If sorting by ranking_position, add secondary sort by ranking_score DESC
+        # This ensures correct order even if there are duplicate positions
+        if sort_field == "ranking_position":
+            result = query.order(sort_field, desc=is_desc)\
+                .order("ranking_score", desc=True)\
+                .range(offset, offset + limit - 1)\
+                .execute()
+        else:
+            result = query.order(sort_field, desc=is_desc)\
+                .range(offset, offset + limit - 1)\
+                .execute()
         
         # Enrich jobs with their types and AI enrichment status
         jobs_with_types = []
