@@ -642,8 +642,8 @@ function jobsPage() {
         cacheDuration: 10 * 60 * 1000, // 10 minutes
         
         async init() {
-            // Load cache from localStorage
-            this.loadCacheFromStorage();
+            // Clear cache to force fresh data with new sorting
+            this.invalidateCache();
             
             // Load filter state from localStorage
             this.loadFilterState();
