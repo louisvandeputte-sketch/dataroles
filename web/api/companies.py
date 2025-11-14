@@ -64,11 +64,20 @@ async def list_companies(
     """List companies with optional filters using lightweight view."""
     
     try:
-        # Use lightweight view for much faster loading
-        query = db.client.table("companies_list_view").select(
-            "*",
-            count="exact"
-        )
+        # Try to use lightweight view for much faster loading
+        # Fallback to regular query if view doesn't exist yet
+        try:
+            query = db.client.table("companies_list_view").select(
+                "*",
+                count="exact"
+            )
+        except Exception as view_error:
+            logger.warning(f"companies_list_view not found, falling back to regular query: {view_error}")
+            # Fallback to old query method
+            query = db.client.table("companies").select(
+                "id, name, logo_url, industry, linkedin_company_id, company_master_data(id, hiring_model, is_consulting, sector_en, category_en, aantal_werknemers, bedrijfswebsite, jobspagina, email_hr, ai_enriched, ai_enriched_at)",
+                count="exact"
+            )
         
         # Apply search filter
         if search:
