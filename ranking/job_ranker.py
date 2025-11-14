@@ -245,7 +245,7 @@ class JobRankingSystem:
         if role_type == 'Other':
             return -200  # VERHOOGD: -200 punten voor 'Other' (was -50)
         if role_type == 'NIS':
-            return -150  # VERHOOGD: -150 punten voor 'NIS' (was -30)
+            return -99999  # MASSIVE PENALTY: NIS jobs always at absolute bottom
         
         # Tier 1: Top data roles
         if role_type in ['Data Engineer', 'Data Scientist']:

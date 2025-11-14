@@ -6,8 +6,26 @@ from datetime import datetime
 from loguru import logger
 
 from ranking.job_ranker import calculate_and_save_rankings
+import os
+import shutil
 
 router = APIRouter()
+
+
+def calculate_and_clear_cache():
+    """Calculate rankings and automatically clear cache when done"""
+    try:
+        # Run ranking
+        calculate_and_save_rankings()
+        
+        # Clear cache silently after successful ranking
+        cache_dir = os.path.join(os.path.dirname(__file__), '..', '..', '.cache')
+        if os.path.exists(cache_dir):
+            shutil.rmtree(cache_dir)
+            logger.info("✅ Cache cleared automatically after ranking completion")
+    except Exception as e:
+        logger.error(f"Error in ranking or cache clear: {e}")
+        raise
 
 
 class RankingStatus(BaseModel):
@@ -27,8 +45,8 @@ async def trigger_ranking_calculation(background_tasks: BackgroundTasks):
     """
     logger.info("🎯 Manual ranking calculation triggered via API")
     
-    # Run in background
-    background_tasks.add_task(calculate_and_save_rankings)
+    # Run in background with auto-cache clear
+    background_tasks.add_task(calculate_and_clear_cache)
     
     return RankingStatus(
         status="started",
