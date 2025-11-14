@@ -555,8 +555,13 @@ def load_jobs_from_database(only_needs_ranking: bool = False) -> List[JobData]:
                 # Try different language keys for seniority
                 for lang in ['nl', 'en', 'fr']:
                     if lang in labels:
-                        seniority = labels[lang].get('seniority')
-                        if seniority:
+                        seniority_value = labels[lang].get('seniority')
+                        if seniority_value:
+                            # Handle both string and list
+                            if isinstance(seniority_value, list):
+                                seniority = seniority_value[0] if seniority_value else None
+                            else:
+                                seniority = seniority_value
                             break
             
             job = JobData(
