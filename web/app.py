@@ -103,7 +103,8 @@ app = FastAPI(
     title="everyjob",
     description="Job aggregation platform admin panel",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
+    redirect_slashes=False  # Disable automatic trailing slash redirects to prevent HTTP->HTTPS mixed content
 )
 
 # Add middleware to trust Railway's proxy headers
