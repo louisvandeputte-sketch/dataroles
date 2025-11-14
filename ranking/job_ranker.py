@@ -518,13 +518,15 @@ def load_jobs_from_database(only_needs_ranking: bool = False) -> List[JobData]:
     while True:
         # Query jobs in batches - join company_master_data for hiring_model
         # Note: We'll fetch scrape history separately due to aggregation complexity
+        # Note: Supabase has issues with multiple joins, so we fetch enrichment separately
         query = db.client.table("job_postings")\
             .select("""
-                *,
+                id, title, company_id, location_id, posted_date, seniority_level, 
+                employment_type, function_areas, base_salary_min, base_salary_max, 
+                apply_url, num_applicants, is_active,
                 companies(*),
                 company_master_data(hiring_model),
                 locations(*),
-                llm_enrichment!job_posting_id(*),
                 job_descriptions(description_text)
             """)\
             .eq("is_active", True)\
@@ -547,16 +549,6 @@ def load_jobs_from_database(only_needs_ranking: bool = False) -> List[JobData]:
             company = row.get('companies', {})
             company_master = row.get('company_master_data', {})
             location = row.get('locations', {})
-            
-            # Handle llm_enrichment - can be dict, list, or None
-            enrichment_raw = row.get('llm_enrichment')
-            if isinstance(enrichment_raw, list):
-                enrichment = enrichment_raw[0] if enrichment_raw else {}
-            elif enrichment_raw is None:
-                enrichment = {}
-            else:
-                enrichment = enrichment_raw
-            
             description = row.get('job_descriptions', {})
             
             # Get hiring_model from company_master_data
@@ -565,28 +557,6 @@ def load_jobs_from_database(only_needs_ranking: bool = False) -> List[JobData]:
             # Check if FAANG
             faang_companies = ['google', 'microsoft', 'meta', 'amazon', 'apple', 'netflix', 'facebook', 'alphabet']
             is_faang = company.get('name', '').lower() in faang_companies
-            
-            # Use type_datarol column (English canonical value) for consistent matching
-            # This ensures 'Other' matches correctly in penalty logic
-            data_role_type = enrichment.get('type_datarol')
-            
-            # Parse labels JSON for seniority
-            labels = enrichment.get('labels')
-            if isinstance(labels, str):
-                import json
-                try:
-                    labels = json.loads(labels)
-                except:
-                    labels = {}
-            
-            seniority = None
-            if labels:
-                # Try different language keys for seniority
-                for lang in ['nl', 'en', 'fr']:
-                    if lang in labels:
-                        seniority = labels[lang].get('seniority')
-                        if seniority:
-                            break
             
             job = JobData(
                 id=row['id'],
@@ -617,22 +587,22 @@ def load_jobs_from_database(only_needs_ranking: bool = False) -> List[JobData]:
                 # Location data
                 location_city=location.get('city'),
                 
-                # Enrichment data
-                skills_must_have=enrichment.get('skills_must_have_nl'),
-                samenvatting_kort=enrichment.get('samenvatting_kort_nl'),
-                samenvatting_lang=enrichment.get('samenvatting_lang_nl'),
-                data_role_type=data_role_type,
-                seniority=seniority,
-                enrichment_completed_at=parse_datetime(enrichment.get('enrichment_completed_at')),
+                # Enrichment data - will be populated separately
+                skills_must_have=None,
+                samenvatting_kort=None,
+                samenvatting_lang=None,
+                data_role_type=None,
+                seniority=None,
+                enrichment_completed_at=None,
                 
                 # Scraping data - will be populated in next step
-                scraped_at=None,  # Populated below
+                scraped_at=None,
                 
-                # Tech stack data
-                must_have_programmeertalen=enrichment.get('must_have_programmeertalen', []),
-                nice_to_have_programmeertalen=enrichment.get('nice_to_have_programmeertalen', []),
-                must_have_ecosystemen=enrichment.get('must_have_ecosystemen', []),
-                nice_to_have_ecosystemen=enrichment.get('nice_to_have_ecosystemen', []),
+                # Tech stack data - will be populated separately
+                must_have_programmeertalen=[],
+                nice_to_have_programmeertalen=[],
+                must_have_ecosystemen=[],
+                nice_to_have_ecosystemen=[],
                 
                 # Description data
                 description_text=description.get('description_text') if description else None
@@ -680,6 +650,58 @@ def load_jobs_from_database(only_needs_ranking: bool = False) -> List[JobData]:
                 job.scraped_at = job_scrape_times[job.id]
         
         logger.info(f"Found scrape times for {len(job_scrape_times)} jobs")
+        
+        # Fetch enrichment data separately (Supabase join issues with multiple relations)
+        logger.info(f"Fetching enrichment data for {len(jobs)} jobs...")
+        enrichment_data = {}
+        
+        for i in range(0, len(job_ids), batch_size):
+            batch_ids = job_ids[i:i + batch_size]
+            
+            # Query enrichment for this batch
+            enr_result = db.client.table("llm_enrichment")\
+                .select("*")\
+                .in_("job_posting_id", batch_ids)\
+                .execute()
+            
+            # Store by job_posting_id
+            for row in enr_result.data:
+                enrichment_data[row['job_posting_id']] = row
+        
+        # Update jobs with enrichment data
+        for job in jobs:
+            if job.id in enrichment_data:
+                enrichment = enrichment_data[job.id]
+                
+                # Update enrichment fields
+                job.enrichment_completed_at = parse_datetime(enrichment.get('enrichment_completed_at'))
+                job.data_role_type = enrichment.get('type_datarol')
+                job.skills_must_have = enrichment.get('skills_must_have_nl')
+                job.samenvatting_kort = enrichment.get('samenvatting_kort_nl')
+                job.samenvatting_lang = enrichment.get('samenvatting_lang_nl')
+                job.must_have_programmeertalen = enrichment.get('must_have_programmeertalen', [])
+                job.nice_to_have_programmeertalen = enrichment.get('nice_to_have_programmeertalen', [])
+                job.must_have_ecosystemen = enrichment.get('must_have_ecosystemen', [])
+                job.nice_to_have_ecosystemen = enrichment.get('nice_to_have_ecosystemen', [])
+                
+                # Parse labels for seniority
+                labels = enrichment.get('labels')
+                if isinstance(labels, str):
+                    import json
+                    try:
+                        labels = json.loads(labels)
+                    except:
+                        labels = {}
+                
+                if labels:
+                    for lang in ['nl', 'en', 'fr']:
+                        if lang in labels:
+                            seniority = labels[lang].get('seniority')
+                            if seniority:
+                                job.seniority = seniority
+                                break
+        
+        logger.info(f"Found enrichment data for {len(enrichment_data)} jobs")
     
     logger.info(f"Loaded {len(jobs)} jobs from database")
     return jobs
