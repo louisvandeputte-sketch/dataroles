@@ -793,14 +793,20 @@ function companiesPage() {
                     return;
                 }
                 
-                // Fetch from API
+                // Fetch from API with timeout
                 console.log(`Fetching companies page ${this.currentPage} from API`);
                 const params = new URLSearchParams();
                 if (this.search) params.append('search', this.search);
                 params.append('limit', this.pageSize);
                 params.append('offset', (this.currentPage - 1) * this.pageSize);
                 
-                const response = await fetch(`/api/companies?${params}`);
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+                
+                const response = await fetch(`/api/companies?${params}`, {
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
                 
                 if (!response.ok) {
                     const errorText = await response.text();
