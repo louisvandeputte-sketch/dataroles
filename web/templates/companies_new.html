@@ -380,24 +380,31 @@ function companiesPage() {
         async loadCompanies() {
             this.loading = true;
             try {
-                console.log(`Fetching companies page ${this.currentPage} from API`);
+                console.log(`🔍 Fetching companies page ${this.currentPage} from API`);
                 const params = new URLSearchParams();
                 if (this.search) params.append('search', this.search);
                 params.append('limit', this.pageSize);
                 params.append('offset', (this.currentPage - 1) * this.pageSize);
                 
-                const apiUrl = `${this.getApiBaseUrl()}/api/companies?${params}`;
-                console.log('API URL:', apiUrl); // Debug log
+                const baseUrl = this.getApiBaseUrl();
+                const apiUrl = `${baseUrl}/api/companies?${params}`;
+                
+                console.log('🌐 Base URL:', baseUrl);
+                console.log('📡 Full API URL:', apiUrl);
+                console.log('🔒 Protocol:', apiUrl.startsWith('https://') ? 'HTTPS ✅' : 'HTTP ❌');
                 
                 const response = await fetch(apiUrl);
                 
+                console.log('📥 Response status:', response.status);
+                
                 if (!response.ok) {
                     const errorText = await response.text();
-                    console.error('API Error:', response.status, errorText);
+                    console.error('❌ API Error:', response.status, errorText);
                     throw new Error(`HTTP ${response.status}: ${errorText}`);
                 }
                 
                 const data = await response.json();
+                console.log('✅ Data received:', data.companies?.length, 'companies');
                 
                 this.companies = data.companies || [];
                 this.total = data.total || 0;
@@ -409,10 +416,13 @@ function companiesPage() {
                 
                 this.$nextTick(() => lucide.createIcons());
             } catch (error) {
-                console.error('Failed to load companies:', error);
+                console.error('❌ Failed to load companies:', error);
+                console.error('Error type:', error.constructor.name);
+                console.error('Error message:', error.message);
+                console.error('Error stack:', error.stack);
                 this.companies = [];
                 this.total = 0;
-                alert('Failed to load companies: ' + error.message);
+                alert('Failed to load companies: ' + error.message + '\n\nCheck console for details.');
             } finally {
                 this.loading = false;
             }
