@@ -82,11 +82,6 @@
                 </div>
             </div>
             <div class="flex items-center space-x-2">
-                <button @click="clearCache()" 
-                        class="inline-flex items-center px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
-                    <i data-lucide="refresh-cw" class="w-4 h-4 mr-2"></i>
-                    Clear Cache
-                </button>
                 <button @click="viewMode = 'table'" 
                         :class="viewMode === 'table' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'"
                         class="p-2 rounded-lg hover:bg-blue-50">
@@ -637,14 +632,7 @@ function jobsPage() {
         companyOptions: [],
         locationOptions: [],
         typesOptions: [],
-        jobsCache: {},
-        cacheTimestamp: {},
-        cacheDuration: 10 * 60 * 1000, // 10 minutes
-        
         async init() {
-            // Clear cache to force fresh data with new sorting
-            this.invalidateCache();
-            
             // Load filter state from localStorage
             this.loadFilterState();
             
@@ -660,29 +648,9 @@ function jobsPage() {
             
             await this.loadJobs();
             await this.loadAIStats();
-            
-            // Prefetch first 3 pages
-            this.prefetchPages();
-            
+
             this.$nextTick(() => lucide.createIcons());
         },
-        
-        loadCacheFromStorage() {
-            try {
-                const cachedData = localStorage.getItem('jobsCache');
-                const cachedTimestamps = localStorage.getItem('jobsCacheTimestamp');
-                
-                if (cachedData && cachedTimestamps) {
-                    this.jobsCache = JSON.parse(cachedData);
-                    this.cacheTimestamp = JSON.parse(cachedTimestamps);
-                    
-                    // Clean up expired cache entries
-                    const now = Date.now();
-                    Object.keys(this.cacheTimestamp).forEach(key => {
-                        if (now - this.cacheTimestamp[key] > this.cacheDuration) {
-                            delete this.jobsCache[key];
-                            delete this.cacheTimestamp[key];
-                        }
                     });
                     
                     console.log('Loaded cache from localStorage:', Object.keys(this.jobsCache).length, 'pages');
@@ -691,14 +659,6 @@ function jobsPage() {
                 console.error('Failed to load cache from storage:', error);
             }
         },
-        
-        saveCacheToStorage() {
-            try {
-                localStorage.setItem('jobsCache', JSON.stringify(this.jobsCache));
-                localStorage.setItem('jobsCacheTimestamp', JSON.stringify(this.cacheTimestamp));
-            } catch (error) {
-                console.error('Failed to save cache to storage:', error);
-            }
         },
         
         saveFilterState() {
@@ -725,28 +685,10 @@ function jobsPage() {
             }
         },
         
-        async prefetchPages() {
-            // Prefetch pages 2 and 3 in background
-            for (let page = 2; page <= 3; page++) {
-                setTimeout(() => {
-                    this.fetchAndCachePage(page);
-                }, (page - 1) * 500); // Stagger requests
-            }
+        async
         },
         
-        async fetchAndCachePage(page) {
-            const cacheKey = this.getCacheKey(page);
-            
-            try {
-                const params = new URLSearchParams({
-                    limit: this.pageSize,
-                    offset: (page - 1) * this.pageSize
-                });
-                
-                // Apply all filters
-                if (this.searchQuery) {
-                    params.append('search', this.searchQuery);
-                }
+        async
                 if (this.filters.companies.length > 0) {
                     params.append('company_ids', this.filters.companies.join(','));
                 }
@@ -785,51 +727,18 @@ function jobsPage() {
                 
                 const response = await fetch(`/api/jobs/?${params}`);
                 const data = await response.json();
-                
-                // Cache the data
-                this.jobsCache[cacheKey] = data;
-                this.cacheTimestamp[cacheKey] = Date.now();
-                this.saveCacheToStorage();
+
                 
                 console.log(`Cached page ${page}`);
             } catch (error) {
                 console.error(`Failed to prefetch page ${page}:`, error);
             }
         },
-        
-        getCacheKey(page) {
-            return `${page}_${this.searchQuery}_${this.filters.companies.join(',')}_${this.filters.locations.join(',')}_${this.filters.seniority.join(',')}_${this.filters.employment.join(',')}_${this.filters.types.join(',')}_${this.filters.postedDate}_${this.filters.aiStatus}_${this.filters.source}_${this.filters.activeOnly}_${this.filters.dataOnly}_${this.sortField}_${this.sortDirection}`;
-        },
-        
-        isCacheValid(cacheKey) {
-            if (!this.jobsCache[cacheKey]) return false;
-            const age = Date.now() - (this.cacheTimestamp[cacheKey] || 0);
-            return age < this.cacheDuration;
-        },
-        
-        invalidateCache() {
-            this.jobsCache = {};
-            this.cacheTimestamp = {};
-            // Also clear from localStorage
-            localStorage.removeItem('jobsCache');
-            localStorage.removeItem('jobsCacheTimestamp');
-            console.log('Cache invalidated');
-        },
-        
-        clearCache() {
-            this.invalidateCache();
-            this.loadJobs();
-            // Show notification
-            alert('Cache cleared! Page refreshed with latest data.');
-        },
-        
         async toggleDataOnly() {
             // Save filter state to localStorage
             this.saveFilterState();
             // Reset to page 1
             this.currentPage = 1;
-            // Clear cache to force fresh data
-            this.invalidateCache();
             // Reload jobs with new filter
             await this.loadJobs();
             // Update icons
@@ -902,9 +811,7 @@ function jobsPage() {
                 this.selectedJobs = [];
                 
                 // Reload after a short delay to see results
-                setTimeout(async () => {
-                    this.invalidateCache();
-                    await this.loadJobs();
+                setTimeout(async () => {                    await this.loadJobs();
                     this.$nextTick(() => lucide.createIcons());
                 }, 3000);
             } catch (error) {
@@ -1037,10 +944,7 @@ function jobsPage() {
                 setTimeout(async () => {
                     console.log('🔄 Clearing cache and reloading jobs with new rankings...');
                     
-                    // Clear ALL cache to force fresh data
-                    this.clearCache();
-                    
-                    // Reset to page 1 to see top rankings
+                    // Clear ALL cache to force fresh data                    // Reset to page 1 to see top rankings
                     this.currentPage = 1;
                     
                     // Force reload from API (cache is now cleared)
@@ -1066,20 +970,6 @@ function jobsPage() {
         async loadJobs() {
             try {
                 this.loading = true;  // Start loading
-                
-                const cacheKey = this.getCacheKey(this.currentPage);
-                
-                // Check if we have valid cached data
-                if (this.isCacheValid(cacheKey)) {
-                    console.log(`Loading page ${this.currentPage} from cache`);
-                    const data = this.jobsCache[cacheKey];
-                    this.jobs = data.jobs;
-                    this.stats = data.stats;
-                    this.totalCount = data.total || data.stats.total_jobs;
-                    this.loading = false;  // Done loading
-                    this.$nextTick(() => lucide.createIcons());
-                    return;
-                }
                 
                 // Fetch from API
                 console.log(`Fetching page ${this.currentPage} from API`);
@@ -1129,23 +1019,13 @@ function jobsPage() {
                 
                 const response = await fetch(`/api/jobs/?${params}`);
                 const data = await response.json();
-                
-                // Cache the data
-                this.jobsCache[cacheKey] = data;
-                this.cacheTimestamp[cacheKey] = Date.now();
-                this.saveCacheToStorage();
+
                 
                 this.jobs = data.jobs;
                 this.stats = data.stats;
                 this.totalCount = data.total || data.stats.total_jobs;
                 this.loading = false;  // Done loading
-                
-                // Prefetch next page if we're on page 1 or 2
-                if (this.currentPage <= 2) {
-                    setTimeout(() => {
-                        this.fetchAndCachePage(this.currentPage + 1);
-                    }, 500);
-                }
+
                 
                 this.$nextTick(() => lucide.createIcons());
             } catch (error) {
@@ -1157,7 +1037,6 @@ function jobsPage() {
         applyFilter() {
             // Helper function to apply filters with loading state
             this.currentPage = 1;
-            this.invalidateCache(); // Clear cache when filter changes
             this.loadJobs();
         },
         
@@ -1298,9 +1177,7 @@ function jobsPage() {
                 locationSearch: '',
                 typesSearch: ''
             };
-            this.currentPage = 1;
-            this.invalidateCache();
-            this.loadJobs();
+            this.currentPage = 1;            this.loadJobs();
         },
         
         removeFilter(filter) {
