@@ -58,16 +58,15 @@ async def list_companies(
     employee_max: Optional[int] = None,
     has_master_data: Optional[bool] = None,
     verified: Optional[bool] = None,
-    limit: int = 100,
+    limit: int = 50,  # Reduced from 100 to avoid timeout with large master_data
     offset: int = 0
 ):
     """List companies with optional filters."""
     
     try:
         # Build base query with LEFT JOIN to master data
-        # Only select essential fields to reduce response size
         query = db.client.table("companies").select(
-            "id, name, logo_url, industry, company_master_data(hiring_model, is_consulting)",
+            "id, name, logo_url, industry, company_master_data(*)",
             count="exact"
         )
         
