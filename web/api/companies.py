@@ -58,15 +58,15 @@ async def list_companies(
     employee_max: Optional[int] = None,
     has_master_data: Optional[bool] = None,
     verified: Optional[bool] = None,
-    limit: int = 50,  # Reduced from 100 to avoid timeout with large master_data
+    limit: int = 100,  # Back to 100 - view is much lighter
     offset: int = 0
 ):
-    """List companies with optional filters."""
+    """List companies with optional filters using lightweight view."""
     
     try:
-        # Build base query with LEFT JOIN to master data
-        query = db.client.table("companies").select(
-            "id, name, logo_url, industry, company_master_data(*)",
+        # Use lightweight view for much faster loading
+        query = db.client.table("companies_list_view").select(
+            "*",
             count="exact"
         )
         
@@ -74,7 +74,7 @@ async def list_companies(
         if search:
             query = query.ilike("name", f"%{search}%")
         
-        # Order by name
+        # Order by name (already in view but can be overridden)
         query = query.order("name")
         
         # Apply pagination
@@ -85,14 +85,32 @@ async def list_companies(
         if not result.data:
             return {"companies": [], "total": 0}
         
-        # Process results - just normalize master_data format
+        # Transform view data to match expected format
         companies = []
-        for company in result.data:
-            # Convert master_data from list to dict if needed
-            master_data = company.get("company_master_data")
-            if isinstance(master_data, list):
-                company["company_master_data"] = master_data[0] if master_data else None
-            
+        for row in result.data:
+            # Restructure to match old format for compatibility
+            company = {
+                "id": row["id"],
+                "name": row["name"],
+                "logo_url": row["logo_url"],
+                "industry": row["industry"],
+                "linkedin_company_id": row.get("linkedin_company_id"),
+                "job_count": row.get("job_count", 0),
+                "active_job_count": row.get("active_job_count", 0),
+                "company_master_data": {
+                    "id": row.get("master_data_id"),
+                    "hiring_model": row.get("hiring_model"),
+                    "is_consulting": row.get("is_consulting"),
+                    "sector_en": row.get("sector_en"),
+                    "category_en": row.get("category_en"),
+                    "aantal_werknemers": row.get("aantal_werknemers"),
+                    "bedrijfswebsite": row.get("bedrijfswebsite"),
+                    "jobspagina": row.get("jobspagina"),
+                    "email_hr": row.get("email_hr"),
+                    "ai_enriched": row.get("ai_enriched"),
+                    "ai_enriched_at": row.get("ai_enriched_at")
+                } if row.get("master_data_id") else None
+            }
             companies.append(company)
         
         return {
