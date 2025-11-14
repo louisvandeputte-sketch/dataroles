@@ -84,9 +84,6 @@ class JobData:
     # Description data
     description_text: Optional[str]
     
-    # Source data
-    source: Optional[str] = None  # Job source: 'linkedin' or 'indeed'
-    
     # Tech stack data (for bonus calculation) - with defaults, must come after non-default fields
     must_have_programmeertalen: Optional[List[str]] = None
     nice_to_have_programmeertalen: Optional[List[str]] = None
@@ -527,7 +524,7 @@ def load_jobs_from_database(only_needs_ranking: bool = False) -> List[JobData]:
                 companies(*),
                 company_master_data(hiring_model),
                 locations(*),
-                llm_enrichment(*),
+                llm_enrichment!job_posting_id(*),
                 job_descriptions(description_text)
             """)\
             .eq("is_active", True)\
@@ -550,7 +547,16 @@ def load_jobs_from_database(only_needs_ranking: bool = False) -> List[JobData]:
             company = row.get('companies', {})
             company_master = row.get('company_master_data', {})
             location = row.get('locations', {})
-            enrichment = row.get('llm_enrichment', {})
+            
+            # Handle llm_enrichment - can be dict, list, or None
+            enrichment_raw = row.get('llm_enrichment')
+            if isinstance(enrichment_raw, list):
+                enrichment = enrichment_raw[0] if enrichment_raw else {}
+            elif enrichment_raw is None:
+                enrichment = {}
+            else:
+                enrichment = enrichment_raw
+            
             description = row.get('job_descriptions', {})
             
             # Get hiring_model from company_master_data
@@ -622,17 +628,14 @@ def load_jobs_from_database(only_needs_ranking: bool = False) -> List[JobData]:
                 # Scraping data - will be populated in next step
                 scraped_at=None,  # Populated below
                 
-                # Description data
-                description_text=description.get('description_text') if description else None,
-                
-                # Source data
-                source=row.get('source'),  # Job source: 'linkedin' or 'indeed'
-                
                 # Tech stack data
                 must_have_programmeertalen=enrichment.get('must_have_programmeertalen', []),
                 nice_to_have_programmeertalen=enrichment.get('nice_to_have_programmeertalen', []),
                 must_have_ecosystemen=enrichment.get('must_have_ecosystemen', []),
-                nice_to_have_ecosystemen=enrichment.get('nice_to_have_ecosystemen', [])
+                nice_to_have_ecosystemen=enrichment.get('nice_to_have_ecosystemen', []),
+                
+                # Description data
+                description_text=description.get('description_text') if description else None
             )
             
             jobs.append(job)
