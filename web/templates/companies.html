@@ -40,7 +40,7 @@
                 <button @click="clearCache()" 
                         class="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium">
                     <i data-lucide="refresh-cw" class="w-4 h-4 mr-2"></i>
-                    Clear Cache
+                    Reload Data
                 </button>
             </div>
         </div>
@@ -88,7 +88,7 @@
 
         <!-- Search -->
         <div class="bg-white rounded-lg shadow p-4 mb-4">
-            <input type="text" x-model="search" @input="invalidateCache(); loadCompanies()" 
+            <input type="text" x-model="search" @input="loadCompanies()" 
                    placeholder="Search companies..."
                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
         </div>
@@ -650,9 +650,6 @@ function companiesPage() {
         currentPage: 1,
         pageSize: 100,
         totalPages: 1,
-        companiesCache: {},
-        cacheTimestamp: {},
-        cacheDuration: 10 * 60 * 1000, // 10 minutes
         selectedCompanies: [],
         enriching: false,
         aiStats: {
@@ -668,134 +665,27 @@ function companiesPage() {
             categories: {}
         },
         
+        // Helper to get API base URL with forced HTTPS in production
+        getApiBaseUrl() {
+            const origin = window.location.origin;
+            // Force HTTPS if on Railway production (or any production domain)
+            if (origin.includes('railway.app') && origin.startsWith('http://')) {
+                return origin.replace('http://', 'https://');
+            }
+            return origin;
+        },
+        
         async init() {
-            // Clear cache if schema version changed
-            this.checkAndClearCache();
-            this.loadCacheFromStorage();
             await this.loadCompanies();
             await this.loadAIStats();
             await this.loadSizeStats();
-            this.prefetchPages();
             this.$nextTick(() => lucide.createIcons());
         },
         
-        checkAndClearCache() {
-            const SCHEMA_VERSION = '4'; // Increment this when schema changes (v4: added weetjes)
-            const currentVersion = localStorage.getItem('companiesSchemaVersion');
-            
-            if (currentVersion !== SCHEMA_VERSION) {
-                console.log('Schema version changed, clearing cache...');
-                localStorage.removeItem('companiesCache');
-                localStorage.removeItem('companiesCacheTimestamp');
-                localStorage.setItem('companiesSchemaVersion', SCHEMA_VERSION);
-                this.companiesCache = {};
-                this.cacheTimestamp = {};
-            }
-        },
-        
-        loadCacheFromStorage() {
-            try {
-                const cachedData = localStorage.getItem('companiesCache');
-                const cachedTimestamps = localStorage.getItem('companiesCacheTimestamp');
-                
-                if (cachedData && cachedTimestamps) {
-                    this.companiesCache = JSON.parse(cachedData);
-                    this.cacheTimestamp = JSON.parse(cachedTimestamps);
-                    
-                    // Clean up expired cache entries
-                    const now = Date.now();
-                    Object.keys(this.cacheTimestamp).forEach(key => {
-                        if (now - this.cacheTimestamp[key] > this.cacheDuration) {
-                            delete this.companiesCache[key];
-                            delete this.cacheTimestamp[key];
-                        }
-                    });
-                    
-                    console.log('Loaded companies cache from localStorage:', Object.keys(this.companiesCache).length, 'pages');
-                }
-            } catch (error) {
-                console.error('Failed to load cache from storage:', error);
-            }
-        },
-        
-        saveCacheToStorage() {
-            try {
-                localStorage.setItem('companiesCache', JSON.stringify(this.companiesCache));
-                localStorage.setItem('companiesCacheTimestamp', JSON.stringify(this.cacheTimestamp));
-            } catch (error) {
-                console.error('Failed to save cache to storage:', error);
-            }
-        },
-        
-        async prefetchPages() {
-            for (let page = 2; page <= 3; page++) {
-                setTimeout(() => {
-                    this.fetchAndCachePage(page);
-                }, (page - 1) * 500);
-            }
-        },
-        
-        async fetchAndCachePage(page) {
-            const cacheKey = this.getCacheKey(page);
-            
-            try {
-                const params = new URLSearchParams();
-                if (this.search) params.append('search', this.search);
-                params.append('limit', this.pageSize);
-                params.append('offset', (page - 1) * this.pageSize);
-                
-                // Force HTTPS for Railway - use window.location.origin to get correct protocol
-                const apiUrl = `${window.location.origin}/api/companies?${params}`;
-                const response = await fetch(apiUrl);
-                const data = await response.json();
-                
-                this.companiesCache[cacheKey] = data;
-                this.cacheTimestamp[cacheKey] = Date.now();
-                this.saveCacheToStorage();
-                
-                console.log(`Cached companies page ${page}`);
-            } catch (error) {
-                console.error(`Failed to prefetch companies page ${page}:`, error);
-            }
-        },
-        
-        getCacheKey(page) {
-            return `${page}_${this.search}`;
-        },
-        
-        isCacheValid(cacheKey) {
-            if (!this.companiesCache[cacheKey]) return false;
-            const age = Date.now() - (this.cacheTimestamp[cacheKey] || 0);
-            return age < this.cacheDuration;
-        },
-        
-        invalidateCache() {
-            this.companiesCache = {};
-            this.cacheTimestamp = {};
-            localStorage.removeItem('companiesCache');
-            localStorage.removeItem('companiesCacheTimestamp');
-        },
         
         async loadCompanies() {
             this.loading = true;
             try {
-                const cacheKey = this.getCacheKey(this.currentPage);
-                
-                // Check cache first
-                if (this.isCacheValid(cacheKey)) {
-                    console.log(`Loading companies page ${this.currentPage} from cache`);
-                    const data = this.companiesCache[cacheKey];
-                    this.companies = data.companies || [];
-                    this.total = data.total || 0;
-                    this.totalPages = Math.ceil(this.total / this.pageSize);
-                    this.withMasterData = this.companies.filter(c => c.company_master_data).length;
-                    this.verified = this.companies.filter(c => c.company_master_data?.verified).length;
-                    this.loading = false;
-                    this.$nextTick(() => lucide.createIcons());
-                    return;
-                }
-                
-                // Fetch from API with timeout
                 console.log(`Fetching companies page ${this.currentPage} from API`);
                 const params = new URLSearchParams();
                 if (this.search) params.append('search', this.search);
@@ -805,8 +695,8 @@ function companiesPage() {
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
                 
-                // Force HTTPS for Railway - use window.location.origin to get correct protocol
-                const apiUrl = `${window.location.origin}/api/companies?${params}`;
+                // Force HTTPS for Railway
+                const apiUrl = `${this.getApiBaseUrl()}/api/companies?${params}`;
                 
                 const response = await fetch(apiUrl, {
                     signal: controller.signal
@@ -821,11 +711,6 @@ function companiesPage() {
                 
                 const data = await response.json();
                 
-                // Cache the data
-                this.companiesCache[cacheKey] = data;
-                this.cacheTimestamp[cacheKey] = Date.now();
-                this.saveCacheToStorage();
-                
                 this.companies = data.companies || [];
                 this.total = data.total || 0;
                 this.totalPages = Math.ceil(this.total / this.pageSize);
@@ -833,13 +718,6 @@ function companiesPage() {
                 // Calculate stats
                 this.withMasterData = this.companies.filter(c => c.company_master_data).length;
                 this.verified = this.companies.filter(c => c.company_master_data?.verified).length;
-                
-                // Prefetch next page if on page 1 or 2
-                if (this.currentPage <= 2) {
-                    setTimeout(() => {
-                        this.fetchAndCachePage(this.currentPage + 1);
-                    }, 500);
-                }
                 
                 this.$nextTick(() => lucide.createIcons());
             } catch (error) {
@@ -929,7 +807,7 @@ function companiesPage() {
                 
                 console.log('Cleaned data to send:', cleanedData);
                 
-                const url = `${window.location.origin}/api/companies/${companyId}/master-data`;
+                const url = `${this.getApiBaseUrl()}/api/companies/${companyId}/master-data`;
                 const method = hasMasterData ? 'PUT' : 'POST';
                 
                 const response = await fetch(url, {
@@ -956,7 +834,7 @@ function companiesPage() {
         
         async loadAIStats() {
             try {
-                const response = await fetch(`${window.location.origin}/api/companies/enrich/stats`);
+                const response = await fetch(`${this.getApiBaseUrl()}/api/companies/enrich/stats`);
                 this.aiStats = await response.json();
             } catch (error) {
                 console.error('Failed to load AI stats:', error);
@@ -965,7 +843,7 @@ function companiesPage() {
         
         async loadSizeStats() {
             try {
-                const response = await fetch(`${window.location.origin}/api/companies/size-classification/stats`);
+                const response = await fetch(`${this.getApiBaseUrl()}/api/companies/size-classification/stats`);
                 this.sizeStats = await response.json();
             } catch (error) {
                 console.error('Failed to load size stats:', error);
@@ -1002,7 +880,7 @@ function companiesPage() {
             this.enriching = true;
             
             try {
-                const response = await fetch(`${window.location.origin}/api/companies/enrich/batch`, {
+                const response = await fetch(`${this.getApiBaseUrl()}/api/companies/enrich/batch`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(this.selectedCompanies)
@@ -1030,12 +908,6 @@ function companiesPage() {
                 // Clear selection
                 this.selectedCompanies = [];
                 
-                // Clear cache to force fresh data
-                this.companiesCache = {};
-                this.cacheTimestamp = {};
-                localStorage.removeItem('companiesCache');
-                localStorage.removeItem('companiesCacheTimestamp');
-                
                 // Reload data
                 await this.loadCompanies();
                 await this.loadAIStats();
@@ -1058,7 +930,7 @@ function companiesPage() {
             
             try {
                 // Get unenriched company IDs
-                const response = await fetch(`${window.location.origin}/api/companies/enrich/unenriched?limit=1000`);
+                const response = await fetch(`${this.getApiBaseUrl()}/api/companies/enrich/unenriched?limit=1000`);
                 const data = await response.json();
                 
                 if (data.company_ids.length === 0) {
@@ -1067,7 +939,7 @@ function companiesPage() {
                 }
                 
                 // Enrich in batch
-                const enrichResponse = await fetch(`${window.location.origin}/api/companies/enrich/batch`, {
+                const enrichResponse = await fetch(`${this.getApiBaseUrl()}/api/companies/enrich/batch`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data.company_ids)
@@ -1086,12 +958,6 @@ function companiesPage() {
                     alert('Enrichment completed!');
                 }
                 
-                // Clear cache to force fresh data
-                this.companiesCache = {};
-                this.cacheTimestamp = {};
-                localStorage.removeItem('companiesCache');
-                localStorage.removeItem('companiesCacheTimestamp');
-                
                 await this.loadCompanies();
                 await this.loadAIStats();
                 this.$nextTick(() => lucide.createIcons());
@@ -1104,21 +970,9 @@ function companiesPage() {
         },
         
         clearCache() {
-            // Clear all caches
-            this.companiesCache = {};
-            this.cacheTimestamp = {};
-            localStorage.removeItem('companiesCache');
-            localStorage.removeItem('companiesCacheTimestamp');
-            
             // Reload data
             this.loadCompanies();
-            this.loadAIStats();
-            this.loadSizeStats();
-            
-            // Show confirmation
-            alert('✅ Cache cleared! Reloading fresh data...');
-            
-            this.$nextTick(() => lucide.createIcons());
+            alert('Data reloaded!');
         }
     }
 }
