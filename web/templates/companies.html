@@ -803,7 +803,10 @@ function companiesPage() {
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
                 
-                const response = await fetch(`/api/companies?${params}`, {
+                // Force HTTPS for Railway - use window.location.origin to get correct protocol
+                const apiUrl = `${window.location.origin}/api/companies?${params}`;
+                
+                const response = await fetch(apiUrl, {
                     signal: controller.signal
                 });
                 clearTimeout(timeoutId);
