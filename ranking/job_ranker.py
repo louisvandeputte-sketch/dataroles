@@ -516,26 +516,16 @@ def load_jobs_from_database(only_needs_ranking: bool = False) -> List[JobData]:
     offset = 0
     
     while True:
-        # Query jobs in batches - join company_master_data for hiring_model
-        # Note: We'll fetch scrape history separately due to aggregation complexity
-        # Note: Supabase has issues with multiple joins, so we fetch enrichment separately
-        query = db.client.table("job_postings")\
-            .select("""
-                id, title, company_id, location_id, posted_date, seniority_level, 
-                employment_type, function_areas, base_salary_min, base_salary_max, 
-                apply_url, num_applicants, is_active,
-                companies(*),
-                company_master_data(hiring_model),
-                locations(*),
-                job_descriptions(description_text)
-            """)\
-            .eq("is_active", True)\
-            .eq("title_classification", "Data")\
+        # Use denormalized view for efficient data loading
+        # This avoids Supabase/PostgREST join limitations
+        query = db.client.table("job_ranking_view")\
+            .select("*")\
             .range(offset, offset + page_size - 1)
         
         # Optionally filter to only jobs that need ranking
-        if only_needs_ranking:
-            query = query.eq("needs_ranking", True)
+        # Note: needs_ranking is on job_postings table, not in view
+        # So we need to join or filter differently if this is needed
+        # For now, we load all active Data jobs
         
         result = query.execute()
         
@@ -546,23 +536,34 @@ def load_jobs_from_database(only_needs_ranking: bool = False) -> List[JobData]:
         
         # Process this batch
         for row in result.data:
-            company = row.get('companies', {})
-            company_master = row.get('company_master_data', {})
-            location = row.get('locations', {})
-            description = row.get('job_descriptions', {})
-            
-            # Get hiring_model from company_master_data
-            hiring_model = company_master.get('hiring_model') if company_master else None
-            
+            # All data is already denormalized in the view
             # Check if FAANG
             faang_companies = ['google', 'microsoft', 'meta', 'amazon', 'apple', 'netflix', 'facebook', 'alphabet']
-            is_faang = company.get('name', '').lower() in faang_companies
+            is_faang = row.get('company_name', '').lower() in faang_companies
+            
+            # Parse labels JSON for seniority
+            labels = row.get('labels')
+            if isinstance(labels, str):
+                import json
+                try:
+                    labels = json.loads(labels)
+                except:
+                    labels = {}
+            
+            seniority = None
+            if labels:
+                # Try different language keys for seniority
+                for lang in ['nl', 'en', 'fr']:
+                    if lang in labels:
+                        seniority = labels[lang].get('seniority')
+                        if seniority:
+                            break
             
             job = JobData(
                 id=row['id'],
                 title=row['title'],
                 company_id=row['company_id'],
-                company_name=company.get('name', ''),
+                company_name=row.get('company_name', ''),
                 location_id=row['location_id'],
                 posted_date=parse_datetime(row.get('posted_date')),
                 seniority_level=row.get('seniority_level'),
@@ -574,38 +575,38 @@ def load_jobs_from_database(only_needs_ranking: bool = False) -> List[JobData]:
                 num_applicants=row.get('num_applicants'),
                 is_active=row.get('is_active', True),
                 
-                # Company data
-                company_industry=company.get('industry'),
-                company_url=company.get('company_url'),
-                company_logo_data=company.get('logo_data'),
-                company_employee_count_range=company.get('employee_count_range'),
-                company_rating=company.get('rating'),
-                company_reviews_count=company.get('reviews_count'),
-                hiring_model=hiring_model,
+                # Company data (from view)
+                company_industry=row.get('company_industry'),
+                company_url=row.get('company_url'),
+                company_logo_data=row.get('company_logo_data'),
+                company_employee_count_range=row.get('company_employee_count_range'),
+                company_rating=row.get('company_rating'),
+                company_reviews_count=row.get('company_reviews_count'),
+                hiring_model=row.get('hiring_model'),
                 is_faang=is_faang,
                 
-                # Location data
-                location_city=location.get('city'),
+                # Location data (from view)
+                location_city=row.get('location_city'),
                 
-                # Enrichment data - will be populated separately
-                skills_must_have=None,
-                samenvatting_kort=None,
-                samenvatting_lang=None,
-                data_role_type=None,
-                seniority=None,
-                enrichment_completed_at=None,
+                # Enrichment data (from view)
+                skills_must_have=row.get('skills_must_have'),
+                samenvatting_kort=row.get('samenvatting_kort'),
+                samenvatting_lang=row.get('samenvatting_lang'),
+                data_role_type=row.get('data_role_type'),
+                seniority=seniority,
+                enrichment_completed_at=parse_datetime(row.get('enrichment_completed_at')),
                 
                 # Scraping data - will be populated in next step
                 scraped_at=None,
                 
-                # Tech stack data - will be populated separately
-                must_have_programmeertalen=[],
-                nice_to_have_programmeertalen=[],
-                must_have_ecosystemen=[],
-                nice_to_have_ecosystemen=[],
+                # Tech stack data (from view)
+                must_have_programmeertalen=row.get('must_have_programmeertalen', []),
+                nice_to_have_programmeertalen=row.get('nice_to_have_programmeertalen', []),
+                must_have_ecosystemen=row.get('must_have_ecosystemen', []),
+                nice_to_have_ecosystemen=row.get('nice_to_have_ecosystemen', []),
                 
-                # Description data
-                description_text=description.get('description_text') if description else None
+                # Description data (from view)
+                description_text=row.get('description_text')
             )
             
             jobs.append(job)
@@ -651,57 +652,7 @@ def load_jobs_from_database(only_needs_ranking: bool = False) -> List[JobData]:
         
         logger.info(f"Found scrape times for {len(job_scrape_times)} jobs")
         
-        # Fetch enrichment data separately (Supabase join issues with multiple relations)
-        logger.info(f"Fetching enrichment data for {len(jobs)} jobs...")
-        enrichment_data = {}
-        
-        for i in range(0, len(job_ids), batch_size):
-            batch_ids = job_ids[i:i + batch_size]
-            
-            # Query enrichment for this batch
-            enr_result = db.client.table("llm_enrichment")\
-                .select("*")\
-                .in_("job_posting_id", batch_ids)\
-                .execute()
-            
-            # Store by job_posting_id
-            for row in enr_result.data:
-                enrichment_data[row['job_posting_id']] = row
-        
-        # Update jobs with enrichment data
-        for job in jobs:
-            if job.id in enrichment_data:
-                enrichment = enrichment_data[job.id]
-                
-                # Update enrichment fields
-                job.enrichment_completed_at = parse_datetime(enrichment.get('enrichment_completed_at'))
-                job.data_role_type = enrichment.get('type_datarol')
-                job.skills_must_have = enrichment.get('skills_must_have_nl')
-                job.samenvatting_kort = enrichment.get('samenvatting_kort_nl')
-                job.samenvatting_lang = enrichment.get('samenvatting_lang_nl')
-                job.must_have_programmeertalen = enrichment.get('must_have_programmeertalen', [])
-                job.nice_to_have_programmeertalen = enrichment.get('nice_to_have_programmeertalen', [])
-                job.must_have_ecosystemen = enrichment.get('must_have_ecosystemen', [])
-                job.nice_to_have_ecosystemen = enrichment.get('nice_to_have_ecosystemen', [])
-                
-                # Parse labels for seniority
-                labels = enrichment.get('labels')
-                if isinstance(labels, str):
-                    import json
-                    try:
-                        labels = json.loads(labels)
-                    except:
-                        labels = {}
-                
-                if labels:
-                    for lang in ['nl', 'en', 'fr']:
-                        if lang in labels:
-                            seniority = labels[lang].get('seniority')
-                            if seniority:
-                                job.seniority = seniority
-                                break
-        
-        logger.info(f"Found enrichment data for {len(enrichment_data)} jobs")
+        # Note: Enrichment data is already loaded from the view, no need to fetch separately
     
     logger.info(f"Loaded {len(jobs)} jobs from database")
     return jobs
