@@ -798,7 +798,7 @@ function jobsPage() {
         },
         
         getCacheKey(page) {
-            return `${page}_${this.searchQuery}_${this.filters.companies.join(',')}_${this.filters.locations.join(',')}_${this.filters.seniority.join(',')}_${this.filters.employment.join(',')}_${this.filters.types.join(',')}_${this.filters.postedDate}_${this.filters.aiStatus}_${this.filters.activeOnly}_${this.filters.dataOnly}`;
+            return `${page}_${this.searchQuery}_${this.filters.companies.join(',')}_${this.filters.locations.join(',')}_${this.filters.seniority.join(',')}_${this.filters.employment.join(',')}_${this.filters.types.join(',')}_${this.filters.postedDate}_${this.filters.aiStatus}_${this.filters.source}_${this.filters.activeOnly}_${this.filters.dataOnly}_${this.sortField}_${this.sortDirection}`;
         },
         
         isCacheValid(cacheKey) {
