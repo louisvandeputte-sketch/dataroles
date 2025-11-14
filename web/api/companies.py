@@ -65,8 +65,9 @@ async def list_companies(
     
     try:
         # Build base query with LEFT JOIN to master data
+        # Only select essential fields to reduce response size
         query = db.client.table("companies").select(
-            "id, name, logo_url, industry, company_master_data(*)",
+            "id, name, logo_url, industry, company_master_data(hiring_model, is_consulting)",
             count="exact"
         )
         
