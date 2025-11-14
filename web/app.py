@@ -215,6 +215,11 @@ async def job_types_page(request: Request):
 @app.get("/companies", response_class=HTMLResponse)
 async def companies_page(request: Request):
     """Companies master data management page."""
+    return templates.TemplateResponse("companies_new.html", {"request": request})
+
+@app.get("/companies-old", response_class=HTMLResponse)
+async def companies_old_page(request: Request):
+    """Old companies page (backup)."""
     return templates.TemplateResponse("companies.html", {"request": request})
 
 
