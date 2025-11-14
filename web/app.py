@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from pathlib import Path
 from contextlib import asynccontextmanager
 from loguru import logger
@@ -105,6 +106,17 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+# Add middleware to trust Railway's proxy headers
+@app.middleware("http")
+async def force_https_middleware(request: Request, call_next):
+    """Force HTTPS scheme when behind Railway proxy."""
+    # Railway sends X-Forwarded-Proto header
+    forwarded_proto = request.headers.get("x-forwarded-proto")
+    if forwarded_proto == "https":
+        # Override the request URL scheme to HTTPS
+        request.scope["scheme"] = "https"
+    response = await call_next(request)
+    return response
 
 # Add validation error handler
 @app.exception_handler(RequestValidationError)
