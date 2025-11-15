@@ -854,3 +854,97 @@ async def get_size_classification_stats():
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== CONSULTING CLASSIFICATION ====================
+
+def _classify_consulting_background(company_id: str, company_name: str, company_description: str = None):
+    """Background task for classifying a single company's consulting status."""
+    try:
+        from ingestion.consulting_classifier import classify_consulting
+        logger.info(f"🔄 Background consulting classification started for company: {company_name}")
+        result = classify_consulting(company_id, company_name, company_description)
+        if result["success"]:
+            logger.info(f"✅ Background consulting classification complete for company: {company_name} - Consulting: {result['is_consulting']}")
+        else:
+            logger.error(f"❌ Background consulting classification failed for company: {company_name} - {result.get('error')}")
+    except Exception as e:
+        logger.error(f"❌ Background consulting classification error for company: {company_name} - {e}")
+
+
+@router.post("/{company_id}/classify-consulting")
+async def classify_company_consulting(company_id: str, background_tasks: BackgroundTasks):
+    """Classify if a company is primarily a consulting firm (runs in background)."""
+    try:
+        # Get company details
+        company = db.client.table("companies")\
+            .select("id, name, company_master_data(bedrijfsomschrijving_en)")\
+            .eq("id", company_id)\
+            .single()\
+            .execute()
+        
+        if not company.data:
+            raise HTTPException(status_code=404, detail="Company not found")
+        
+        company_data = company.data
+        company_name = company_data.get("name", "Unknown")
+        
+        # Get description if available
+        description = None
+        if company_data.get("company_master_data"):
+            master_data = company_data["company_master_data"]
+            if isinstance(master_data, list) and len(master_data) > 0:
+                description = master_data[0].get("bedrijfsomschrijving_en")
+            elif isinstance(master_data, dict):
+                description = master_data.get("bedrijfsomschrijving_en")
+        
+        # Add to background tasks
+        background_tasks.add_task(
+            _classify_consulting_background,
+            company_id,
+            company_name,
+            description
+        )
+        
+        return {
+            "message": "Consulting classification started in background",
+            "company_id": company_id,
+            "company_name": company_name
+        }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+def _classify_consulting_batch_background(company_ids: List[str]):
+    """Background task for batch classifying companies' consulting status."""
+    try:
+        from ingestion.consulting_classifier import classify_consulting_batch
+        logger.info(f"🔄 Background batch consulting classification started for {len(company_ids)} companies")
+        stats = classify_consulting_batch(company_ids)
+        logger.info(f"✅ Background batch consulting classification complete: {stats['successful']} successful, {stats['failed']} failed")
+    except Exception as e:
+        logger.error(f"❌ Background batch consulting classification error: {e}")
+
+
+@router.post("/classify-consulting/batch")
+async def classify_consulting_batch_endpoint(company_ids: List[str], background_tasks: BackgroundTasks):
+    """Classify multiple companies for consulting status in batch (runs in background)."""
+    try:
+        if not company_ids:
+            raise HTTPException(status_code=400, detail="No company IDs provided")
+        
+        # Add to background tasks
+        background_tasks.add_task(_classify_consulting_batch_background, company_ids)
+        
+        return {
+            "message": f"Batch consulting classification started in background for {len(company_ids)} companies",
+            "company_count": len(company_ids)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
