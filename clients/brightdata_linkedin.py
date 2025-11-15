@@ -218,6 +218,12 @@ class BrightDataLinkedInClient:
             response.raise_for_status()
             data = response.json()
             
+            # Log raw response for debugging
+            logger.info(f"Raw Bright Data response type: {type(data).__name__}")
+            if isinstance(data, list) and len(data) > 0:
+                logger.info(f"First item keys: {list(data[0].keys()) if isinstance(data[0], dict) else 'Not a dict'}")
+                logger.debug(f"First job raw data: {data[0]}")
+            
             # Validate that we got a list, not a status dict
             if isinstance(data, dict):
                 # Sometimes Bright Data returns {"status": "building"} even after status check
@@ -229,8 +235,27 @@ class BrightDataLinkedInClient:
             if not isinstance(data, list):
                 raise BrightDataError(f"Expected list of jobs, got {type(data).__name__}")
             
-            logger.info(f"Downloaded {len(data)} jobs from snapshot {snapshot_id}")
-            return data
+            # Filter out error items - Bright Data returns error objects for failed requests
+            # Error items have 'error' and 'error_code' fields but no job data
+            jobs = []
+            error_count = 0
+            for item in data:
+                if isinstance(item, dict):
+                    if 'error' in item or 'error_code' in item:
+                        # This is an error item, not a job
+                        error_count += 1
+                        logger.warning(f"Bright Data error item: {item.get('error', 'Unknown error')}")
+                    else:
+                        # This is actual job data
+                        jobs.append(item)
+                else:
+                    jobs.append(item)
+            
+            if error_count > 0:
+                logger.warning(f"Filtered out {error_count} error items from Bright Data response")
+            
+            logger.info(f"Downloaded {len(jobs)} LinkedIn jobs from snapshot {snapshot_id} ({error_count} errors filtered)")
+            return jobs
             
         except httpx.HTTPStatusError as e:
             raise BrightDataError(f"Failed to download results: {e}")
