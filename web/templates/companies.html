@@ -123,7 +123,6 @@
                                 <input type="checkbox" @change="toggleAll" class="rounded border-gray-300">
                             </th>
                             <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
-                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hiring Model</th>
                             <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sector</th>
                             <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
                             <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Website</th>
@@ -154,19 +153,6 @@
                                     </div>
                                     <div class="text-sm font-medium text-gray-900 truncate" x-text="company.name"></div>
                                 </div>
-                            </td>
-                            <!-- Hiring Model -->
-                            <td class="px-2 py-2">
-                                <span x-show="company.company_master_data?.hiring_model" 
-                                      class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
-                                      :class="{
-                                          'bg-green-100 text-green-800': company.company_master_data?.hiring_model === 'direct',
-                                          'bg-orange-100 text-orange-800': company.company_master_data?.hiring_model === 'recruitment',
-                                          'bg-gray-100 text-gray-800': company.company_master_data?.hiring_model === 'unknown'
-                                      }"
-                                      x-text="company.company_master_data?.hiring_model_en || company.company_master_data?.hiring_model">
-                                </span>
-                                <span x-show="!company.company_master_data?.hiring_model" class="text-xs text-gray-400">-</span>
                             </td>
                             <!-- Sector -->
                             <td class="px-2 py-2">
@@ -476,54 +462,6 @@
                                       :class="viewingCompany.company_master_data?.is_consulting ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100 text-gray-800'">
                                     <span x-text="viewingCompany.company_master_data?.is_consulting ? '✓ Yes - This is a consulting company' : '✗ No - Not a consulting company'"></span>
                                 </span>
-                            </div>
-                        </div>
-
-                        <!-- Hiring Model -->
-                        <div x-show="viewingCompany.company_master_data?.hiring_model" class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                            <h4 class="text-sm font-semibold text-blue-900 mb-3 flex items-center">
-                                <i data-lucide="briefcase" class="w-4 h-4 mr-2"></i>
-                                Hiring Model
-                            </h4>
-                            <div class="space-y-3">
-                                <!-- Hiring Model Badge -->
-                                <div>
-                                    <div class="flex items-center gap-2 mb-2">
-                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
-                                              :class="{
-                                                  'bg-purple-100 text-purple-800': viewingCompany.company_master_data?.hiring_model === 'recruitment',
-                                                  'bg-green-100 text-green-800': viewingCompany.company_master_data?.hiring_model === 'direct',
-                                                  'bg-gray-100 text-gray-800': viewingCompany.company_master_data?.hiring_model === 'unknown',
-                                              }"
-                                              x-text="viewingCompany.company_master_data?.hiring_model_en || viewingCompany.company_master_data?.hiring_model">
-                                        </span>
-                                    </div>
-                                    <!-- Multilingual hiring model labels -->
-                                    <div class="text-xs text-gray-600 space-y-1">
-                                        <div x-show="viewingCompany.company_master_data?.hiring_model_en">
-                                            🇬🇧 <span x-text="viewingCompany.company_master_data?.hiring_model_en"></span>
-                                        </div>
-                                        <div x-show="viewingCompany.company_master_data?.hiring_model_nl">
-                                            🇳🇱 <span x-text="viewingCompany.company_master_data?.hiring_model_nl"></span>
-                                        </div>
-                                        <div x-show="viewingCompany.company_master_data?.hiring_model_fr">
-                                            🇫🇷 <span x-text="viewingCompany.company_master_data?.hiring_model_fr"></span>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- Explanation -->
-                                <div class="text-xs text-gray-600 bg-white rounded p-2">
-                                    <template x-if="viewingCompany.company_master_data?.hiring_model === 'recruitment'">
-                                        <p>🏢 This company provides recruitment/staffing services (interim, headhunting, RPO)</p>
-                                    </template>
-                                    <template x-if="viewingCompany.company_master_data?.hiring_model === 'direct'">
-                                        <p>🏭 This company hires directly for its own organization</p>
-                                    </template>
-                                    <template x-if="viewingCompany.company_master_data?.hiring_model === 'unknown'">
-                                        <p>❓ Hiring model could not be determined with confidence</p>
-                                    </template>
-                                </div>
                             </div>
                         </div>
 
