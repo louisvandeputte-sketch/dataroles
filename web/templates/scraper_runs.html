@@ -490,23 +490,34 @@ function scraperRunsPage() {
                 let errorCount = 0;
                 
                 for (const key of this.selectedRuns) {
-                    const [runId, source] = key.split('-');
+                    // Split key properly - handle UUIDs with dashes
+                    const lastDashIndex = key.lastIndexOf('-');
+                    const runId = key.substring(0, lastDashIndex);
+                    const source = key.substring(lastDashIndex + 1);
+                    
+                    console.log(`Archiving: runId=${runId}, source=${source}`);
                     
                     try {
                         const apiPrefix = source === 'linkedin' ? '/api/runs' : '/api/indeed/runs';
-                        const response = await fetch(`${apiPrefix}/${runId}/archive`, {
+                        const url = `${apiPrefix}/${runId}/archive`;
+                        console.log(`Calling: ${url}`);
+                        
+                        const response = await fetch(url, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ archived: true })
                         });
                         
                         if (response.ok) {
+                            console.log(`✅ Archived ${runId}`);
                             successCount++;
                         } else {
+                            const errorText = await response.text();
+                            console.error(`❌ Failed to archive ${runId}: ${response.status} - ${errorText}`);
                             errorCount++;
                         }
                     } catch (error) {
-                        console.error(`Failed to archive run ${runId}:`, error);
+                        console.error(`❌ Exception archiving run ${runId}:`, error);
                         errorCount++;
                     }
                 }

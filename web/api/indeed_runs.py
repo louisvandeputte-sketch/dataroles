@@ -4,10 +4,15 @@ from fastapi import APIRouter, HTTPException
 from typing import Optional
 from datetime import datetime, timedelta
 from loguru import logger
+from pydantic import BaseModel
 
 from database import db
 
 router = APIRouter()
+
+
+class ArchiveRequest(BaseModel):
+    archived: bool
 
 
 @router.get("/")
@@ -120,6 +125,34 @@ async def get_indeed_run_jobs(run_id: str, limit: int = 100, offset: int = 0):
     except Exception as e:
         logger.error(f"Error getting Indeed run jobs: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{run_id}/archive")
+async def archive_indeed_run(run_id: str, body: ArchiveRequest):
+    """Archive or unarchive an Indeed scrape run."""
+    try:
+        # Update the archived status
+        result = db.client.table("scrape_runs")\
+            .update({"archived": body.archived})\
+            .eq("id", run_id)\
+            .eq("platform", "indeed_brightdata")\
+            .execute()
+        
+        if not result.data:
+            raise HTTPException(status_code=404, detail="Run not found")
+        
+        logger.info(f"Indeed run {run_id} {'archived' if body.archived else 'unarchived'}")
+        
+        return {
+            "message": f"Run {'archived' if body.archived else 'unarchived'} successfully",
+            "run_id": run_id,
+            "archived": body.archived
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to archive Indeed run {run_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to archive run: {str(e)}")
 
 
 @router.post("/{run_id}/cancel")
