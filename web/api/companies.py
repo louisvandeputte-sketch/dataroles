@@ -948,3 +948,57 @@ async def classify_consulting_batch_endpoint(company_ids: List[str], background_
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/classify-consulting/enriched")
+async def get_enriched_companies_for_consulting(limit: int = 1000):
+    """Get list of enriched companies that can be classified for consulting status."""
+    try:
+        # Get companies that have been AI enriched (have descriptions)
+        result = db.client.table("companies")\
+            .select("id")\
+            .not_.is_("company_master_data.ai_enriched", "null")\
+            .eq("company_master_data.ai_enriched", True)\
+            .limit(limit)\
+            .execute()
+        
+        company_ids = [row["id"] for row in result.data] if result.data else []
+        
+        return {
+            "company_ids": company_ids,
+            "count": len(company_ids)
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/classify-consulting/all-enriched")
+async def classify_all_enriched_companies(background_tasks: BackgroundTasks, limit: int = 1000):
+    """Classify all enriched companies for consulting status (runs in background)."""
+    try:
+        # Get enriched companies
+        result = db.client.table("companies")\
+            .select("id")\
+            .not_.is_("company_master_data.ai_enriched", "null")\
+            .eq("company_master_data.ai_enriched", True)\
+            .limit(limit)\
+            .execute()
+        
+        company_ids = [row["id"] for row in result.data] if result.data else []
+        
+        if not company_ids:
+            raise HTTPException(status_code=404, detail="No enriched companies found")
+        
+        # Add to background tasks
+        background_tasks.add_task(_classify_consulting_batch_background, company_ids)
+        
+        return {
+            "message": f"Batch consulting classification started for {len(company_ids)} enriched companies",
+            "company_count": len(company_ids)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
