@@ -174,10 +174,15 @@
                         </td>
                         <td class="px-6 py-4">
                             <div class="flex items-center justify-end space-x-2">
+                                <a :href="`/jobs?run_id=${run.id}`"
+                                   class="inline-flex items-center px-3 py-1.5 border border-blue-300 rounded-md text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                                    <i data-lucide="list" class="w-3.5 h-3.5 mr-1.5"></i>
+                                    View Jobs
+                                </a>
                                 <button @click="viewRunDetail(run.id)" 
                                         class="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
                                     <i data-lucide="eye" class="w-3.5 h-3.5 mr-1.5"></i>
-                                    View Details
+                                    Details
                                 </button>
                                 <button @click="toggleArchive(run.id, run.archived)" 
                                         class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
