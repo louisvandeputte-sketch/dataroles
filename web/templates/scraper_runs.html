@@ -90,7 +90,7 @@
                     </div>
                     <div class="flex items-center justify-between">
                         <span class="text-sm font-medium text-gray-700">Jobs Found:</span>
-                        <span class="text-sm font-semibold text-blue-600" x-text="run.jobs_scraped || 0"></span>
+                        <span class="text-sm font-semibold text-blue-600" x-text="run.jobs_found || run.jobs_scraped || 0"></span>
                     </div>
                 </div>
             </div>
@@ -151,7 +151,7 @@
                         </div>
                         <div>
                             <span class="text-xs text-gray-500">Jobs Found</span>
-                            <p class="text-sm font-semibold text-blue-600" x-text="run.jobs_scraped || 0"></p>
+                            <p class="text-sm font-semibold text-blue-600" x-text="run.jobs_found || run.jobs_scraped || 0"></p>
                         </div>
                         <div>
                             <span class="text-xs text-gray-500">Completed</span>
@@ -204,7 +204,7 @@
                         </div>
                         <div>
                             <span class="text-xs text-gray-500">Jobs Found</span>
-                            <p class="text-sm font-semibold text-blue-600" x-text="run.jobs_scraped || 0"></p>
+                            <p class="text-sm font-semibold text-blue-600" x-text="run.jobs_found || run.jobs_scraped || 0"></p>
                         </div>
                         <div>
                             <span class="text-xs text-gray-500">Completed</span>
@@ -254,8 +254,8 @@
                                 <p class="mt-1 text-sm text-gray-900" x-text="selectedRun.status"></p>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700">Jobs Scraped</label>
-                                <p class="mt-1 text-sm font-semibold text-blue-600" x-text="selectedRun.jobs_scraped || 0"></p>
+                                <label class="block text-sm font-medium text-gray-700">Jobs Found</label>
+                                <p class="mt-1 text-sm font-semibold text-blue-600" x-text="selectedRun.jobs_found || selectedRun.jobs_scraped || 0"></p>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Started</label>

@@ -132,6 +132,21 @@ async def execute_scrape_run(
         
         logger.info(f"Received {len(jobs_data)} jobs from Bright Data")
         
+        # Log warning if no jobs found
+        if len(jobs_data) == 0:
+            logger.warning(
+                f"⚠️ No jobs returned from Bright Data!\n"
+                f"  Query: '{query}'\n"
+                f"  Location: '{location}'\n"
+                f"  Date range: {date_range}\n"
+                f"  Snapshot ID: {snapshot_id}\n"
+                f"  This could indicate:\n"
+                f"    - No jobs match the search criteria\n"
+                f"    - Invalid location query\n"
+                f"    - Bright Data API issue\n"
+                f"    - Date range too restrictive"
+            )
+        
         # Step 6: Process jobs through ingestion pipeline
         batch_result = await process_jobs_batch(jobs_data, run_id, source=source)
         
@@ -172,7 +187,14 @@ async def execute_scrape_run(
                 "duration_seconds": duration,
                 "batch_summary": batch_result.summary(),
                 "jobs_error": batch_result.error_count,
-                "error_details": batch_result.error_details if batch_result.error_count > 0 else []
+                "error_details": batch_result.error_details if batch_result.error_count > 0 else [],
+                "brightdata_jobs_returned": len(jobs_data),
+                "query_params": {
+                    "keyword": query,
+                    "location": location,
+                    "posted_date_range": date_range,
+                    "limit": 1000
+                }
             }
         })
         
