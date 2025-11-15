@@ -568,22 +568,34 @@ function companiesPage() {
         },
         
         async viewCompanyDetail(companyId) {
+            console.log('🔍 Opening company detail for ID:', companyId);
             this.showDetailModal = true;
             this.loadingDetail = true;
             this.companyDetail = null;
             
             try {
                 const apiUrl = `${this.getApiBaseUrl()}/api/companies/${companyId}/`;  // Note: trailing slash required
+                console.log('📡 Fetching company detail from:', apiUrl);
+                
                 const response = await fetch(apiUrl);
+                console.log('📥 Response status:', response.status);
                 
                 if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
+                    const errorText = await response.text();
+                    console.error('❌ API Error:', response.status, errorText);
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
                 }
                 
                 this.companyDetail = await response.json();
+                console.log('✅ Company detail loaded:', this.companyDetail.name);
+                console.log('📊 Master data present:', !!this.companyDetail.company_master_data);
+                
                 this.$nextTick(() => lucide.createIcons());
             } catch (error) {
-                console.error('Failed to load company detail:', error);
+                console.error('❌ Failed to load company detail:', error);
+                console.error('Error type:', error.constructor.name);
+                console.error('Error message:', error.message);
+                console.error('Error stack:', error.stack);
                 alert('Failed to load company details: ' + error.message);
                 this.showDetailModal = false;
             } finally {
