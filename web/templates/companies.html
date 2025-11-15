@@ -353,17 +353,24 @@
             <div class="fixed inset-0 bg-gray-500 bg-opacity-75" @click="showViewModal = false"></div>
             
             <div class="relative bg-white rounded-lg max-w-4xl w-full p-6 max-h-[90vh] overflow-y-auto">
-                <div class="flex items-center justify-between mb-4 sticky top-0 bg-white pb-4 border-b">
-                    <div>
-                        <h3 class="text-xl font-bold text-gray-900" x-text="viewingCompany?.name"></h3>
-                        <p class="text-sm text-gray-500" x-text="viewingCompany?.industry"></p>
-                    </div>
-                    <button @click="showViewModal = false" class="text-gray-400 hover:text-gray-500">
-                        <i data-lucide="x" class="w-6 h-6"></i>
-                    </button>
+                <!-- Loading State -->
+                <div x-show="loadingDetail" class="text-center py-12">
+                    <i data-lucide="loader" class="w-8 h-8 mx-auto animate-spin text-blue-500 mb-3"></i>
+                    <p class="text-gray-500">Loading company details...</p>
                 </div>
 
-                <template x-if="viewingCompany">
+                <!-- Content -->
+                <template x-if="!loadingDetail && viewingCompany">
+                    <div>
+                        <div class="flex items-center justify-between mb-4 sticky top-0 bg-white pb-4 border-b">
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-900" x-text="viewingCompany?.name"></h3>
+                                <p class="text-sm text-gray-500" x-text="viewingCompany?.industry"></p>
+                            </div>
+                            <button @click="showViewModal = false" class="text-gray-400 hover:text-gray-500">
+                                <i data-lucide="x" class="w-6 h-6"></i>
+                            </button>
+                        </div>
                     <div class="space-y-6">
                         <!-- AI Enrichment Status -->
                         <div class="flex items-center justify-between p-4 rounded-lg bg-purple-50 border border-purple-200">
@@ -441,6 +448,20 @@
                                 <div x-show="viewingCompany.company_master_data?.size_enriched_at" class="text-xs text-gray-500 pt-2 border-t">
                                     Classified on <span x-text="new Date(viewingCompany.company_master_data?.size_enriched_at).toLocaleString()"></span>
                                 </div>
+                            </div>
+                        </div>
+
+                        <!-- Consulting Check -->
+                        <div x-show="viewingCompany.company_master_data?.is_consulting !== null && viewingCompany.company_master_data?.is_consulting !== undefined" class="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                            <h4 class="text-sm font-semibold text-indigo-900 mb-3 flex items-center">
+                                <i data-lucide="briefcase" class="w-4 h-4 mr-2"></i>
+                                Consulting Company
+                            </h4>
+                            <div class="flex items-center gap-3">
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
+                                      :class="viewingCompany.company_master_data?.is_consulting ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100 text-gray-800'">
+                                    <span x-text="viewingCompany.company_master_data?.is_consulting ? '✓ Yes - This is a consulting company' : '✗ No - Not a consulting company'"></span>
+                                </span>
                             </div>
                         </div>
 
@@ -637,6 +658,7 @@
                             </div>
                         </div>
                     </div>
+                    </div>
                 </template>
             </div>
         </div>
@@ -656,6 +678,7 @@ function companiesPage() {
         verified: 0,
         showModal: false,
         showViewModal: false,
+        loadingDetail: false,
         editingCompany: null,
         viewingCompany: null,
         formData: {},
@@ -773,10 +796,37 @@ function companiesPage() {
             return '-';
         },
         
-        viewCompany(company) {
-            this.viewingCompany = company;
+        async viewCompany(company) {
+            console.log('🔍 Opening company detail for ID:', company.id);
             this.showViewModal = true;
-            this.$nextTick(() => lucide.createIcons());
+            this.loadingDetail = true;
+            this.viewingCompany = null; // Clear previous data
+            
+            try {
+                const apiUrl = `${this.getApiBaseUrl()}/api/companies/${company.id}`;
+                console.log('📡 Fetching company detail from:', apiUrl);
+                
+                const response = await fetch(apiUrl);
+                console.log('📥 Response status:', response.status);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ API Error:', response.status, errorText);
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+                
+                this.viewingCompany = await response.json();
+                console.log('✅ Company detail loaded:', this.viewingCompany.name);
+                console.log('📊 Master data present:', !!this.viewingCompany.company_master_data);
+                
+                this.$nextTick(() => lucide.createIcons());
+            } catch (error) {
+                console.error('❌ Failed to load company detail:', error);
+                alert('Failed to load company details: ' + error.message);
+                this.showViewModal = false;
+            } finally {
+                this.loadingDetail = false;
+            }
         },
         
         editCompany(company) {
