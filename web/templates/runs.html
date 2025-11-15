@@ -490,19 +490,36 @@ function runsPage() {
         
         async loadRunJobs(runId) {
             try {
+                console.log('Fetching jobs for run:', runId);
+                
                 // Fetch jobs from this specific run (increase limit to get all jobs)
-                const response = await fetch(`/api/jobs/?run_id=${runId}&limit=500`);
+                // Remove is_active filter to show ALL jobs from the run (active and inactive)
+                const url = `/api/jobs/?run_id=${runId}&limit=500`;
+                console.log('Fetching from URL:', url);
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
                 const data = await response.json();
+                console.log('API response:', data);
                 
                 this.runJobs = data.jobs || [];
                 this.loadingJobs = false;
                 
-                console.log('Loaded', this.runJobs.length, 'jobs for run');
+                console.log('Loaded', this.runJobs.length, 'jobs for run', runId);
+                
+                if (this.runJobs.length === 0) {
+                    console.warn('No jobs returned from API for run', runId);
+                    console.log('Expected jobs:', this.selectedRun?.jobs_found || 0);
+                }
                 
                 // Re-initialize icons for the table
                 this.$nextTick(() => lucide.createIcons());
             } catch (error) {
                 console.error('Failed to load run jobs:', error);
+                this.runJobs = [];
                 this.loadingJobs = false;
             }
         },

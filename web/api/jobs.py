@@ -35,12 +35,12 @@ async def list_jobs(
     run_id: Optional[str] = None,  # Filter by scrape run
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
-    sort_field: str = "ranking_score",  # Field to sort by (default: score)
-    sort_direction: str = "desc",  # asc or desc (desc = highest score first)
+    sort_field: str = "ranking_position",  # Field to sort by (default: ranking)
+    sort_direction: str = "asc",  # asc or desc (asc = best rank first)
     limit: int = 50,
     offset: int = 0
 ):
-    """List jobs with filtering and search. Default sort by ranking_score (highest first)."""
+    """List jobs with filtering and search. Default sort by ranking_position (best first)."""
     
     # If run_id is provided, filter jobs from that specific scrape run
     job_ids_filter = None
@@ -79,6 +79,13 @@ async def list_jobs(
     elif ai_enriched == 'false':
         ai_enriched_bool = False
     
+    # When filtering by run_id, show ALL jobs from that run (active and inactive)
+    # Otherwise, default to active jobs only
+    if run_id:
+        active_only = is_active if is_active is not None else False
+    else:
+        active_only = is_active if is_active is not None else True
+    
     # Build search query
     jobs, total = db.search_jobs(
         search_query=search,
@@ -92,7 +99,7 @@ async def list_jobs(
         ai_enriched=ai_enriched_bool,
         title_classification=title_classification,
         source=source,
-        active_only=is_active if is_active is not None else True,
+        active_only=active_only,
         job_ids=job_ids_filter,
         sort_field=sort_field,
         sort_direction=sort_direction,
