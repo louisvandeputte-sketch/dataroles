@@ -152,9 +152,14 @@
                             </span>
                         </div>
                         <div class="flex items-center space-x-2">
+                            <a :href="`/jobs?run_id=${run.id}`"
+                               class="inline-flex items-center px-3 py-1.5 border border-blue-300 rounded-lg text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors">
+                                <i data-lucide="list" class="w-3.5 h-3.5 mr-1.5"></i>
+                                View Jobs
+                            </a>
                             <button @click="viewRunDetails(run.id, run.source)" 
                                     class="px-3 py-1 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium">
-                                View Details
+                                Details
                             </button>
                             <button @click="toggleArchive(run.id, run.archived, run.source)" 
                                     class="px-3 py-1 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium">
@@ -210,10 +215,17 @@
                                 ARCHIVED
                             </span>
                         </div>
-                        <button @click="toggleArchive(run.id, run.archived, run.source)" 
-                                class="px-3 py-1 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium">
-                            Unarchive
-                        </button>
+                        <div class="flex items-center space-x-2">
+                            <a :href="`/jobs?run_id=${run.id}`"
+                               class="inline-flex items-center px-3 py-1.5 border border-blue-300 rounded-lg text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors">
+                                <i data-lucide="list" class="w-3.5 h-3.5 mr-1.5"></i>
+                                View Jobs
+                            </a>
+                            <button @click="toggleArchive(run.id, run.archived, run.source)" 
+                                    class="px-3 py-1 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium">
+                                Unarchive
+                            </button>
+                        </div>
                     </div>
                     
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
