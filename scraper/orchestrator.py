@@ -115,9 +115,18 @@ async def execute_scrape_run(
     
     try:
         # Step 3: Get Bright Data client (mock or real based on settings)
+        logger.info(f"📡 Getting Bright Data client for source: {source}")
         brightdata = get_client(source=source)
+        logger.info(f"✅ Bright Data client initialized: {type(brightdata).__name__}")
         
         # Step 4: Trigger collection
+        logger.info(
+            f"🚀 Triggering Bright Data collection:\n"
+            f"  Keyword: '{query}'\n"
+            f"  Location: '{location}'\n"
+            f"  Date range: {date_range}\n"
+            f"  Limit: 1000"
+        )
         snapshot_id = await brightdata.trigger_collection(
             keyword=query,
             location=location,
@@ -125,12 +134,13 @@ async def execute_scrape_run(
             limit=1000
         )
         
-        logger.info(f"Bright Data snapshot triggered: {snapshot_id}")
+        logger.success(f"✅ Bright Data snapshot triggered successfully: {snapshot_id}")
         
         # Step 5: Wait for completion (with progress logging)
+        logger.info(f"⏳ Waiting for Bright Data snapshot {snapshot_id} to complete...")
         jobs_data = await brightdata.wait_for_completion(snapshot_id)
         
-        logger.info(f"Received {len(jobs_data)} jobs from Bright Data")
+        logger.success(f"✅ Received {len(jobs_data)} jobs from Bright Data")
         
         # Log warning if no jobs found
         if len(jobs_data) == 0:
@@ -148,11 +158,18 @@ async def execute_scrape_run(
             )
         
         # Step 6: Process jobs through ingestion pipeline
+        logger.info(f"🔄 Processing {len(jobs_data)} jobs through ingestion pipeline...")
         batch_result = await process_jobs_batch(jobs_data, run_id, source=source)
+        logger.success(
+            f"✅ Batch processing complete:\n"
+            f"  New jobs: {batch_result.new_count}\n"
+            f"  Updated jobs: {batch_result.updated_count}\n"
+            f"  Errors: {batch_result.error_count}"
+        )
         
         # Step 7: Assign job types to all jobs found in this run (BEFORE updating scrape_run)
         if job_type_id and batch_result.job_ids:
-            logger.info(f"Assigning job type {job_type_id} to {len(batch_result.job_ids)} jobs")
+            logger.info(f"🏷️  Assigning job type {job_type_id} to {len(batch_result.job_ids)} jobs...")
             assignment_count = 0
             for job_id in batch_result.job_ids:
                 try:
@@ -174,6 +191,7 @@ async def execute_scrape_run(
         end_time = datetime.utcnow()
         duration = (end_time - start_time).total_seconds()
         
+        logger.info(f"💾 Updating scrape run {run_id} with final results...")
         db.update_scrape_run(run_id, {
             "status": "completed",
             "completed_at": end_time.isoformat(),
@@ -199,6 +217,7 @@ async def execute_scrape_run(
         })
         
         # Clean up
+        logger.info("🧹 Cleaning up Bright Data client...")
         await brightdata.close()
         
         # Return result
@@ -214,7 +233,12 @@ async def execute_scrape_run(
             snapshot_id=snapshot_id
         )
         
-        logger.success(result.summary())
+        logger.success(
+            f"🎉 SCRAPE COMPLETED SUCCESSFULLY!\n"
+            f"{'='*60}\n"
+            f"{result.summary()}\n"
+            f"{'='*60}"
+        )
         return result
         
     except Exception as e:
@@ -222,7 +246,16 @@ async def execute_scrape_run(
         error_type = type(e).__name__
         error_msg = str(e)
         
-        logger.exception(f"Scrape run failed with {error_type}: {error_msg}")
+        logger.error(
+            f"❌ SCRAPE FAILED!\n"
+            f"{'='*60}\n"
+            f"Error Type: {error_type}\n"
+            f"Error Message: {error_msg}\n"
+            f"Query: '{query}'\n"
+            f"Location: '{location}'\n"
+            f"{'='*60}"
+        )
+        logger.exception("Full stack trace:")
         
         end_time = datetime.utcnow()
         duration = (end_time - start_time).total_seconds()
