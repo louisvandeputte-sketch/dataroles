@@ -54,6 +54,27 @@ async def list_indeed_runs(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/active")
+async def get_active_indeed_runs():
+    """Get currently running Indeed scrapes."""
+    try:
+        runs = db.client.table("scrape_runs")\
+            .select("*, search_queries(search_query, location_query, job_type_id)")\
+            .eq("platform", "indeed_brightdata")\
+            .eq("status", "running")\
+            .order("started_at", desc=True)\
+            .limit(10)\
+            .execute()
+        
+        return {
+            "runs": runs.data,
+            "count": len(runs.data)
+        }
+    except Exception as e:
+        logger.error(f"Error getting active Indeed runs: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/{run_id}")
 async def get_indeed_run(run_id: str):
     """Get details of a specific Indeed run."""

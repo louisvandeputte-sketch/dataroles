@@ -92,8 +92,17 @@ async def list_runs(
 
 @router.get("/active")
 async def get_active_runs():
-    """Get currently running scrapes."""
-    runs = db.get_scrape_runs(status="running", limit=10)
+    """Get currently running LinkedIn scrapes."""
+    # Get LinkedIn runs only (filter by platform)
+    runs_result = db.client.table("scrape_runs")\
+        .select("*")\
+        .eq("status", "running")\
+        .or_("platform.eq.linkedin_brightdata,platform.is.null")\
+        .order("started_at", desc=True)\
+        .limit(10)\
+        .execute()
+    
+    runs = runs_result.data if runs_result.data else []
     
     # Format runs
     runs_list = []
