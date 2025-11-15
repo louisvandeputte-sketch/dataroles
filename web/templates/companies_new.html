@@ -574,7 +574,7 @@ function companiesPage() {
             this.companyDetail = null;
             
             try {
-                const apiUrl = `${this.getApiBaseUrl()}/api/companies/${companyId}/`;  // Note: trailing slash required
+                const apiUrl = `${this.getApiBaseUrl()}/api/companies/${companyId}`;  // Note: NO trailing slash for detail endpoint
                 console.log('📡 Fetching company detail from:', apiUrl);
                 
                 const response = await fetch(apiUrl);
