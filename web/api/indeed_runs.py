@@ -155,12 +155,61 @@ async def archive_indeed_run(run_id: str, body: ArchiveRequest):
         raise HTTPException(status_code=500, detail=f"Failed to archive run: {str(e)}")
 
 
+@router.post("/{run_id}/stop")
+async def stop_indeed_run(run_id: str):
+    """
+    Hard stop an Indeed scrape run immediately.
+    
+    This will mark the run as failed in the database. The Bright Data 
+    collection may continue on their side, but we stop tracking it.
+    """
+    try:
+        # Get current run (don't check status - allow stopping any run)
+        current = db.client.table("scrape_runs")\
+            .select("*")\
+            .eq("id", run_id)\
+            .eq("platform", "indeed_brightdata")\
+            .execute()
+        
+        if not current.data:
+            raise HTTPException(status_code=404, detail="Run not found")
+        
+        run = current.data[0]
+        
+        # Check if already stopped
+        if run.get("status") in ["completed", "failed"]:
+            return {
+                "message": f"Run already {run.get('status')}",
+                "run_id": run_id
+            }
+        
+        # Hard stop: update status immediately
+        result = db.client.table("scrape_runs")\
+            .update({
+                "status": "failed",
+                "completed_at": datetime.utcnow().isoformat(),
+                "error_message": "Manually stopped by user (hard stop)"
+            })\
+            .eq("id", run_id)\
+            .execute()
+        
+        logger.info(f"Indeed run {run_id} hard stopped by user")
+        
+        return {
+            "message": "Scrape stopped successfully",
+            "run_id": run_id
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to stop Indeed run {run_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to stop scrape: {str(e)}")
+
+
 @router.post("/{run_id}/cancel")
 async def cancel_indeed_run(run_id: str):
     """Cancel/kill a running Indeed scrape run."""
     try:
-        from datetime import datetime
-        
         # Check if run exists and is cancellable
         run = db.client.table("scrape_runs")\
             .select("id, status")\
