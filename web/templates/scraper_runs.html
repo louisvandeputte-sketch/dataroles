@@ -99,7 +99,25 @@
 
     <!-- Completed Runs Section -->
     <div x-show="activeTab === 'all'">
-        <h2 class="text-lg font-semibold text-gray-900 mb-3">Completed Runs</h2>
+        <div class="flex items-center justify-between mb-3">
+            <h2 class="text-lg font-semibold text-gray-900">Completed Runs</h2>
+            
+            <!-- Bulk Actions -->
+            <div x-show="selectedRuns.length > 0" class="flex items-center space-x-2">
+                <span class="text-sm text-gray-600">
+                    <span x-text="selectedRuns.length"></span> selected
+                </span>
+                <button @click="bulkArchive()" 
+                        class="inline-flex items-center px-3 py-1.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm font-medium">
+                    <i data-lucide="archive" class="w-4 h-4 mr-1.5"></i>
+                    Archive Selected
+                </button>
+                <button @click="selectedRuns = []" 
+                        class="inline-flex items-center px-3 py-1.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium">
+                    Clear Selection
+                </button>
+            </div>
+        </div>
         
         <div x-show="filteredCompletedRuns.length === 0" class="bg-white rounded-lg shadow p-8 text-center text-gray-500">
             <i data-lucide="check-circle" class="w-12 h-12 mx-auto mb-3 text-gray-300"></i>
@@ -112,6 +130,11 @@
                 <div class="bg-white rounded-lg shadow p-6 border-l-4" :class="run.source === 'linkedin' ? 'border-blue-500' : 'border-green-500'">
                     <div class="flex justify-between items-start mb-4">
                         <div class="flex items-center space-x-3">
+                            <!-- Checkbox -->
+                            <input type="checkbox" 
+                                   :checked="selectedRuns.includes(run.id + '-' + run.source)"
+                                   @change="toggleRunSelection(run.id, run.source)"
+                                   class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
                             <!-- Source Badge -->
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium" 
                                   :class="run.source === 'linkedin' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'">
@@ -286,6 +309,7 @@ function scraperRunsPage() {
         indeedActiveRuns: [],
         showModal: false,
         selectedRun: null,
+        selectedRuns: [],
         
         get allRuns() {
             return [
@@ -440,6 +464,66 @@ function scraperRunsPage() {
                 console.error('Failed to stop scrape:', error);
                 alert('Failed to stop scrape');
                 if (run) run.stopping = false;
+            }
+        },
+        
+        toggleRunSelection(runId, source) {
+            const key = runId + '-' + source;
+            const index = this.selectedRuns.indexOf(key);
+            
+            if (index > -1) {
+                this.selectedRuns.splice(index, 1);
+            } else {
+                this.selectedRuns.push(key);
+            }
+        },
+        
+        async bulkArchive() {
+            if (this.selectedRuns.length === 0) return;
+            
+            if (!confirm(`Archive ${this.selectedRuns.length} selected runs?`)) {
+                return;
+            }
+            
+            try {
+                let successCount = 0;
+                let errorCount = 0;
+                
+                for (const key of this.selectedRuns) {
+                    const [runId, source] = key.split('-');
+                    
+                    try {
+                        const apiPrefix = source === 'linkedin' ? '/api/runs' : '/api/indeed/runs';
+                        const response = await fetch(`${apiPrefix}/${runId}/archive`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ archived: true })
+                        });
+                        
+                        if (response.ok) {
+                            successCount++;
+                        } else {
+                            errorCount++;
+                        }
+                    } catch (error) {
+                        console.error(`Failed to archive run ${runId}:`, error);
+                        errorCount++;
+                    }
+                }
+                
+                // Clear selection and reload
+                this.selectedRuns = [];
+                await this.loadAllRuns();
+                this.$nextTick(() => lucide.createIcons());
+                
+                if (errorCount > 0) {
+                    alert(`Archived ${successCount} runs. ${errorCount} failed.`);
+                } else {
+                    alert(`✅ Successfully archived ${successCount} runs!`);
+                }
+            } catch (error) {
+                console.error('Bulk archive failed:', error);
+                alert('Failed to archive runs');
             }
         },
         
