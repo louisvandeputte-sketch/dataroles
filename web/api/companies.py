@@ -878,7 +878,7 @@ async def classify_company_consulting(company_id: str, background_tasks: Backgro
     try:
         # Get company details
         company = db.client.table("companies")\
-            .select("id, name, company_master_data(bedrijfsomschrijving_en)")\
+            .select("id, name")\
             .eq("id", company_id)\
             .single()\
             .execute()
@@ -886,17 +886,20 @@ async def classify_company_consulting(company_id: str, background_tasks: Backgro
         if not company.data:
             raise HTTPException(status_code=404, detail="Company not found")
         
-        company_data = company.data
-        company_name = company_data.get("name", "Unknown")
+        company_name = company.data.get("name", "Unknown")
         
-        # Get description if available
+        # Get master data description if available
         description = None
-        if company_data.get("company_master_data"):
-            master_data = company_data["company_master_data"]
-            if isinstance(master_data, list) and len(master_data) > 0:
-                description = master_data[0].get("bedrijfsomschrijving_en")
-            elif isinstance(master_data, dict):
-                description = master_data.get("bedrijfsomschrijving_en")
+        try:
+            master_data = db.client.table("company_master_data")\
+                .select("bedrijfsomschrijving_en")\
+                .eq("company_id", company_id)\
+                .execute()
+            
+            if master_data.data and len(master_data.data) > 0:
+                description = master_data.data[0].get("bedrijfsomschrijving_en")
+        except Exception as e:
+            logger.warning(f"Could not fetch master data for company {company_id}: {e}")
         
         # Add to background tasks
         background_tasks.add_task(
@@ -954,15 +957,14 @@ async def classify_consulting_batch_endpoint(company_ids: List[str], background_
 async def get_enriched_companies_for_consulting(limit: int = 1000):
     """Get list of enriched companies that can be classified for consulting status."""
     try:
-        # Get companies that have been AI enriched (have descriptions)
-        result = db.client.table("companies")\
-            .select("id")\
-            .not_.is_("company_master_data.ai_enriched", "null")\
-            .eq("company_master_data.ai_enriched", True)\
+        # Get companies that have been AI enriched (query master data table directly)
+        result = db.client.table("company_master_data")\
+            .select("company_id")\
+            .eq("ai_enriched", True)\
             .limit(limit)\
             .execute()
         
-        company_ids = [row["id"] for row in result.data] if result.data else []
+        company_ids = [row["company_id"] for row in result.data] if result.data else []
         
         return {
             "company_ids": company_ids,
@@ -977,15 +979,14 @@ async def get_enriched_companies_for_consulting(limit: int = 1000):
 async def classify_all_enriched_companies(background_tasks: BackgroundTasks, limit: int = 1000):
     """Classify all enriched companies for consulting status (runs in background)."""
     try:
-        # Get enriched companies
-        result = db.client.table("companies")\
-            .select("id")\
-            .not_.is_("company_master_data.ai_enriched", "null")\
-            .eq("company_master_data.ai_enriched", True)\
+        # Get enriched companies (query master data table directly)
+        result = db.client.table("company_master_data")\
+            .select("company_id")\
+            .eq("ai_enriched", True)\
             .limit(limit)\
             .execute()
         
-        company_ids = [row["id"] for row in result.data] if result.data else []
+        company_ids = [row["company_id"] for row in result.data] if result.data else []
         
         if not company_ids:
             raise HTTPException(status_code=404, detail="No enriched companies found")
