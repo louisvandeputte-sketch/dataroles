@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter, HTTPException
 from typing import Optional
+from datetime import datetime, timedelta
 from loguru import logger
 
 from database import db
@@ -179,4 +180,61 @@ async def cancel_indeed_run(run_id: str):
         raise
     except Exception as e:
         logger.error(f"Error cancelling Indeed run {run_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/cleanup-stuck")
+async def cleanup_stuck_indeed_runs(hours: int = 2):
+    """
+    Mark stuck running scrapes as failed.
+    A scrape is considered stuck if it's been running for more than X hours.
+    """
+    try:
+        # Calculate cutoff time
+        cutoff_time = datetime.utcnow() - timedelta(hours=hours)
+        
+        # Find stuck runs
+        stuck_runs = db.client.table("scrape_runs")\
+            .select("id, search_query, location_query, started_at")\
+            .eq("platform", "indeed_brightdata")\
+            .eq("status", "running")\
+            .lt("started_at", cutoff_time.isoformat())\
+            .execute()
+        
+        if not stuck_runs.data:
+            return {
+                "message": "No stuck runs found",
+                "cleaned_count": 0
+            }
+        
+        # Mark each as failed
+        cleaned_count = 0
+        for run in stuck_runs.data:
+            try:
+                db.client.table("scrape_runs")\
+                    .update({
+                        "status": "failed",
+                        "completed_at": datetime.utcnow().isoformat(),
+                        "error_message": f"Run stuck for more than {hours} hours - automatically marked as failed"
+                    })\
+                    .eq("id", run["id"])\
+                    .execute()
+                
+                cleaned_count += 1
+                logger.warning(
+                    f"Marked stuck Indeed run as failed: {run['id']}\n"
+                    f"  Query: {run.get('search_query')}\n"
+                    f"  Started: {run.get('started_at')}"
+                )
+            except Exception as e:
+                logger.error(f"Failed to clean up run {run['id']}: {e}")
+        
+        return {
+            "message": f"Cleaned up {cleaned_count} stuck runs",
+            "cleaned_count": cleaned_count,
+            "runs_cleaned": [r["id"] for r in stuck_runs.data]
+        }
+        
+    except Exception as e:
+        logger.error(f"Error cleaning up stuck Indeed runs: {e}")
         raise HTTPException(status_code=500, detail=str(e))
