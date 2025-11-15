@@ -708,7 +708,7 @@ function companiesPage() {
                 const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
                 
                 // Force HTTPS for Railway
-                const apiUrl = `${this.getApiBaseUrl()}/api/companies?${params}`;
+                const apiUrl = `${this.getApiBaseUrl()}/api/companies/?${params}`;
                 
                 const response = await fetch(apiUrl, {
                     signal: controller.signal
