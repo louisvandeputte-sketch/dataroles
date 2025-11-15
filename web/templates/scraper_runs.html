@@ -1,0 +1,454 @@
+{% extends "base.html" %}
+
+{% block title %}Scraper Runs - everyjob{% endblock %}
+
+{% block content %}
+<div x-data="scraperRunsPage()">
+    <!-- Page Header with Source Filter -->
+    <div class="mb-6">
+        <div class="flex items-center justify-between mb-4">
+            <h1 class="text-2xl font-bold text-gray-900">Scraper Runs</h1>
+            
+            <!-- Source Filter -->
+            <div class="flex items-center space-x-2">
+                <button @click="sourceFilter = 'all'" 
+                        :class="sourceFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border border-gray-300'"
+                        class="px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 hover:text-white transition">
+                    All Sources
+                </button>
+                <button @click="sourceFilter = 'linkedin'" 
+                        :class="sourceFilter === 'linkedin' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border border-gray-300'"
+                        class="px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 hover:text-white transition inline-flex items-center">
+                    <i data-lucide="linkedin" class="w-4 h-4 mr-2"></i>
+                    LinkedIn
+                </button>
+                <button @click="sourceFilter = 'indeed'" 
+                        :class="sourceFilter === 'indeed' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border border-gray-300'"
+                        class="px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 hover:text-white transition inline-flex items-center">
+                    <i data-lucide="briefcase" class="w-4 h-4 mr-2"></i>
+                    Indeed
+                </button>
+            </div>
+        </div>
+        
+        <div class="border-b border-gray-200">
+            <nav class="-mb-px flex space-x-8">
+                <button @click="activeTab = 'all'" 
+                        :class="activeTab === 'all' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                    All Runs (<span x-text="filteredRuns.length"></span>)
+                </button>
+                <button @click="activeTab = 'archived'" 
+                        :class="activeTab === 'archived' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                    Archived (<span x-text="filteredArchivedRuns.length"></span>)
+                </button>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Active Runs Section -->
+    <div x-show="activeTab === 'all' && filteredActiveRuns.length > 0" class="space-y-4 mb-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-3">Active Scrapes</h2>
+        
+        <template x-for="run in filteredActiveRuns" :key="run.id + '-' + run.source">
+            <div class="bg-white rounded-lg shadow p-6 border-l-4" :class="run.source === 'linkedin' ? 'border-blue-500' : 'border-green-500'">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="flex items-center space-x-3">
+                        <!-- Source Badge -->
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium" 
+                              :class="run.source === 'linkedin' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'">
+                            <i :data-lucide="run.source === 'linkedin' ? 'linkedin' : 'briefcase'" class="w-3 h-3 mr-1"></i>
+                            <span x-text="run.source.toUpperCase()"></span>
+                        </span>
+                        <!-- Status Badge -->
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                            <span class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
+                            RUNNING
+                        </span>
+                    </div>
+                    <button @click="stopScrape(run.id, run.source)" 
+                            class="px-3 py-1 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 text-sm font-medium"
+                            :disabled="run.stopping">
+                        <span x-show="!run.stopping">Stop Scrape</span>
+                        <span x-show="run.stopping">Stopping...</span>
+                    </button>
+                </div>
+                
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-medium text-gray-700">Query:</span>
+                        <span class="text-sm text-gray-900" x-text="run.search_query || 'N/A'"></span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-medium text-gray-700">Location:</span>
+                        <span class="text-sm text-gray-900" x-text="run.location || 'N/A'"></span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-medium text-gray-700">Started:</span>
+                        <span class="text-sm text-gray-900" x-text="formatDate(run.created_at)"></span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-medium text-gray-700">Jobs Found:</span>
+                        <span class="text-sm font-semibold text-blue-600" x-text="run.jobs_scraped || 0"></span>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <!-- Completed Runs Section -->
+    <div x-show="activeTab === 'all'">
+        <h2 class="text-lg font-semibold text-gray-900 mb-3">Completed Runs</h2>
+        
+        <div x-show="filteredCompletedRuns.length === 0" class="bg-white rounded-lg shadow p-8 text-center text-gray-500">
+            <i data-lucide="check-circle" class="w-12 h-12 mx-auto mb-3 text-gray-300"></i>
+            <p class="text-lg font-medium">No completed runs</p>
+            <p class="text-sm mt-1">Completed scrapes will appear here</p>
+        </div>
+        
+        <div class="space-y-4">
+            <template x-for="run in filteredCompletedRuns" :key="run.id + '-' + run.source">
+                <div class="bg-white rounded-lg shadow p-6 border-l-4" :class="run.source === 'linkedin' ? 'border-blue-500' : 'border-green-500'">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex items-center space-x-3">
+                            <!-- Source Badge -->
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium" 
+                                  :class="run.source === 'linkedin' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'">
+                                <i :data-lucide="run.source === 'linkedin' ? 'linkedin' : 'briefcase'" class="w-3 h-3 mr-1"></i>
+                                <span x-text="run.source.toUpperCase()"></span>
+                            </span>
+                            <!-- Status Badge -->
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
+                                  :class="{
+                                      'bg-green-100 text-green-800': run.status === 'completed',
+                                      'bg-red-100 text-red-800': run.status === 'failed',
+                                      'bg-gray-100 text-gray-800': run.status === 'stopped'
+                                  }">
+                                <span x-text="run.status.toUpperCase()"></span>
+                            </span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button @click="viewRunDetails(run.id, run.source)" 
+                                    class="px-3 py-1 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium">
+                                View Details
+                            </button>
+                            <button @click="toggleArchive(run.id, run.archived, run.source)" 
+                                    class="px-3 py-1 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium">
+                                Archive
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div>
+                            <span class="text-xs text-gray-500">Query</span>
+                            <p class="text-sm font-medium text-gray-900" x-text="run.search_query || 'N/A'"></p>
+                        </div>
+                        <div>
+                            <span class="text-xs text-gray-500">Location</span>
+                            <p class="text-sm font-medium text-gray-900" x-text="run.location || 'N/A'"></p>
+                        </div>
+                        <div>
+                            <span class="text-xs text-gray-500">Jobs Found</span>
+                            <p class="text-sm font-semibold text-blue-600" x-text="run.jobs_scraped || 0"></p>
+                        </div>
+                        <div>
+                            <span class="text-xs text-gray-500">Completed</span>
+                            <p class="text-sm font-medium text-gray-900" x-text="formatDate(run.completed_at || run.created_at)"></p>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- Archived Runs Section -->
+    <div x-show="activeTab === 'archived'">
+        <div x-show="filteredArchivedRuns.length === 0" class="bg-white rounded-lg shadow p-8 text-center text-gray-500">
+            <i data-lucide="archive" class="w-12 h-12 mx-auto mb-3 text-gray-300"></i>
+            <p class="text-lg font-medium">No archived runs</p>
+            <p class="text-sm mt-1">Archive completed runs to keep your workspace clean</p>
+        </div>
+        
+        <div class="space-y-4">
+            <template x-for="run in filteredArchivedRuns" :key="run.id + '-' + run.source">
+                <div class="bg-white rounded-lg shadow p-6 border-l-4 opacity-75" :class="run.source === 'linkedin' ? 'border-blue-500' : 'border-green-500'">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex items-center space-x-3">
+                            <!-- Source Badge -->
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium" 
+                                  :class="run.source === 'linkedin' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'">
+                                <i :data-lucide="run.source === 'linkedin' ? 'linkedin' : 'briefcase'" class="w-3 h-3 mr-1"></i>
+                                <span x-text="run.source.toUpperCase()"></span>
+                            </span>
+                            <!-- Status Badge -->
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+                                ARCHIVED
+                            </span>
+                        </div>
+                        <button @click="toggleArchive(run.id, run.archived, run.source)" 
+                                class="px-3 py-1 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium">
+                            Unarchive
+                        </button>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div>
+                            <span class="text-xs text-gray-500">Query</span>
+                            <p class="text-sm font-medium text-gray-900" x-text="run.search_query || 'N/A'"></p>
+                        </div>
+                        <div>
+                            <span class="text-xs text-gray-500">Location</span>
+                            <p class="text-sm font-medium text-gray-900" x-text="run.location || 'N/A'"></p>
+                        </div>
+                        <div>
+                            <span class="text-xs text-gray-500">Jobs Found</span>
+                            <p class="text-sm font-semibold text-blue-600" x-text="run.jobs_scraped || 0"></p>
+                        </div>
+                        <div>
+                            <span class="text-xs text-gray-500">Completed</span>
+                            <p class="text-sm font-medium text-gray-900" x-text="formatDate(run.completed_at || run.created_at)"></p>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- Run Details Modal -->
+    <div x-show="showModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75" @click="showModal = false"></div>
+            
+            <div class="relative bg-white rounded-lg max-w-2xl w-full p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold text-gray-900">Run Details</h3>
+                    <button @click="showModal = false" class="text-gray-400 hover:text-gray-500">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+
+                <template x-if="selectedRun">
+                    <div class="space-y-4">
+                        <!-- Source Badge -->
+                        <div class="flex items-center space-x-2">
+                            <span class="inline-flex items-center px-3 py-1 rounded text-sm font-medium" 
+                                  :class="selectedRun.source === 'linkedin' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'">
+                                <i :data-lucide="selectedRun.source === 'linkedin' ? 'linkedin' : 'briefcase'" class="w-4 h-4 mr-2"></i>
+                                <span x-text="selectedRun.source.toUpperCase()"></span>
+                            </span>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Search Query</label>
+                                <p class="mt-1 text-sm text-gray-900" x-text="selectedRun.search_query || 'N/A'"></p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Location</label>
+                                <p class="mt-1 text-sm text-gray-900" x-text="selectedRun.location || 'N/A'"></p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Status</label>
+                                <p class="mt-1 text-sm text-gray-900" x-text="selectedRun.status"></p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Jobs Scraped</label>
+                                <p class="mt-1 text-sm font-semibold text-blue-600" x-text="selectedRun.jobs_scraped || 0"></p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Started</label>
+                                <p class="mt-1 text-sm text-gray-900" x-text="formatDate(selectedRun.created_at)"></p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Completed</label>
+                                <p class="mt-1 text-sm text-gray-900" x-text="formatDate(selectedRun.completed_at)"></p>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function scraperRunsPage() {
+    return {
+        activeTab: 'all',
+        sourceFilter: 'all',
+        linkedinRuns: [],
+        indeedRuns: [],
+        linkedinActiveRuns: [],
+        indeedActiveRuns: [],
+        showModal: false,
+        selectedRun: null,
+        
+        get allRuns() {
+            return [
+                ...this.linkedinRuns.map(r => ({...r, source: 'linkedin'})),
+                ...this.indeedRuns.map(r => ({...r, source: 'indeed'}))
+            ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        },
+        
+        get allActiveRuns() {
+            return [
+                ...this.linkedinActiveRuns.map(r => ({...r, source: 'linkedin'})),
+                ...this.indeedActiveRuns.map(r => ({...r, source: 'indeed'}))
+            ];
+        },
+        
+        get filteredRuns() {
+            const runs = this.allRuns.filter(r => !r.archived);
+            if (this.sourceFilter === 'all') return runs;
+            return runs.filter(r => r.source === this.sourceFilter);
+        },
+        
+        get filteredActiveRuns() {
+            const runs = this.allActiveRuns;
+            if (this.sourceFilter === 'all') return runs;
+            return runs.filter(r => r.source === this.sourceFilter);
+        },
+        
+        get filteredCompletedRuns() {
+            const runs = this.allRuns.filter(r => !r.archived && r.status !== 'running');
+            if (this.sourceFilter === 'all') return runs;
+            return runs.filter(r => r.source === this.sourceFilter);
+        },
+        
+        get filteredArchivedRuns() {
+            const runs = this.allRuns.filter(r => r.archived);
+            if (this.sourceFilter === 'all') return runs;
+            return runs.filter(r => r.source === this.sourceFilter);
+        },
+        
+        async init() {
+            await this.loadAllRuns();
+            // Refresh every 5 seconds
+            setInterval(() => this.loadAllRuns(), 5000);
+            this.$nextTick(() => lucide.createIcons());
+        },
+        
+        async loadAllRuns() {
+            await Promise.all([
+                this.loadLinkedInRuns(),
+                this.loadIndeedRuns(),
+                this.loadLinkedInActiveRuns(),
+                this.loadIndeedActiveRuns()
+            ]);
+        },
+        
+        async loadLinkedInRuns() {
+            try {
+                const response = await fetch(`/api/runs/?t=${Date.now()}`);
+                const data = await response.json();
+                this.linkedinRuns = data.runs;
+            } catch (error) {
+                console.error('Failed to load LinkedIn runs:', error);
+            }
+        },
+        
+        async loadIndeedRuns() {
+            try {
+                const response = await fetch(`/api/indeed/runs/?t=${Date.now()}`);
+                const data = await response.json();
+                this.indeedRuns = data.runs;
+            } catch (error) {
+                console.error('Failed to load Indeed runs:', error);
+            }
+        },
+        
+        async loadLinkedInActiveRuns() {
+            try {
+                const response = await fetch(`/api/runs/active?t=${Date.now()}`);
+                const data = await response.json();
+                this.linkedinActiveRuns = data.runs;
+            } catch (error) {
+                console.error('Failed to load LinkedIn active runs:', error);
+            }
+        },
+        
+        async loadIndeedActiveRuns() {
+            try {
+                const response = await fetch(`/api/indeed/runs/active?t=${Date.now()}`);
+                const data = await response.json();
+                this.indeedActiveRuns = data.runs;
+            } catch (error) {
+                console.error('Failed to load Indeed active runs:', error);
+            }
+        },
+        
+        async toggleArchive(runId, currentlyArchived, source) {
+            try {
+                const apiPrefix = source === 'linkedin' ? '/api/runs' : '/api/indeed/runs';
+                const response = await fetch(`${apiPrefix}/${runId}/archive`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ archived: !currentlyArchived })
+                });
+                
+                if (response.ok) {
+                    await this.loadAllRuns();
+                    this.$nextTick(() => lucide.createIcons());
+                }
+            } catch (error) {
+                console.error('Failed to toggle archive:', error);
+                alert('Failed to update archive status');
+            }
+        },
+        
+        async viewRunDetails(runId, source) {
+            this.showModal = true;
+            
+            try {
+                const apiPrefix = source === 'linkedin' ? '/api/runs' : '/api/indeed/runs';
+                const response = await fetch(`${apiPrefix}/${runId}`);
+                const data = await response.json();
+                
+                this.selectedRun = {...data, source};
+                this.$nextTick(() => lucide.createIcons());
+            } catch (error) {
+                console.error('Failed to load run details:', error);
+                alert('Failed to load run details');
+            }
+        },
+        
+        async stopScrape(runId, source) {
+            if (!confirm('Are you sure you want to stop this scrape?')) {
+                return;
+            }
+            
+            const run = this.allActiveRuns.find(r => r.id === runId && r.source === source);
+            if (run) run.stopping = true;
+            
+            try {
+                const apiPrefix = source === 'linkedin' ? '/api/runs' : '/api/indeed/runs';
+                const response = await fetch(`${apiPrefix}/${runId}/stop`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    await this.loadAllRuns();
+                    this.$nextTick(() => lucide.createIcons());
+                } else {
+                    throw new Error('Failed to stop scrape');
+                }
+            } catch (error) {
+                console.error('Failed to stop scrape:', error);
+                alert('Failed to stop scrape');
+                if (run) run.stopping = false;
+            }
+        },
+        
+        formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleString();
+        }
+    }
+}
+</script>
+{% endblock %}

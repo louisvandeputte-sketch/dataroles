@@ -2,10 +2,9 @@
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from pathlib import Path
 from contextlib import asynccontextmanager
@@ -180,22 +179,29 @@ async def queries_page(request: Request):
     return templates.TemplateResponse("queries.html", {"request": request})
 
 
+@app.get("/scraper-runs", response_class=HTMLResponse)
+async def scraper_runs_page(request: Request):
+    """Unified scraper runs monitoring page (LinkedIn + Indeed)."""
+    return templates.TemplateResponse("scraper_runs.html", {"request": request})
+
+
+# Legacy redirects
 @app.get("/runs", response_class=HTMLResponse)
-async def runs_page(request: Request):
-    """Scrape runs monitoring page."""
-    return templates.TemplateResponse("runs.html", {"request": request})
+async def runs_page_redirect(request: Request):
+    """Redirect old runs page to unified scraper runs."""
+    return RedirectResponse(url="/scraper-runs", status_code=301)
+
+
+@app.get("/indeed/runs", response_class=HTMLResponse)
+async def indeed_runs_page_redirect(request: Request):
+    """Redirect old Indeed runs page to unified scraper runs."""
+    return RedirectResponse(url="/scraper-runs", status_code=301)
 
 
 @app.get("/indeed/queries", response_class=HTMLResponse)
 async def indeed_queries_page(request: Request):
     """Indeed search queries management page."""
     return templates.TemplateResponse("indeed_queries.html", {"request": request})
-
-
-@app.get("/indeed/runs", response_class=HTMLResponse)
-async def indeed_runs_page(request: Request):
-    """Indeed scrape runs monitoring page."""
-    return templates.TemplateResponse("indeed_runs.html", {"request": request})
 
 
 @app.get("/jobs", response_class=HTMLResponse)
