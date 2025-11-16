@@ -25,6 +25,9 @@ SELECT
     
     -- Company size category (multilingual) from company_master_data
     cmd.size_category,         -- Size category enum (startup, scaleup, sme, etc.)
+    cmd.category_nl,           -- Category in Dutch (startup, scaleup, kmo, etc.)
+    cmd.category_en,           -- Category in English (startup, scaleup, sme, etc.)
+    cmd.category_fr,           -- Category in French (startup, scaleup, pme, etc.)
     cmd.size_summary_nl,       -- Dutch size summary
     cmd.size_summary_en,       -- English size summary
     cmd.size_summary_fr,       -- French size summary
