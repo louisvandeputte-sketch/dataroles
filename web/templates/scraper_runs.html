@@ -408,6 +408,22 @@
                         <p class="text-sm text-gray-500 mt-1">This run didn't produce any jobs</p>
                     </div>
                     
+                    <!-- Warning for large result sets -->
+                    <div x-show="!loadingJobs && runJobs.length >= 1000 && selectedJobsRun?.jobs_found > 1000" 
+                         class="mb-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <div class="flex items-start">
+                            <i data-lucide="alert-triangle" class="w-5 h-5 text-yellow-600 mr-3 mt-0.5"></i>
+                            <div class="flex-1">
+                                <h4 class="text-sm font-medium text-yellow-800">Showing partial results</h4>
+                                <p class="text-sm text-yellow-700 mt-1">
+                                    Displaying first <span class="font-semibold">1,000</span> of 
+                                    <span class="font-semibold" x-text="selectedJobsRun?.jobs_found"></span> jobs. 
+                                    Use the "Open in Jobs Page" button below to view all jobs with full filtering and pagination.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <!-- Jobs Table -->
                     <div x-show="!loadingJobs && runJobs.length > 0" class="border rounded-lg overflow-hidden">
                         <div class="max-h-[60vh] overflow-y-auto">
@@ -764,8 +780,8 @@ function scraperRunsPage() {
             this.$nextTick(() => lucide.createIcons());
             
             try {
-                // Fetch jobs from API
-                const response = await fetch(`/api/jobs/?run_id=${runId}&limit=500`);
+                // Fetch jobs from API with higher limit for large runs (up to 1000 jobs)
+                const response = await fetch(`/api/jobs/?run_id=${runId}&limit=1000`);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -777,13 +793,21 @@ function scraperRunsPage() {
                 
                 console.log(`✅ Loaded ${this.runJobs.length} jobs for run ${runId}`);
                 
+                // Warn if we hit the limit
+                if (this.runJobs.length >= 1000 && jobsFound > 1000) {
+                    console.warn(`⚠️ Showing first 1000 of ${jobsFound} jobs`);
+                }
+                
                 // Re-initialize icons for the table
                 this.$nextTick(() => lucide.createIcons());
             } catch (error) {
                 console.error('Failed to load run jobs:', error);
                 this.runJobs = [];
                 this.loadingJobs = false;
-                alert('Failed to load jobs: ' + error.message);
+                
+                // Show detailed error message
+                const errorMsg = error.message || 'Unknown error';
+                alert(`Failed to load jobs:\n\n${errorMsg}\n\nTry opening the jobs page directly using the "Open in Jobs Page" button.`);
             }
         },
         
