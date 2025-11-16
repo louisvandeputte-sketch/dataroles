@@ -18,10 +18,9 @@ SELECT
     c.name AS company_name,    -- Company name
     
     -- Company sector (multilingual) from company_master_data
+    cmd.sector_nl,             -- Company sector in Dutch
     cmd.sector_en,             -- Company sector in English
-    cmd.bedrijfsomschrijving_nl AS company_sector_nl,  -- Dutch description (contains sector info)
-    cmd.bedrijfsomschrijving_fr AS company_sector_fr,  -- French description (contains sector info)
-    cmd.bedrijfsomschrijving_en AS company_sector_en,  -- English description (contains sector info)
+    cmd.sector_fr,             -- Company sector in French
     
     -- Company size category (multilingual) from company_master_data
     cmd.size_category,         -- Size category enum (startup, scaleup, sme, etc.)
