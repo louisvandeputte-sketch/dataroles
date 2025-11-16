@@ -37,6 +37,14 @@ SELECT
     cmd.founded_year,          -- Company founding year
     cmd.industry,              -- Industry (from original data)
     
+    -- Location info (multilingual) from locations
+    l.city_name_nl,            -- City name in Dutch
+    l.city_name_en,            -- City name in English
+    l.city_name_fr,            -- City name in French
+    l.subdivision_name_nl,     -- Province/state/region in Dutch
+    l.subdivision_name_en,     -- Province/state/region in English
+    l.subdivision_name_fr,     -- Province/state/region in French
+    
     -- Core classification fields (ACTIVE - used for filtering)
     e.type_datarol,            -- Data role type (Data Engineer, Data Analyst, etc.)
     e.rolniveau,               -- Role level array (Technical, Lead, Managerial)
@@ -93,16 +101,18 @@ SELECT
 FROM llm_enrichment e
 LEFT JOIN job_postings j ON e.job_posting_id = j.id
 LEFT JOIN companies c ON j.company_id = c.id
-LEFT JOIN company_master_data cmd ON c.id = cmd.company_id;
+LEFT JOIN company_master_data cmd ON c.id = cmd.company_id
+LEFT JOIN locations l ON j.location_id = l.id;
 
 COMMENT ON VIEW vw_job_listings IS 
 'Frontend-friendly view for job listings with complete enrichment data.
-Identical to llm_enrichment_active but with clearer naming for frontend developers.
 Includes: 
 - Job classification (type_datarol, rolniveau, seniority, contract, sourcing_type)
 - Company info (name, logo, sector in NL/EN/FR, size category in NL/EN/FR)
+- Location info (city and subdivision names in NL/EN/FR)
 - Multilingual labels, summaries in 3 languages
 - Tech stack, spoken languages, remote work policy
 - Individual perk columns (v17)
 - Metadata
-Created: 2025-11-16 as duplicate of llm_enrichment_active for frontend clarity.';
+Created: 2025-11-16 for frontend clarity.
+Updated: 2025-11-16 to include location multilingual fields.';
