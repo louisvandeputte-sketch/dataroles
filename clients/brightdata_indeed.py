@@ -78,10 +78,11 @@ class BrightDataIndeedClient:
             snapshot_id for polling
         """
         # Map our date range to Indeed's date_posted format
+        # Valid values from Bright Data API: "Last 24 hours", "Last 7 days", "Last 14 days", or empty string
         time_range_map = {
             "past_24h": "Last 24 hours",
             "past_week": "Last 7 days",
-            "past_month": "Last 30 days"
+            "past_month": "Last 14 days"  # Indeed API doesn't support "Last 30 days", use 14 days instead
         }
         date_posted = time_range_map.get(posted_date_range, "Last 7 days")
         
