@@ -41,6 +41,7 @@ async def list_runs(
             "search_query": run.get("search_query"),
             "location_query": run.get("location_query"),
             "status": run.get("status"),
+            "source": run.get("source", "linkedin"),  # linkedin or indeed
             "trigger_type": run.get("trigger_type", "manual"),
             "job_type": job_type,
             "created_at": run.get("started_at"),  # Use started_at as created_at for frontend
@@ -123,6 +124,7 @@ async def get_active_runs():
             "search_query": run.get("search_query"),
             "location_query": run.get("location_query"),
             "status": run.get("status"),
+            "source": run.get("source", "linkedin"),  # linkedin or indeed
             "job_type": job_type,
             "created_at": run.get("started_at"),  # Use started_at as created_at for frontend
             "started_at": run.get("started_at"),

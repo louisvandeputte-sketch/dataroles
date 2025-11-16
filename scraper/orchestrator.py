@@ -100,6 +100,7 @@ async def execute_scrape_run(
         "search_query": query,
         "location_query": location,
         "platform": platform,
+        "source": source,  # linkedin or indeed
         "status": "running",
         "trigger_type": trigger_type,
         "search_query_id": search_query_id,
