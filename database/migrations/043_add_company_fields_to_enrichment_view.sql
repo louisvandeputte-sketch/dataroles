@@ -37,6 +37,14 @@ SELECT
     cmd.founded_year,          -- Company founding year
     cmd.industry,              -- Industry (from original data)
     
+    -- Location info (multilingual) from locations
+    l.city_name_nl,            -- City name in Dutch
+    l.city_name_en,            -- City name in English
+    l.city_name_fr,            -- City name in French
+    l.subdivision_name_nl,     -- Province/state/region in Dutch
+    l.subdivision_name_en,     -- Province/state/region in English
+    l.subdivision_name_fr,     -- Province/state/region in French
+    
     -- Core classification fields (ACTIVE - used for filtering)
     e.type_datarol,            -- Data role type (Data Engineer, Data Analyst, etc.)
     e.rolniveau,               -- Role level array (Technical, Lead, Managerial)
@@ -93,16 +101,18 @@ SELECT
 FROM llm_enrichment e
 LEFT JOIN job_postings j ON e.job_posting_id = j.id
 LEFT JOIN companies c ON j.company_id = c.id
-LEFT JOIN company_master_data cmd ON c.id = cmd.company_id;
+LEFT JOIN company_master_data cmd ON c.id = cmd.company_id
+LEFT JOIN locations l ON j.location_id = l.id;
 
 COMMENT ON VIEW llm_enrichment_active IS 
 'Complete view of llm_enrichment showing ALL active (non-deprecated) fields. 
 Includes: 
 - Job classification (type_datarol, rolniveau, seniority, contract, sourcing_type)
 - Company info (name, logo, sector in NL/EN/FR, size category in NL/EN/FR)
+- Location info (city and subdivision names in NL/EN/FR)
 - Multilingual labels, summaries in 3 languages
 - Tech stack, spoken languages, remote work policy
 - Individual perk columns (v17)
 - Metadata
 Frontend developers should query this view instead of the full table.
-Updated: 2025-11-16 to include company sector and size category in all languages.';
+Updated: 2025-11-16 to include company and location multilingual fields.';
