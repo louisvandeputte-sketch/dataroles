@@ -376,21 +376,22 @@ class SupabaseClient:
         posted_date: Optional[str] = None,
         ai_enriched: Optional[bool] = None,
         title_classification: Optional[str] = None,
+        type_datarol: Optional[str] = None,
         source: Optional[str] = None,
         active_only: bool = True,
         job_ids: Optional[List[str]] = None,
-        sort_field: str = "ranking_score",  # Sort by score
-        sort_direction: str = "desc",  # DESC = highest score first
+        sort_field: str = "ranking_position",  # Changed from posted_date to ranking_position
+        sort_direction: str = "asc",  # Changed from desc to asc (lower rank = better)
         limit: int = 50,
         offset: int = 0
     ) -> tuple[List[Dict], int]:
         """
         Search jobs with filters. Returns (jobs, total_count).
-        Default sort is by ranking_score (DESC) to show best jobs first.
+        Default sort is by ranking_position (ASC) to show best jobs first.
         """
-        # Build query - include job_sources for multi-source support
+        # Build query - include job_sources for multi-source support and llm_enrichment for type_datarol filtering
         query = self.client.table("job_postings")\
-            .select("*, companies(id, name, logo_url), locations(id, city, country_code), job_sources(source, source_job_id)", count="exact")
+            .select("*, companies(id, name, logo_url), locations(id, city, country_code), job_sources(source, source_job_id), llm_enrichment(type_datarol, seniority, rolniveau, contract)", count="exact")
         
         # NEW: Filter by job IDs if provided (for run_id filtering)
         if job_ids is not None:
@@ -442,6 +443,11 @@ class SupabaseClient:
         if title_classification:
             query = query.eq("title_classification", title_classification)
         
+        # Filter by data role type (requires join with llm_enrichment)
+        if type_datarol:
+            # Note: This requires llm_enrichment to be joined in the select
+            query = query.eq("llm_enrichment.type_datarol", type_datarol)
+        
         # Filter by source (linkedin or indeed)
         if source:
             query = query.eq("source", source)
@@ -450,10 +456,17 @@ class SupabaseClient:
         # Apply sorting based on parameters
         is_desc = sort_direction.lower() == "desc"
         
-        # Apply sorting - simple single field sort
-        result = query.order(sort_field, desc=is_desc)\
-            .range(offset, offset + limit - 1)\
-            .execute()
+        # If sorting by ranking_position, add secondary sort by ranking_score DESC
+        # This ensures correct order even if there are duplicate positions
+        if sort_field == "ranking_position":
+            result = query.order(sort_field, desc=is_desc)\
+                .order("ranking_score", desc=True)\
+                .range(offset, offset + limit - 1)\
+                .execute()
+        else:
+            result = query.order(sort_field, desc=is_desc)\
+                .range(offset, offset + limit - 1)\
+                .execute()
         
         # Enrich jobs with their types and AI enrichment status
         jobs_with_types = []

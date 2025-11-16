@@ -30,6 +30,7 @@ async def list_jobs(
     posted_date: Optional[str] = None,  # today, week, month, all
     ai_enriched: Optional[str] = None,  # true, false, or None for all
     title_classification: Optional[str] = None,  # Data, NIS, or None for all
+    type_datarol: Optional[str] = None,  # Data Engineer, Data Analyst, etc.
     source: Optional[str] = None,  # linkedin, indeed, or None for all
     is_active: Optional[bool] = None,
     run_id: Optional[str] = None,  # Filter by scrape run
@@ -98,6 +99,7 @@ async def list_jobs(
         posted_date=posted_date,
         ai_enriched=ai_enriched_bool,
         title_classification=title_classification,
+        type_datarol=type_datarol,
         source=source,
         active_only=active_only,
         job_ids=job_ids_filter,

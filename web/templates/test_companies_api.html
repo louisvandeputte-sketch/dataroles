@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Companies API</title>
+</head>
+<body>
+    <h1>Test Companies API</h1>
+    <button onclick="testAPI()">Test API Call</button>
+    <pre id="result"></pre>
+    
+    <script>
+    async function testAPI() {
+        const resultEl = document.getElementById('result');
+        resultEl.textContent = 'Loading...';
+        
+        try {
+            console.log('Fetching from /api/companies/?limit=1');
+            const response = await fetch('/api/companies/?limit=1');
+            console.log('Response status:', response.status);
+            console.log('Response ok:', response.ok);
+            
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(`HTTP ${response.status}: ${text}`);
+            }
+            
+            const data = await response.json();
+            console.log('Data:', data);
+            
+            resultEl.textContent = JSON.stringify(data, null, 2);
+        } catch (error) {
+            console.error('Error:', error);
+            resultEl.textContent = `ERROR: ${error.message}\n\nStack: ${error.stack}`;
+        }
+    }
+    
+    // Auto-run on load
+    window.addEventListener('load', testAPI);
+    </script>
+</body>
+</html>
