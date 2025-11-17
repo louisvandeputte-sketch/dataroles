@@ -133,6 +133,81 @@ async def list_jobs(
     return response
 
 
+@router.get("/count")
+async def count_jobs(
+    search: Optional[str] = None,
+    company: Optional[str] = None,
+    location: Optional[str] = None,
+    company_ids: Optional[str] = None,
+    location_ids: Optional[str] = None,
+    type_ids: Optional[str] = None,
+    seniority: Optional[List[str]] = None,
+    employment: Optional[List[str]] = None,
+    employment_type: Optional[str] = None,
+    posted_date: Optional[str] = None,
+    ai_enriched: Optional[str] = None,
+    title_classification: Optional[str] = None,
+    type_datarol: Optional[str] = None,
+    source: Optional[str] = None,
+    is_active: Optional[bool] = None,
+    run_id: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None
+):
+    """
+    Count jobs matching filters without returning the actual job data.
+    Useful for displaying total counts in the frontend.
+    Accepts the same filter parameters as the main /jobs endpoint.
+    """
+    
+    # Handle run_id filter
+    job_ids_filter = None
+    if run_id:
+        history = db.client.table("job_scrape_history")\
+            .select("job_posting_id")\
+            .eq("scrape_run_id", run_id)\
+            .execute()
+        
+        if history.data:
+            job_ids_filter = [h["job_posting_id"] for h in history.data]
+        else:
+            return {"count": 0}
+    
+    # Handle ai_enriched filter
+    ai_enriched_bool = None
+    if ai_enriched is not None:
+        ai_enriched_bool = ai_enriched.lower() == "true"
+    
+    # Handle is_active filter
+    active_only = is_active if is_active is not None else None
+    
+    # Get count only (limit=0 to skip fetching actual records)
+    _, total = db.search_jobs(
+        search_query=search,
+        company=company,
+        location=location,
+        company_ids=company_ids,
+        location_ids=location_ids,
+        type_ids=type_ids,
+        seniority=seniority,
+        employment=employment,
+        employment_type=employment_type,
+        posted_date=posted_date,
+        date_from=date_from,
+        date_to=date_to,
+        ai_enriched=ai_enriched_bool,
+        title_classification=title_classification,
+        type_datarol=type_datarol,
+        source=source,
+        active_only=active_only,
+        job_ids=job_ids_filter,
+        limit=0,  # Don't fetch records, just count
+        offset=0
+    )
+    
+    return {"count": total}
+
+
 @router.get("/{job_id}")
 async def get_job_detail(job_id: str):
     """Get detailed information about a specific job."""
