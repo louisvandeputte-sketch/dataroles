@@ -1101,14 +1101,26 @@ function companiesPage() {
         },
         
         async enrichAllUnenriched() {
-            if (!confirm(`Enrich all ${this.aiStats.unenriched} unenriched companies? This may take several minutes.`)) {
+            const maxBatch = 50; // Server-side limit to prevent timeouts
+            const total = this.aiStats.unenriched;
+            const willProcess = Math.min(total, maxBatch);
+            
+            let message = `Enrich ${willProcess} companies?`;
+            if (total > maxBatch) {
+                message = `⚠️ You have ${total} unenriched companies.\n\n` +
+                         `Due to server timeout limits, only ${maxBatch} companies will be enriched per batch.\n\n` +
+                         `After this batch completes, click "Enrich All" again to process the next ${maxBatch}.\n\n` +
+                         `Continue with first batch of ${maxBatch} companies?`;
+            }
+            
+            if (!confirm(message)) {
                 return;
             }
             
             this.enriching = true;
             
             try {
-                // Get unenriched company IDs
+                // Get unenriched company IDs (limit to 1000 but server will process max 50)
                 const response = await fetch(`${this.getApiBaseUrl()}/api/companies/enrich/unenriched?limit=1000`);
                 const data = await response.json();
                 
@@ -1117,7 +1129,7 @@ function companiesPage() {
                     return;
                 }
                 
-                // Enrich in batch
+                // Enrich in batch (server will limit to 50)
                 const enrichResponse = await fetch(`${this.getApiBaseUrl()}/api/companies/enrich/batch`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1130,13 +1142,21 @@ function companiesPage() {
                 }
                 
                 const result = await enrichResponse.json();
+                const processed = Math.min(data.company_ids.length, maxBatch);
+                const remaining = Math.max(0, total - processed);
                 
-                alert(
-                    `✅ Batch enrichment started in background!\n\n` +
-                    `${data.company_ids.length} unenriched companies will be enriched.\n\n` +
-                    `⏱️ This will take several minutes (1-2 min per company).\n\n` +
-                    `Refresh the page in a few minutes to see the results.`
-                );
+                let successMessage = `✅ Batch enrichment started!\n\n` +
+                    `Processing: ${processed} companies\n` +
+                    `⏱️ Time: ~${processed * 2} minutes (2 min/company)\n\n`;
+                
+                if (remaining > 0) {
+                    successMessage += `📊 Remaining: ${remaining} companies\n` +
+                                    `💡 Click "Enrich All" again after this batch completes to process the next batch.\n\n`;
+                }
+                
+                successMessage += `Refresh the page in ${processed * 2} minutes to see results.`;
+                
+                alert(successMessage);
                 
                 await this.loadCompanies();
                 await this.loadAIStats();

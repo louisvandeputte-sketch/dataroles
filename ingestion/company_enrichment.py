@@ -237,16 +237,22 @@ def save_enrichment_to_db(company_id: str, enrichment_data: Dict[str, Any]) -> b
         return False
 
 
-def enrich_companies_batch(company_ids: list) -> Dict[str, Any]:
+def enrich_companies_batch(company_ids: list, max_companies: int = 50) -> Dict[str, Any]:
     """
     Enrich multiple companies in batch.
     
     Args:
         company_ids: List of company UUIDs to enrich
+        max_companies: Maximum number of companies to process (default: 50 to avoid timeouts)
         
     Returns:
         Dictionary with statistics about the enrichment process
     """
+    # Limit to max_companies to avoid timeouts
+    if len(company_ids) > max_companies:
+        logger.warning(f"Limiting batch from {len(company_ids)} to {max_companies} companies to avoid timeout")
+        company_ids = company_ids[:max_companies]
+    
     stats = {
         "total": len(company_ids),
         "successful": 0,
@@ -256,7 +262,7 @@ def enrich_companies_batch(company_ids: list) -> Dict[str, Any]:
     
     logger.info(f"Starting batch enrichment for {len(company_ids)} companies")
     
-    for company_id in company_ids:
+    for i, company_id in enumerate(company_ids, 1):
         try:
             # Get company details
             company = db.client.table("companies")\
@@ -278,13 +284,19 @@ def enrich_companies_batch(company_ids: list) -> Dict[str, Any]:
             company_name = company_data.get("name", "Unknown")
             company_url = company_data.get("logo_url")  # Using logo_url as fallback
             
+            # Log progress every 10 companies
+            if i % 10 == 0 or i == 1:
+                logger.info(f"Progress: {i}/{len(company_ids)} companies processed ({stats['successful']} successful, {stats['failed']} failed)")
+            
             # Enrich the company
             result = enrich_company(company_id, company_name, company_url)
             
             if result["success"]:
                 stats["successful"] += 1
+                logger.info(f"✅ [{i}/{len(company_ids)}] Enriched: {company_name}")
             else:
                 stats["failed"] += 1
+                logger.warning(f"❌ [{i}/{len(company_ids)}] Failed: {company_name} - {result.get('error', 'Unknown error')}")
                 stats["errors"].append({
                     "company_id": company_id,
                     "company_name": company_name,
