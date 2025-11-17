@@ -759,7 +759,9 @@ async def get_unenriched_companies(limit: int = 1000):
     try:
         from ingestion.company_enrichment import get_unenriched_companies
         
-        company_ids = get_unenriched_companies(limit)
+        # Use include_retries=False to find companies without master_data records
+        # This includes all companies that have never been enriched (no master_data row)
+        company_ids = get_unenriched_companies(limit, include_retries=False)
         
         return {
             "company_ids": company_ids,
