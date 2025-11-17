@@ -31,6 +31,8 @@ async def list_jobs(
     ai_enriched: Optional[str] = None,  # true, false, or None for all
     title_classification: Optional[str] = None,  # Data, NIS, or None for all
     type_datarol: Optional[str] = None,  # Data Engineer, Data Analyst, etc.
+    contract: Optional[str] = None,  # Contract type from llm_enrichment
+    subdivision_name_en: Optional[str] = None,  # Province/region in English
     source: Optional[str] = None,  # linkedin, indeed, or None for all
     is_active: Optional[bool] = None,
     run_id: Optional[str] = None,  # Filter by scrape run
@@ -148,6 +150,8 @@ async def count_jobs(
     ai_enriched: Optional[str] = None,
     title_classification: Optional[str] = None,
     type_datarol: Optional[str] = None,
+    contract: Optional[str] = None,
+    subdivision_name_en: Optional[str] = None,
     source: Optional[str] = None,
     is_active: Optional[bool] = None,
     run_id: Optional[str] = None,
@@ -198,6 +202,8 @@ async def count_jobs(
         ai_enriched=ai_enriched_bool,
         title_classification=title_classification,
         type_datarol=type_datarol,
+        contract=contract,
+        subdivision_name_en=subdivision_name_en,
         source=source,
         active_only=active_only,
         job_ids=job_ids_filter,

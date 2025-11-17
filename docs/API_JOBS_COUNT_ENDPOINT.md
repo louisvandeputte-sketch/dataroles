@@ -32,10 +32,14 @@ All filter parameters from the main `/api/jobs` endpoint are supported:
 
 ### Classification Filters
 - `type_datarol` (string): Data role type (e.g., "Data Engineer", "Data Analyst")
+- `contract` (string): Contract type from AI enrichment (e.g., "Permanent", "Freelance")
 - `seniority` (array): Seniority levels (e.g., "Junior", "Senior")
 - `employment` (array): Employment types
 - `employment_type` (string): Specific employment type
 - `title_classification` (string): Job title classification
+
+### Location Filters
+- `subdivision_name_en` (string): Province/region in English (e.g., "Flemish Brabant", "Brussels")
 
 ### Date Filters
 - `posted_date` (string): Relative date filter (`today`, `week`, `month`, `all`)
@@ -106,6 +110,39 @@ Response:
 ```json
 {
   "count": 42
+}
+```
+
+### Count by contract type
+```bash
+GET /api/jobs/count?contract=Permanent
+```
+Response:
+```json
+{
+  "count": 3456
+}
+```
+
+### Count by province/region
+```bash
+GET /api/jobs/count?subdivision_name_en=Flemish%20Brabant
+```
+Response:
+```json
+{
+  "count": 789
+}
+```
+
+### Combine multiple filters (type + contract + region)
+```bash
+GET /api/jobs/count?type_datarol=Data%20Engineer&contract=Freelance&subdivision_name_en=Brussels
+```
+Response:
+```json
+{
+  "count": 23
 }
 ```
 

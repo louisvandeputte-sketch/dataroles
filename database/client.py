@@ -377,6 +377,8 @@ class SupabaseClient:
         ai_enriched: Optional[bool] = None,
         title_classification: Optional[str] = None,
         type_datarol: Optional[str] = None,
+        contract: Optional[str] = None,
+        subdivision_name_en: Optional[str] = None,
         source: Optional[str] = None,
         active_only: bool = True,
         job_ids: Optional[List[str]] = None,
@@ -389,9 +391,9 @@ class SupabaseClient:
         Search jobs with filters. Returns (jobs, total_count).
         Default sort is by ranking_position (ASC) to show best jobs first.
         """
-        # Build query - include job_sources for multi-source support and llm_enrichment for type_datarol filtering
+        # Build query - include job_sources for multi-source support and llm_enrichment for type_datarol/contract filtering
         query = self.client.table("job_postings")\
-            .select("*, companies(id, name, logo_url), locations(id, city, country_code), job_sources(source, source_job_id), llm_enrichment(type_datarol, seniority, rolniveau, contract)", count="exact")
+            .select("*, companies(id, name, logo_url), locations(id, city, country_code, subdivision_name_en), job_sources(source, source_job_id), llm_enrichment(type_datarol, seniority, rolniveau, contract)", count="exact")
         
         # NEW: Filter by job IDs if provided (for run_id filtering)
         if job_ids is not None:
@@ -447,6 +449,14 @@ class SupabaseClient:
         if type_datarol:
             # Note: This requires llm_enrichment to be joined in the select
             query = query.eq("llm_enrichment.type_datarol", type_datarol)
+        
+        # Filter by contract type (requires join with llm_enrichment)
+        if contract:
+            query = query.eq("llm_enrichment.contract", contract)
+        
+        # Filter by subdivision (province/region) in English
+        if subdivision_name_en:
+            query = query.eq("locations.subdivision_name_en", subdivision_name_en)
         
         # Filter by source (linkedin or indeed)
         if source:
