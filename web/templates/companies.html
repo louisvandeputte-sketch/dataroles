@@ -165,17 +165,56 @@
                                 </span>
                                 <span x-show="!company.company_master_data?.hiring_model" class="text-xs text-gray-400">-</span>
                             </td>
-                            <!-- Sector -->
-                            <td class="px-2 py-2">
-                                <div class="text-xs text-gray-600 truncate max-w-[120px]" 
-                                     :title="company.company_master_data?.sector_en || company.company_master_data?.sector_nl" 
-                                     x-text="company.company_master_data?.sector_en || company.company_master_data?.sector_nl || '-'"></div>
+                            <!-- Sector (Editable) -->
+                            <td class="px-2 py-2" @click.stop>
+                                <div x-data="{ editing: false, value: company.company_master_data?.sector_en || '' }">
+                                    <!-- Display mode -->
+                                    <div x-show="!editing" 
+                                         @click="editing = true"
+                                         class="text-xs text-gray-600 truncate max-w-[120px] cursor-pointer hover:bg-gray-100 px-1 py-0.5 rounded"
+                                         :title="value || 'Click to edit'">
+                                        <span x-text="value || '-'"></span>
+                                    </div>
+                                    <!-- Edit mode -->
+                                    <input x-show="editing"
+                                           x-model="value"
+                                           @blur="editing = false; updateCompanyField(company.id, 'sector_en', value)"
+                                           @keydown.enter="editing = false; updateCompanyField(company.id, 'sector_en', value)"
+                                           @keydown.escape="editing = false; value = company.company_master_data?.sector_en || ''"
+                                           class="text-xs border border-blue-300 rounded px-1 py-0.5 w-full max-w-[120px] focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                           placeholder="Enter sector"
+                                           x-init="$watch('editing', value => { if(value) $el.focus() })">
+                                </div>
                             </td>
-                            <!-- Category -->
-                            <td class="px-2 py-2">
-                                <div class="text-xs text-gray-600 truncate max-w-[120px]" 
-                                     :title="company.company_master_data?.category_en || company.company_master_data?.category_nl" 
-                                     x-text="company.company_master_data?.category_en || company.company_master_data?.category_nl || '-'"></div>
+                            <!-- Category (Editable Dropdown) -->
+                            <td class="px-2 py-2" @click.stop>
+                                <div x-data="{ editing: false, value: company.company_master_data?.category_en || '' }">
+                                    <!-- Display mode -->
+                                    <div x-show="!editing" 
+                                         @click="editing = true"
+                                         class="text-xs text-gray-600 truncate max-w-[120px] cursor-pointer hover:bg-gray-100 px-1 py-0.5 rounded"
+                                         :title="value || 'Click to edit'">
+                                        <span x-text="value || '-'"></span>
+                                    </div>
+                                    <!-- Edit mode (Dropdown) -->
+                                    <select x-show="editing"
+                                            x-model="value"
+                                            @change="editing = false; updateCompanyField(company.id, 'category_en', value)"
+                                            @blur="editing = false"
+                                            @keydown.escape="editing = false; value = company.company_master_data?.category_en || ''"
+                                            class="text-xs border border-blue-300 rounded px-1 py-0.5 w-full max-w-[120px] focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                            x-init="$watch('editing', value => { if(value) $el.focus() })">
+                                        <option value="">-</option>
+                                        <option value="Startup">Startup</option>
+                                        <option value="Scale-up">Scale-up</option>
+                                        <option value="SME">SME</option>
+                                        <option value="Midmarket">Midmarket</option>
+                                        <option value="Corporate">Corporate</option>
+                                        <option value="Subsidiary">Subsidiary</option>
+                                        <option value="Government">Government</option>
+                                        <option value="Unknown">Unknown</option>
+                                    </select>
+                                </div>
                             </td>
                             <!-- Bedrijfswebsite -->
                             <td class="px-2 py-2" @click.stop>
@@ -880,6 +919,40 @@ function companiesPage() {
                 this.sizeStats = await response.json();
             } catch (error) {
                 console.error('Failed to load size stats:', error);
+            }
+        },
+        
+        async updateCompanyField(companyId, field, value) {
+            try {
+                console.log(`Updating company ${companyId}: ${field} = ${value}`);
+                
+                // Update via API
+                const response = await fetch(`${this.getApiBaseUrl()}/api/companies/${companyId}/master-data`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        [field]: value
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                // Update local data
+                const company = this.companies.find(c => c.id === companyId);
+                if (company && company.company_master_data) {
+                    company.company_master_data[field] = value;
+                }
+                
+                console.log(`✅ Updated ${field} successfully`);
+            } catch (error) {
+                console.error('Failed to update field:', error);
+                alert(`Failed to update ${field}: ${error.message}`);
+                // Reload to revert changes
+                await this.loadCompanies();
             }
         },
         
