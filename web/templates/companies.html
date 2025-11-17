@@ -165,25 +165,53 @@
                                 </span>
                                 <span x-show="!company.company_master_data?.hiring_model" class="text-xs text-gray-400">-</span>
                             </td>
-                            <!-- Sector (Editable) -->
+                            <!-- Sector (Multi-language Editable) -->
                             <td class="px-2 py-2" @click.stop>
-                                <div x-data="{ editing: false, value: company.company_master_data?.sector_en || '' }">
+                                <div x-data="{ 
+                                    editing: false, 
+                                    sector_nl: company.company_master_data?.sector_nl || '',
+                                    sector_en: company.company_master_data?.sector_en || '',
+                                    sector_fr: company.company_master_data?.sector_fr || ''
+                                }">
                                     <!-- Display mode -->
                                     <div x-show="!editing" 
                                          @click="editing = true"
-                                         class="text-xs text-gray-600 truncate max-w-[120px] cursor-pointer hover:bg-gray-100 px-1 py-0.5 rounded"
-                                         :title="value || 'Click to edit'">
-                                        <span x-text="value || '-'"></span>
+                                         class="text-xs text-gray-600 cursor-pointer hover:bg-gray-100 px-1 py-0.5 rounded"
+                                         :title="'NL: ' + (sector_nl || '-') + '\nEN: ' + (sector_en || '-') + '\nFR: ' + (sector_fr || '-')">
+                                        <div class="truncate max-w-[120px]" x-text="sector_en || sector_nl || sector_fr || '-'"></div>
                                     </div>
-                                    <!-- Edit mode -->
-                                    <input x-show="editing"
-                                           x-model="value"
-                                           @blur="editing = false; updateCompanyField(company.id, 'sector_en', value)"
-                                           @keydown.enter="editing = false; updateCompanyField(company.id, 'sector_en', value)"
-                                           @keydown.escape="editing = false; value = company.company_master_data?.sector_en || ''"
-                                           class="text-xs border border-blue-300 rounded px-1 py-0.5 w-full max-w-[120px] focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                           placeholder="Enter sector"
-                                           x-init="$watch('editing', value => { if(value) $el.focus() })">
+                                    <!-- Edit mode (3 inputs) -->
+                                    <div x-show="editing" class="space-y-1 min-w-[200px]">
+                                        <div class="flex items-center space-x-1">
+                                            <span class="text-xs text-gray-500 w-6">NL:</span>
+                                            <input x-model="sector_nl"
+                                                   @keydown.enter="editing = false; updateCompanyFields(company.id, {sector_nl, sector_en, sector_fr})"
+                                                   @keydown.escape="editing = false; sector_nl = company.company_master_data?.sector_nl || ''"
+                                                   class="text-xs border border-blue-300 rounded px-1 py-0.5 flex-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                                   placeholder="Nederlands"
+                                                   x-init="$watch('editing', value => { if(value) $el.focus() })">
+                                        </div>
+                                        <div class="flex items-center space-x-1">
+                                            <span class="text-xs text-gray-500 w-6">EN:</span>
+                                            <input x-model="sector_en"
+                                                   @keydown.enter="editing = false; updateCompanyFields(company.id, {sector_nl, sector_en, sector_fr})"
+                                                   @keydown.escape="editing = false; sector_en = company.company_master_data?.sector_en || ''"
+                                                   class="text-xs border border-blue-300 rounded px-1 py-0.5 flex-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                                   placeholder="English">
+                                        </div>
+                                        <div class="flex items-center space-x-1">
+                                            <span class="text-xs text-gray-500 w-6">FR:</span>
+                                            <input x-model="sector_fr"
+                                                   @keydown.enter="editing = false; updateCompanyFields(company.id, {sector_nl, sector_en, sector_fr})"
+                                                   @keydown.escape="editing = false; sector_fr = company.company_master_data?.sector_fr || ''"
+                                                   class="text-xs border border-blue-300 rounded px-1 py-0.5 flex-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                                   placeholder="Français">
+                                        </div>
+                                        <button @click="editing = false; updateCompanyFields(company.id, {sector_nl, sector_en, sector_fr})"
+                                                class="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 w-full">
+                                            Save
+                                        </button>
+                                    </div>
                                 </div>
                             </td>
                             <!-- Category (Editable Dropdown) -->
@@ -951,6 +979,38 @@ function companiesPage() {
             } catch (error) {
                 console.error('Failed to update field:', error);
                 alert(`Failed to update ${field}: ${error.message}`);
+                // Reload to revert changes
+                await this.loadCompanies();
+            }
+        },
+        
+        async updateCompanyFields(companyId, fields) {
+            try {
+                console.log(`Updating company ${companyId}:`, fields);
+                
+                // Update via API
+                const response = await fetch(`${this.getApiBaseUrl()}/api/companies/${companyId}/master-data`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(fields)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                // Update local data
+                const company = this.companies.find(c => c.id === companyId);
+                if (company && company.company_master_data) {
+                    Object.assign(company.company_master_data, fields);
+                }
+                
+                console.log(`✅ Updated fields successfully`);
+            } catch (error) {
+                console.error('Failed to update fields:', error);
+                alert(`Failed to update fields: ${error.message}`);
                 // Reload to revert changes
                 await this.loadCompanies();
             }
