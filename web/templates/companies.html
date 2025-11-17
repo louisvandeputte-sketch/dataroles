@@ -152,18 +152,36 @@
                                     <div class="text-sm font-medium text-gray-900 truncate" x-text="company.name"></div>
                                 </div>
                             </td>
-                            <!-- Hiring Model -->
-                            <td class="px-2 py-2">
-                                <span x-show="company.company_master_data?.hiring_model" 
-                                      class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
-                                      :class="{
-                                          'bg-green-100 text-green-800': company.company_master_data?.hiring_model === 'direct',
-                                          'bg-orange-100 text-orange-800': company.company_master_data?.hiring_model === 'recruitment',
-                                          'bg-gray-100 text-gray-800': company.company_master_data?.hiring_model === 'unknown'
-                                      }"
-                                      x-text="company.company_master_data?.hiring_model_en || company.company_master_data?.hiring_model">
-                                </span>
-                                <span x-show="!company.company_master_data?.hiring_model" class="text-xs text-gray-400">-</span>
+                            <!-- Hiring Model (Editable Dropdown) -->
+                            <td class="px-2 py-2" @click.stop>
+                                <div x-data="{ editing: false, value: company.company_master_data?.hiring_model || '' }">
+                                    <!-- Display mode -->
+                                    <div x-show="!editing" @click="editing = true" class="cursor-pointer">
+                                        <span x-show="value" 
+                                              class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium hover:opacity-80"
+                                              :class="{
+                                                  'bg-green-100 text-green-800': value === 'direct',
+                                                  'bg-orange-100 text-orange-800': value === 'recruitment',
+                                                  'bg-gray-100 text-gray-800': value === 'unknown'
+                                              }"
+                                              x-text="value === 'direct' ? 'Direct' : value === 'recruitment' ? 'Recruitment' : 'Unknown'">
+                                        </span>
+                                        <span x-show="!value" class="text-xs text-gray-400 hover:bg-gray-100 px-1 py-0.5 rounded">-</span>
+                                    </div>
+                                    <!-- Edit mode (Dropdown) -->
+                                    <select x-show="editing"
+                                            x-model="value"
+                                            @change="editing = false; updateCompanyField(company.id, 'hiring_model', value)"
+                                            @blur="editing = false"
+                                            @keydown.escape="editing = false; value = company.company_master_data?.hiring_model || ''"
+                                            class="text-xs border border-blue-300 rounded px-1 py-0.5 w-full max-w-[120px] focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                            x-init="$watch('editing', value => { if(value) $el.focus() })">
+                                        <option value="">-</option>
+                                        <option value="direct">Direct</option>
+                                        <option value="recruitment">Recruitment</option>
+                                        <option value="unknown">Unknown</option>
+                                    </select>
+                                </div>
                             </td>
                             <!-- Sector (Multi-language Editable) -->
                             <td class="px-2 py-2" @click.stop>
