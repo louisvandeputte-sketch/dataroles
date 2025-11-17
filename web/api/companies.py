@@ -753,6 +753,44 @@ async def enrich_companies_batch_endpoint(company_ids: List[str], background_tas
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/enrich/re-enrich-all")
+async def re_enrich_all_companies(background_tasks: BackgroundTasks, limit: int = 1000):
+    """
+    Re-enrich ALL already enriched companies (overwrites existing data).
+    Useful when you've updated the enrichment prompt and want to refresh all data.
+    Runs in background.
+    """
+    try:
+        # Get all companies that ARE already enriched (ai_enriched=True)
+        result = db.client.table("company_master_data")\
+            .select("company_id")\
+            .eq("ai_enriched", True)\
+            .limit(limit)\
+            .execute()
+        
+        company_ids = [row["company_id"] for row in result.data]
+        
+        if not company_ids:
+            return {
+                "message": "No enriched companies found to re-enrich",
+                "company_count": 0
+            }
+        
+        # Add to background tasks
+        background_tasks.add_task(_enrich_companies_batch_background, company_ids)
+        
+        logger.info(f"🔄 Re-enrichment started for {len(company_ids)} already enriched companies")
+        
+        return {
+            "message": f"Re-enrichment started in background for {len(company_ids)} companies",
+            "company_count": len(company_ids),
+            "note": "This will overwrite existing enrichment data with fresh data"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/enrich/unenriched")
 async def get_unenriched_companies(limit: int = 1000):
     """Get list of companies that haven't been enriched yet."""

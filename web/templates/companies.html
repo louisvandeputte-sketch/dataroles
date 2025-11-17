@@ -37,6 +37,14 @@
                     <span x-show="!enriching">Enrich All (<span x-text="aiStats.unenriched"></span>)</span>
                     <span x-show="enriching">Enriching...</span>
                 </button>
+                <!-- Re-enrich All Button -->
+                <button @click="reEnrichAll()" 
+                        :disabled="enriching || aiStats.enriched === 0"
+                        class="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium">
+                    <i data-lucide="refresh-cw" class="w-4 h-4 mr-2"></i>
+                    <span x-show="!enriching">Re-enrich All (<span x-text="aiStats.enriched"></span>)</span>
+                    <span x-show="enriching">Re-enriching...</span>
+                </button>
                 <!-- Classify All Enriched Button -->
                 <button @click="classifyAllEnriched()" 
                         :disabled="classifyingConsulting || aiStats.enriched === 0"
@@ -1037,6 +1045,50 @@ function companiesPage() {
             } catch (error) {
                 console.error('Failed to enrich companies:', error);
                 alert('Failed to enrich companies: ' + error.message);
+            } finally {
+                this.enriching = false;
+            }
+        },
+        
+        async reEnrichAll() {
+            if (!confirm(
+                `⚠️ RE-ENRICH ALL ENRICHED COMPANIES?\n\n` +
+                `This will OVERWRITE existing enrichment data for ${this.aiStats.enriched} companies.\n\n` +
+                `Use this when you've updated the enrichment prompt and want fresh data.\n\n` +
+                `This may take several minutes. Continue?`
+            )) {
+                return;
+            }
+            
+            this.enriching = true;
+            
+            try {
+                // Call re-enrich endpoint
+                const response = await fetch(`${this.getApiBaseUrl()}/api/companies/enrich/re-enrich-all?limit=1000`, {
+                    method: 'POST'
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Re-enrichment failed');
+                }
+                
+                const result = await response.json();
+                
+                alert(
+                    `✅ Re-enrichment started in background!\n\n` +
+                    `${result.company_count} enriched companies will be re-enriched.\n\n` +
+                    `⏱️ This will take several minutes (1-2 min per company).\n\n` +
+                    `⚠️ Existing data will be overwritten with fresh enrichment.\n\n` +
+                    `Refresh the page in a few minutes to see the results.`
+                );
+                
+                await this.loadCompanies();
+                await this.loadAIStats();
+                this.$nextTick(() => lucide.createIcons());
+            } catch (error) {
+                console.error('Failed to re-enrich companies:', error);
+                alert('Failed to re-enrich companies: ' + error.message);
             } finally {
                 this.enriching = false;
             }
