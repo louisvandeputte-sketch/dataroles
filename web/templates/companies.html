@@ -29,6 +29,14 @@
                     <span x-show="!enriching">Enrich Selected (<span x-text="selectedCompanies.length"></span>)</span>
                     <span x-show="enriching">Enriching...</span>
                 </button>
+                <!-- Enrich All Button -->
+                <button @click="enrichAllUnenriched()" 
+                        :disabled="enriching || aiStats.unenriched === 0"
+                        class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium">
+                    <i data-lucide="zap" class="w-4 h-4 mr-2"></i>
+                    <span x-show="!enriching">Enrich All (<span x-text="aiStats.unenriched"></span>)</span>
+                    <span x-show="enriching">Enriching...</span>
+                </button>
                 <!-- Classify All Enriched Button -->
                 <button @click="classifyAllEnriched()" 
                         :disabled="classifyingConsulting || aiStats.enriched === 0"
@@ -1005,6 +1013,55 @@ function companiesPage() {
                 await this.loadCompanies();
                 await this.loadAIStats();
                 await this.loadSizeStats();
+                this.$nextTick(() => lucide.createIcons());
+            } catch (error) {
+                console.error('Failed to enrich companies:', error);
+                alert('Failed to enrich companies: ' + error.message);
+            } finally {
+                this.enriching = false;
+            }
+        },
+        
+        async enrichAllUnenriched() {
+            if (!confirm(`Enrich all ${this.aiStats.unenriched} unenriched companies? This may take several minutes.`)) {
+                return;
+            }
+            
+            this.enriching = true;
+            
+            try {
+                // Get unenriched company IDs
+                const response = await fetch(`${this.getApiBaseUrl()}/api/companies/enrich/unenriched?limit=1000`);
+                const data = await response.json();
+                
+                if (data.company_ids.length === 0) {
+                    alert('No unenriched companies found');
+                    return;
+                }
+                
+                // Enrich in batch
+                const enrichResponse = await fetch(`${this.getApiBaseUrl()}/api/companies/enrich/batch`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data.company_ids)
+                });
+                
+                if (!enrichResponse.ok) {
+                    const error = await enrichResponse.json();
+                    throw new Error(error.detail || 'Enrichment failed');
+                }
+                
+                const result = await enrichResponse.json();
+                
+                alert(
+                    `✅ Batch enrichment started in background!\n\n` +
+                    `${data.company_ids.length} unenriched companies will be enriched.\n\n` +
+                    `⏱️ This will take several minutes (1-2 min per company).\n\n` +
+                    `Refresh the page in a few minutes to see the results.`
+                );
+                
+                await this.loadCompanies();
+                await this.loadAIStats();
                 this.$nextTick(() => lucide.createIcons());
             } catch (error) {
                 console.error('Failed to enrich companies:', error);
