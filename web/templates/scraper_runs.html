@@ -524,15 +524,15 @@ function scraperRunsPage() {
         
         get allRuns() {
             return [
-                ...this.linkedinRuns.map(r => ({...r, source: 'linkedin'})),
-                ...this.indeedRuns.map(r => ({...r, source: 'indeed'}))
+                ...this.linkedinRuns,  // API already provides source field
+                ...this.indeedRuns     // API already provides source field
             ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
         },
         
         get allActiveRuns() {
             return [
-                ...this.linkedinActiveRuns.map(r => ({...r, source: 'linkedin'})),
-                ...this.indeedActiveRuns.map(r => ({...r, source: 'indeed'}))
+                ...this.linkedinActiveRuns,  // API already provides source field
+                ...this.indeedActiveRuns     // API already provides source field
             ];
         },
         
