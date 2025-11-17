@@ -37,14 +37,6 @@
                     <span x-show="!enriching">Enrich All (<span x-text="aiStats.unenriched"></span>)</span>
                     <span x-show="enriching">Enriching...</span>
                 </button>
-                <!-- Re-enrich All Button -->
-                <button @click="reEnrichAll()" 
-                        :disabled="enriching || aiStats.enriched === 0"
-                        class="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium">
-                    <i data-lucide="refresh-cw" class="w-4 h-4 mr-2"></i>
-                    <span x-show="!enriching">Re-enrich All (<span x-text="aiStats.enriched"></span>)</span>
-                    <span x-show="enriching">Re-enriching...</span>
-                </button>
                 <!-- Classify All Enriched Button -->
                 <button @click="classifyAllEnriched()" 
                         :disabled="classifyingConsulting || aiStats.enriched === 0"
@@ -133,12 +125,9 @@
                             <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
                             <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hiring Model</th>
                             <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sector</th>
-                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
+                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
                             <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Website</th>
                             <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jobs Page</th>
-                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email HR</th>
-                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">HR Source</th>
-                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email General</th>
                             <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
@@ -182,22 +171,11 @@
                                      :title="company.company_master_data?.sector_en || company.company_master_data?.sector_nl" 
                                      x-text="company.company_master_data?.sector_en || company.company_master_data?.sector_nl || '-'"></div>
                             </td>
-                            <!-- Size Category -->
+                            <!-- Category -->
                             <td class="px-2 py-2">
-                                <span x-show="company.company_master_data?.size_category" 
-                                      class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
-                                      :class="{
-                                          'bg-green-100 text-green-800': company.company_master_data?.size_category?.toLowerCase().includes('startup'),
-                                          'bg-blue-100 text-blue-800': company.company_master_data?.size_category?.toLowerCase().includes('scale'),
-                                          'bg-yellow-100 text-yellow-800': company.company_master_data?.size_category?.toLowerCase().includes('sme') || company.company_master_data?.size_category?.toLowerCase().includes('kmo'),
-                                          'bg-purple-100 text-purple-800': company.company_master_data?.size_category?.toLowerCase().includes('midmarket') || company.company_master_data?.size_category?.toLowerCase().includes('middelgroot'),
-                                          'bg-indigo-100 text-indigo-800': company.company_master_data?.size_category?.toLowerCase().includes('corporate'),
-                                          'bg-orange-100 text-orange-800': company.company_master_data?.size_category?.toLowerCase().includes('subsidiary') || company.company_master_data?.size_category?.toLowerCase().includes('dochter'),
-                                          'bg-gray-100 text-gray-800': company.company_master_data?.size_category?.toLowerCase().includes('government') || company.company_master_data?.size_category?.toLowerCase().includes('overheid'),
-                                      }"
-                                      x-text="company.company_master_data?.size_category">
-                                </span>
-                                <span x-show="!company.company_master_data?.size_category" class="text-xs text-gray-400">-</span>
+                                <div class="text-xs text-gray-600 truncate max-w-[120px]" 
+                                     :title="company.company_master_data?.category_en || company.company_master_data?.category_nl" 
+                                     x-text="company.company_master_data?.category_en || company.company_master_data?.category_nl || '-'"></div>
                             </td>
                             <!-- Bedrijfswebsite -->
                             <td class="px-2 py-2" @click.stop>
@@ -222,36 +200,6 @@
                                     <span class="text-xs">Link</span>
                                 </a>
                                 <span x-show="!company.company_master_data?.jobspagina" class="text-xs text-gray-400">-</span>
-                            </td>
-                            <!-- Email HR -->
-                            <td class="px-2 py-2">
-                                <a x-show="company.company_master_data?.email_hr" 
-                                   :href="'mailto:' + company.company_master_data?.email_hr" 
-                                   class="text-xs text-blue-600 hover:text-blue-800 hover:underline truncate block max-w-[140px]"
-                                   :title="company.company_master_data?.email_hr"
-                                   x-text="company.company_master_data?.email_hr"></a>
-                                <span x-show="!company.company_master_data?.email_hr" class="text-xs text-gray-400">-</span>
-                            </td>
-                            <!-- Email HR Bron -->
-                            <td class="px-2 py-2" @click.stop>
-                                <a x-show="company.company_master_data?.email_hr_bron" 
-                                   :href="company.company_master_data?.email_hr_bron" 
-                                   target="_blank"
-                                   class="inline-flex items-center text-blue-600 hover:text-blue-800"
-                                   :title="company.company_master_data?.email_hr_bron">
-                                    <i data-lucide="link" class="w-4 h-4 mr-1"></i>
-                                    <span class="text-xs">Link</span>
-                                </a>
-                                <span x-show="!company.company_master_data?.email_hr_bron" class="text-xs text-gray-400">-</span>
-                            </td>
-                            <!-- Email Algemeen -->
-                            <td class="px-2 py-2">
-                                <a x-show="company.company_master_data?.email_algemeen" 
-                                   :href="'mailto:' + company.company_master_data?.email_algemeen" 
-                                   class="text-xs text-blue-600 hover:text-blue-800 hover:underline truncate block max-w-[140px]"
-                                   :title="company.company_master_data?.email_algemeen"
-                                   x-text="company.company_master_data?.email_algemeen"></a>
-                                <span x-show="!company.company_master_data?.email_algemeen" class="text-xs text-gray-400">-</span>
                             </td>
                             <!-- Actions -->
                             <td class="px-2 py-2" @click.stop>
@@ -1045,50 +993,6 @@ function companiesPage() {
             } catch (error) {
                 console.error('Failed to enrich companies:', error);
                 alert('Failed to enrich companies: ' + error.message);
-            } finally {
-                this.enriching = false;
-            }
-        },
-        
-        async reEnrichAll() {
-            if (!confirm(
-                `⚠️ RE-ENRICH ALL ENRICHED COMPANIES?\n\n` +
-                `This will OVERWRITE existing enrichment data for ${this.aiStats.enriched} companies.\n\n` +
-                `Use this when you've updated the enrichment prompt and want fresh data.\n\n` +
-                `This may take several minutes. Continue?`
-            )) {
-                return;
-            }
-            
-            this.enriching = true;
-            
-            try {
-                // Call re-enrich endpoint
-                const response = await fetch(`${this.getApiBaseUrl()}/api/companies/enrich/re-enrich-all?limit=1000`, {
-                    method: 'POST'
-                });
-                
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.detail || 'Re-enrichment failed');
-                }
-                
-                const result = await response.json();
-                
-                alert(
-                    `✅ Re-enrichment started in background!\n\n` +
-                    `${result.company_count} enriched companies will be re-enriched.\n\n` +
-                    `⏱️ This will take several minutes (1-2 min per company).\n\n` +
-                    `⚠️ Existing data will be overwritten with fresh enrichment.\n\n` +
-                    `Refresh the page in a few minutes to see the results.`
-                );
-                
-                await this.loadCompanies();
-                await this.loadAIStats();
-                this.$nextTick(() => lucide.createIcons());
-            } catch (error) {
-                console.error('Failed to re-enrich companies:', error);
-                alert('Failed to re-enrich companies: ' + error.message);
             } finally {
                 this.enriching = false;
             }
