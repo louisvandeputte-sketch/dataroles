@@ -178,7 +178,7 @@
                                          @click="editing = true"
                                          class="text-xs text-gray-600 cursor-pointer hover:bg-gray-100 px-1 py-0.5 rounded"
                                          :title="'NL: ' + (sector_nl || '-') + '\nEN: ' + (sector_en || '-') + '\nFR: ' + (sector_fr || '-')">
-                                        <div class="truncate max-w-[120px]" x-text="sector_en || sector_nl || sector_fr || '-'"></div>
+                                        <div class="truncate max-w-[120px]" x-text="sector_nl || sector_en || sector_fr || '-'"></div>
                                     </div>
                                     <!-- Edit mode (3 inputs) -->
                                     <div x-show="editing" class="space-y-1 min-w-[200px]">
