@@ -9,53 +9,57 @@ BEGIN
     -- Only update if size_category has changed or is being set
     IF NEW.size_category IS DISTINCT FROM OLD.size_category OR (TG_OP = 'INSERT' AND NEW.size_category IS NOT NULL) THEN
         -- Set translations based on size_category enum value (Title Case)
-        CASE NEW.size_category
-            WHEN 'startup' THEN
-                NEW.category_nl := 'Startup';
-                NEW.category_en := 'Startup';
-                NEW.category_fr := 'Startup';
-            
-            WHEN 'scaleup' THEN
-                NEW.category_nl := 'Scale-up';
-                NEW.category_en := 'Scale-up';
-                NEW.category_fr := 'Scale-up';
-            
-            WHEN 'sme' THEN
-                NEW.category_nl := 'KMO';
-                NEW.category_en := 'SME';
-                NEW.category_fr := 'PME';
-            
-            WHEN 'established_enterprise' THEN
-                NEW.category_nl := 'Gevestigde Onderneming';
-                NEW.category_en := 'Established Enterprise';
-                NEW.category_fr := 'Entreprise Établie';
-            
-            WHEN 'corporate' THEN
-                NEW.category_nl := 'Corporate';
-                NEW.category_en := 'Corporate';
-                NEW.category_fr := 'Corporate';
-            
-            WHEN 'public_company' THEN
-                NEW.category_nl := 'Beursgenoteerd Bedrijf';
-                NEW.category_en := 'Public Company';
-                NEW.category_fr := 'Société Cotée';
-            
-            WHEN 'government' THEN
-                NEW.category_nl := 'Overheid';
-                NEW.category_en := 'Government';
-                NEW.category_fr := 'Gouvernement';
-            
-            WHEN 'unknown' THEN
-                NEW.category_nl := 'Onbekend';
-                NEW.category_en := 'Unknown';
-                NEW.category_fr := 'Inconnu';
-            
-            ELSE
-                -- If size_category is NULL or invalid, clear translations
-                NEW.category_nl := NULL;
-                NEW.category_en := NULL;
-                NEW.category_fr := NULL;
-        END CASE;
+        -- IMPORTANT: Only set translations if they are NULL (preserve existing AI-generated translations)
+        -- Only set translations if they are NULL (preserve existing AI-generated translations)
+        IF NEW.category_nl IS NULL OR NEW.category_en IS NULL OR NEW.category_fr IS NULL THEN
+            CASE NEW.size_category
+                WHEN 'startup' THEN
+                    NEW.category_nl := COALESCE(NEW.category_nl, 'Startup');
+                    NEW.category_en := COALESCE(NEW.category_en, 'Startup');
+                    NEW.category_fr := COALESCE(NEW.category_fr, 'Startup');
+                
+                WHEN 'scaleup' THEN
+                    NEW.category_nl := COALESCE(NEW.category_nl, 'Scale-up');
+                    NEW.category_en := COALESCE(NEW.category_en, 'Scale-up');
+                    NEW.category_fr := COALESCE(NEW.category_fr, 'Scale-up');
+                
+                WHEN 'sme' THEN
+                    NEW.category_nl := COALESCE(NEW.category_nl, 'KMO');
+                    NEW.category_en := COALESCE(NEW.category_en, 'SME');
+                    NEW.category_fr := COALESCE(NEW.category_fr, 'PME');
+                
+                WHEN 'established_enterprise' THEN
+                    NEW.category_nl := COALESCE(NEW.category_nl, 'Gevestigde Onderneming');
+                    NEW.category_en := COALESCE(NEW.category_en, 'Established Enterprise');
+                    NEW.category_fr := COALESCE(NEW.category_fr, 'Entreprise Établie');
+                
+                WHEN 'corporate' THEN
+                    NEW.category_nl := COALESCE(NEW.category_nl, 'Corporate');
+                    NEW.category_en := COALESCE(NEW.category_en, 'Corporate');
+                    NEW.category_fr := COALESCE(NEW.category_fr, 'Corporate');
+                
+                WHEN 'public_company' THEN
+                    NEW.category_nl := COALESCE(NEW.category_nl, 'Beursgenoteerd Bedrijf');
+                    NEW.category_en := COALESCE(NEW.category_en, 'Public Company');
+                    NEW.category_fr := COALESCE(NEW.category_fr, 'Société Cotée');
+                
+                WHEN 'government' THEN
+                    NEW.category_nl := COALESCE(NEW.category_nl, 'Overheid');
+                    NEW.category_en := COALESCE(NEW.category_en, 'Government');
+                    NEW.category_fr := COALESCE(NEW.category_fr, 'Gouvernement');
+                
+                WHEN 'unknown' THEN
+                    NEW.category_nl := COALESCE(NEW.category_nl, 'Onbekend');
+                    NEW.category_en := COALESCE(NEW.category_en, 'Unknown');
+                    NEW.category_fr := COALESCE(NEW.category_fr, 'Inconnu');
+                
+                ELSE
+                    -- If size_category is NULL or invalid, clear translations only if they were NULL
+                    IF OLD.category_nl IS NULL THEN NEW.category_nl := NULL; END IF;
+                    IF OLD.category_en IS NULL THEN NEW.category_en := NULL; END IF;
+                    IF OLD.category_fr IS NULL THEN NEW.category_fr := NULL; END IF;
+            END CASE;
+        END IF;
     END IF;
     
     RETURN NEW;
