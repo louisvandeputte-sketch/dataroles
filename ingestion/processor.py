@@ -156,10 +156,23 @@ def process_job_posting(raw_job: Dict[str, Any], scrape_run_id: UUID, source: st
         else:  # indeed
             location_string = job.get_location_string()
         
-        # Check if location is vague 'Flemish Region' - if so, try to use company location
-        if "Flemish Region" in location_string and location_string.count(",") <= 2:
-            # Location is vague (e.g., "Flemish Region, Belgium" or "City, Flemish Region, Belgium")
-            # Try to get company's locatie_belgie
+        location_data = normalize_location(location_string)
+        
+        existing_location = db.get_location_by_string(location_data["full_location_string"])
+        if existing_location:
+            location_id = UUID(existing_location["id"])
+        else:
+            location_id = db.insert_location(location_data)
+        
+        # Step 3b: Determine display location (multilingual)
+        # If location is vague (e.g., "Flemish Region, Belgium"), use company location
+        # Otherwise use the actual location from the location table
+        location_display_nl = None
+        location_display_en = None
+        location_display_fr = None
+        
+        if location_string.strip().startswith("Flemish Region"):
+            # Location is vague - try to use company's locatie_belgie
             try:
                 company_master = db.client.table("company_master_data")\
                     .select("locatie_belgie")\
@@ -169,20 +182,30 @@ def process_job_posting(raw_job: Dict[str, Any], scrape_run_id: UUID, source: st
                 
                 if company_master.data and company_master.data.get("locatie_belgie"):
                     company_location = company_master.data["locatie_belgie"]
-                    # Override with company location if it's more specific
                     if company_location and company_location.lower() != "niet gevonden":
-                        location_string = f"{company_location}, Belgium"
-                        logger.info(f"Overriding vague location '{location_string}' with company location: {company_location}")
+                        # Use company location for all languages
+                        location_display_nl = company_location
+                        location_display_en = company_location
+                        location_display_fr = company_location
+                        logger.info(f"Using company location for display: {company_location}")
             except Exception as e:
                 logger.debug(f"Could not fetch company location: {e}")
         
-        location_data = normalize_location(location_string)
-        
-        existing_location = db.get_location_by_string(location_data["full_location_string"])
-        if existing_location:
-            location_id = UUID(existing_location["id"])
-        else:
-            location_id = db.insert_location(location_data)
+        # If we didn't get company location, use location table data
+        if not location_display_nl:
+            try:
+                location_details = db.client.table("locations")\
+                    .select("city_name_nl, city_name_en, city_name_fr")\
+                    .eq("id", str(location_id))\
+                    .single()\
+                    .execute()
+                
+                if location_details.data:
+                    location_display_nl = location_details.data.get("city_name_nl")
+                    location_display_en = location_details.data.get("city_name_en")
+                    location_display_fr = location_details.data.get("city_name_fr")
+            except Exception as e:
+                logger.debug(f"Could not fetch location details: {e}")
         
         # Step 4: Check deduplication (by title + company)
         # Get company name for dedup
@@ -197,10 +220,13 @@ def process_job_posting(raw_job: Dict[str, Any], scrape_run_id: UUID, source: st
         
         job_data = job.to_db_dict(company_id, location_id)
         
-        # Add dedup_key to job_data
+        # Add dedup_key and location_display to job_data
         dedup_key = create_dedup_key(job.job_title, company_name)
         job_data["dedup_key"] = dedup_key
         job_data["title_normalized"] = job.job_title.lower().strip()
+        job_data["location_display_nl"] = location_display_nl
+        job_data["location_display_en"] = location_display_en
+        job_data["location_display_fr"] = location_display_fr
         
         if exists:
             # Job exists - check if THIS source already exists
