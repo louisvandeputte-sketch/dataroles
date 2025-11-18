@@ -1,6 +1,6 @@
--- Migration 057: Add location_display fields to vw_job_listings
+-- Migration 057: Add location_id_override to vw_job_listings
 -- Date: 2025-11-18
--- Description: Expose location_display fields in job listings view
+-- Description: Use location_id_override to show company location when job location is vague
 
 DROP VIEW IF EXISTS vw_job_listings;
 
@@ -38,18 +38,14 @@ SELECT
     cmd.founded_year,          -- Company founding year
     cmd.industry,              -- Industry (from original data)
     
-    -- Location info (multilingual) from locations table
-    l.city_name_nl,            -- City name in Dutch (from location enrichment)
-    l.city_name_en,            -- City name in English (from location enrichment)
-    l.city_name_fr,            -- City name in French (from location enrichment)
-    l.subdivision_name_nl,     -- Province/state/region in Dutch
-    l.subdivision_name_en,     -- Province/state/region in English
-    l.subdivision_name_fr,     -- Province/state/region in French
-    
-    -- Display location (multilingual) from job_postings - PREFERRED for frontend
-    j.location_display_nl,     -- Display location in Dutch (company location if vague, else city)
-    j.location_display_en,     -- Display location in English (company location if vague, else city)
-    j.location_display_fr,     -- Display location in French (company location if vague, else city)
+    -- Location info (multilingual) - uses override if available, otherwise original
+    -- Frontend should use these fields directly - they automatically show the best location
+    COALESCE(l_override.city_name_nl, l.city_name_nl) AS city_name_nl,
+    COALESCE(l_override.city_name_en, l.city_name_en) AS city_name_en,
+    COALESCE(l_override.city_name_fr, l.city_name_fr) AS city_name_fr,
+    COALESCE(l_override.subdivision_name_nl, l.subdivision_name_nl) AS subdivision_name_nl,
+    COALESCE(l_override.subdivision_name_en, l.subdivision_name_en) AS subdivision_name_en,
+    COALESCE(l_override.subdivision_name_fr, l.subdivision_name_fr) AS subdivision_name_fr,
     
     -- Core classification fields (ACTIVE - used for filtering)
     e.type_datarol,            -- Data role type (Data Engineer, Data Analyst, etc.)
@@ -104,9 +100,10 @@ FROM llm_enrichment e
 LEFT JOIN job_postings j ON e.job_posting_id = j.id
 LEFT JOIN companies c ON j.company_id = c.id
 LEFT JOIN company_master_data cmd ON c.id = cmd.company_id
-LEFT JOIN locations l ON j.location_id = l.id;
+LEFT JOIN locations l ON j.location_id = l.id
+LEFT JOIN locations l_override ON j.location_id_override = l_override.id;
 
 COMMENT ON VIEW vw_job_listings IS 
 'Frontend-friendly view for job listings with complete enrichment data.
-Includes location_display_nl/en/fr fields which show company location when job location is vague (e.g., "Flemish Region").
-Frontend should prefer location_display_* over city_name_* for display.';
+Location fields (city_name_nl/en/fr, subdivision_name_nl/en/fr) automatically use location_id_override when available (for vague locations like "Flemish Region"), otherwise use original location_id.
+Frontend can use these fields directly without any special logic.';

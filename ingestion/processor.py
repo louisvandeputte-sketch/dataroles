@@ -164,12 +164,9 @@ def process_job_posting(raw_job: Dict[str, Any], scrape_run_id: UUID, source: st
         else:
             location_id = db.insert_location(location_data)
         
-        # Step 3b: Determine display location (multilingual)
-        # If location is vague (e.g., "Flemish Region, Belgium"), use company location
-        # Otherwise use the actual location from the location table
-        location_display_nl = None
-        location_display_en = None
-        location_display_fr = None
+        # Step 3b: Determine location override
+        # If location is vague (e.g., "Flemish Region, Belgium"), create/get location from company
+        location_id_override = None
         
         if location_string.strip().startswith("Flemish Region"):
             # Location is vague - try to use company's locatie_belgie
@@ -183,29 +180,20 @@ def process_job_posting(raw_job: Dict[str, Any], scrape_run_id: UUID, source: st
                 if company_master.data and company_master.data.get("locatie_belgie"):
                     company_location = company_master.data["locatie_belgie"]
                     if company_location and company_location.lower() != "niet gevonden":
-                        # Use company location for all languages
-                        location_display_nl = company_location
-                        location_display_en = company_location
-                        location_display_fr = company_location
-                        logger.info(f"Using company location for display: {company_location}")
+                        # Create location string from company location
+                        override_location_string = f"{company_location}, Belgium"
+                        override_location_data = normalize_location(override_location_string)
+                        
+                        # Check if this location already exists
+                        existing_override = db.get_location_by_string(override_location_data["full_location_string"])
+                        if existing_override:
+                            location_id_override = UUID(existing_override["id"])
+                        else:
+                            location_id_override = db.insert_location(override_location_data)
+                        
+                        logger.info(f"Using company location override: {company_location}")
             except Exception as e:
                 logger.debug(f"Could not fetch company location: {e}")
-        
-        # If we didn't get company location, use location table data
-        if not location_display_nl:
-            try:
-                location_details = db.client.table("locations")\
-                    .select("city_name_nl, city_name_en, city_name_fr")\
-                    .eq("id", str(location_id))\
-                    .single()\
-                    .execute()
-                
-                if location_details.data:
-                    location_display_nl = location_details.data.get("city_name_nl")
-                    location_display_en = location_details.data.get("city_name_en")
-                    location_display_fr = location_details.data.get("city_name_fr")
-            except Exception as e:
-                logger.debug(f"Could not fetch location details: {e}")
         
         # Step 4: Check deduplication (by title + company)
         # Get company name for dedup
@@ -220,13 +208,11 @@ def process_job_posting(raw_job: Dict[str, Any], scrape_run_id: UUID, source: st
         
         job_data = job.to_db_dict(company_id, location_id)
         
-        # Add dedup_key and location_display to job_data
+        # Add dedup_key and location_id_override to job_data
         dedup_key = create_dedup_key(job.job_title, company_name)
         job_data["dedup_key"] = dedup_key
         job_data["title_normalized"] = job.job_title.lower().strip()
-        job_data["location_display_nl"] = location_display_nl
-        job_data["location_display_en"] = location_display_en
-        job_data["location_display_fr"] = location_display_fr
+        job_data["location_id_override"] = str(location_id_override) if location_id_override else None
         
         if exists:
             # Job exists - check if THIS source already exists

@@ -1,18 +1,14 @@
--- Migration 056: Add location_display fields to job_postings
+-- Migration 056: Add location_id_override to job_postings
 -- Date: 2025-11-18
--- Description: Add multilingual display location fields that show company location when job location is vague
+-- Description: Add location_id_override that points to a more specific location when job location is vague
 
--- Add location_display columns (multilingual)
+-- Add location_id_override column
 ALTER TABLE job_postings
-ADD COLUMN IF NOT EXISTS location_display_nl TEXT,
-ADD COLUMN IF NOT EXISTS location_display_en TEXT,
-ADD COLUMN IF NOT EXISTS location_display_fr TEXT;
+ADD COLUMN IF NOT EXISTS location_id_override UUID REFERENCES locations(id);
 
--- Add comments
-COMMENT ON COLUMN job_postings.location_display_nl IS 'Display location in Dutch. Uses company locatie_belgie when job location is vague (e.g., "Flemish Region"). Otherwise uses location.city_name_nl.';
-COMMENT ON COLUMN job_postings.location_display_en IS 'Display location in English. Uses company locatie_belgie when job location is vague (e.g., "Flemish Region"). Otherwise uses location.city_name_en.';
-COMMENT ON COLUMN job_postings.location_display_fr IS 'Display location in French. Uses company locatie_belgie when job location is vague (e.g., "Flemish Region"). Otherwise uses location.city_name_fr.';
+-- Add comment
+COMMENT ON COLUMN job_postings.location_id_override IS 'Override location ID used when original location is vague (e.g., "Flemish Region"). Points to a more specific location created from company locatie_belgie. Frontend should use COALESCE(location_id_override, location_id) to get the display location.';
 
--- Note: These fields will be populated by:
+-- Note: This field will be populated by:
 -- 1. Ingestion pipeline (processor.py) for new jobs
--- 2. Backfill script (scripts/backfill_location_display.py) for existing jobs
+-- 2. Backfill script (scripts/backfill_location_override.py) for existing jobs
