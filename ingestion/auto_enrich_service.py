@@ -253,7 +253,7 @@ class AutoEnrichService:
                     continue
         
         except Exception as e:
-            logger.error(f"Failed to fetch pending Data jobs: {e}")
+            logger.error(f"Failed to fetch pending Data jobs (check query size): {e}")
     
     async def process_pending_tech_scores(self):
         """Process programming languages and ecosystems that need relevance scoring."""
