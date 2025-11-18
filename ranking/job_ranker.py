@@ -494,10 +494,17 @@ class JobRankingSystem:
         )
         
         # Bepaal final ranks
+        # NIS (Not In Scope) jobs krijgen rank 999999 om ze onderaan te plaatsen
+        data_jobs_count = 0
         for i, job in enumerate(ranked_jobs):
-            job.final_rank = i + 1
+            if job.title_classification == 'NIS':
+                job.final_rank = 999999  # NIS jobs always at the bottom
+            else:
+                data_jobs_count += 1
+                job.final_rank = data_jobs_count  # Normal ranking for Data jobs
         
-        logger.info(f"✅ Ranking complete! {len(ranked_jobs)} jobs ranked.")
+        nis_count = len(ranked_jobs) - data_jobs_count
+        logger.info(f"✅ Ranking complete! {data_jobs_count} Data jobs ranked, {nis_count} NIS jobs set to rank 999999.")
         
         return ranked_jobs
 
