@@ -234,31 +234,31 @@
                             </td>
                             <!-- Category (Editable Dropdown) -->
                             <td class="px-2 py-2" @click.stop>
-                                <div x-data="{ editing: false, value: company.company_master_data?.category_en || '' }">
-                                    <!-- Display mode -->
+                                <div x-data="{ editing: false, value: company.company_master_data?.size_category || '' }">
+                                    <!-- Display mode - show Dutch translation -->
                                     <div x-show="!editing" 
                                          @click="editing = true"
                                          class="text-xs text-gray-600 truncate max-w-[120px] cursor-pointer hover:bg-gray-100 px-1 py-0.5 rounded"
-                                         :title="value || 'Click to edit'">
-                                        <span x-text="value || '-'"></span>
+                                         :title="company.company_master_data?.category_nl || 'Click to edit'">
+                                        <span x-text="company.company_master_data?.category_nl || '-'"></span>
                                     </div>
-                                    <!-- Edit mode (Dropdown) -->
+                                    <!-- Edit mode (Dropdown) - edit size_category enum -->
                                     <select x-show="editing"
                                             x-model="value"
-                                            @change="editing = false; updateCompanyField(company.id, 'category_en', value)"
+                                            @change="editing = false; updateCompanyField(company.id, 'size_category', value)"
                                             @blur="editing = false"
-                                            @keydown.escape="editing = false; value = company.company_master_data?.category_en || ''"
+                                            @keydown.escape="editing = false; value = company.company_master_data?.size_category || ''"
                                             class="text-xs border border-blue-300 rounded px-1 py-0.5 w-full max-w-[120px] focus:outline-none focus:ring-1 focus:ring-blue-500"
                                             x-init="$watch('editing', value => { if(value) $el.focus() })">
                                         <option value="">-</option>
-                                        <option value="Startup">Startup</option>
-                                        <option value="Scale-up">Scale-up</option>
-                                        <option value="SME">SME</option>
-                                        <option value="Midmarket">Midmarket</option>
-                                        <option value="Corporate">Corporate</option>
-                                        <option value="Subsidiary">Subsidiary</option>
-                                        <option value="Government">Government</option>
-                                        <option value="Unknown">Unknown</option>
+                                        <option value="startup">Startup</option>
+                                        <option value="scaleup">Scale-up</option>
+                                        <option value="sme">KMO/SME</option>
+                                        <option value="established_enterprise">Gevestigde onderneming</option>
+                                        <option value="corporate">Corporate</option>
+                                        <option value="public_company">Beursgenoteerd</option>
+                                        <option value="government">Overheid</option>
+                                        <option value="unknown">Onbekend</option>
                                     </select>
                                 </div>
                             </td>
