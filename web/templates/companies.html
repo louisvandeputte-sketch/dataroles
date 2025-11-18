@@ -235,12 +235,12 @@
                             <!-- Category (Editable Dropdown) -->
                             <td class="px-2 py-2" @click.stop>
                                 <div x-data="{ editing: false, value: company.company_master_data?.size_category || '' }">
-                                    <!-- Display mode - show Dutch translation -->
+                                    <!-- Display mode - show canonical value or Dutch translation -->
                                     <div x-show="!editing" 
                                          @click="editing = true"
                                          class="text-xs text-gray-600 truncate max-w-[120px] cursor-pointer hover:bg-gray-100 px-1 py-0.5 rounded"
-                                         :title="company.company_master_data?.category_nl || 'Click to edit'">
-                                        <span x-text="company.company_master_data?.category_nl || '-'"></span>
+                                         :title="company.company_master_data?.size_category || 'Click to edit'">
+                                        <span x-text="company.company_master_data?.category_nl || company.company_master_data?.size_category || '-'"></span>
                                     </div>
                                     <!-- Edit mode (Dropdown) - edit size_category enum -->
                                     <select x-show="editing"
