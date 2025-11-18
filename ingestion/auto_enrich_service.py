@@ -195,10 +195,12 @@ class AutoEnrichService:
             # 2. Don't have enrichment yet (no enrichment_completed_at in llm_enrichment)
             # 3. Are active
             
-            # First get all enriched job IDs
+            # First get all enriched job IDs (limit to recent ones to avoid huge lists)
             enriched_result = db.client.table("llm_enrichment")\
                 .select("job_posting_id")\
                 .not_.is_("enrichment_completed_at", "null")\
+                .order("enrichment_completed_at", desc=True)\
+                .limit(1000)\
                 .execute()
             
             enriched_job_ids = [row["job_posting_id"] for row in enriched_result.data] if enriched_result.data else []
@@ -209,8 +211,9 @@ class AutoEnrichService:
                 .eq("title_classification", "Data")\
                 .eq("is_active", True)
             
-            # Exclude already enriched jobs
-            if enriched_job_ids:
+            # Exclude already enriched jobs (but limit check to recent 1000 to avoid PostgREST issues)
+            if enriched_job_ids and len(enriched_job_ids) < 500:
+                # Only use not_.in_ if list is manageable
                 query = query.not_.in_("id", enriched_job_ids)
             
             result = query.limit(20).execute()  # Process 20 at a time for faster bulk processing
