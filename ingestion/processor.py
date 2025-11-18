@@ -152,9 +152,31 @@ def process_job_posting(raw_job: Dict[str, Any], scrape_run_id: UUID, source: st
         # Step 3: Process location
         if source == "linkedin":
             location_model = job.get_location()
-            location_data = normalize_location(location_model.full_location_string)
+            location_string = location_model.full_location_string
         else:  # indeed
-            location_data = normalize_location(job.get_location_string())
+            location_string = job.get_location_string()
+        
+        # Check if location is vague 'Flemish Region' - if so, try to use company location
+        if "Flemish Region" in location_string and location_string.count(",") <= 2:
+            # Location is vague (e.g., "Flemish Region, Belgium" or "City, Flemish Region, Belgium")
+            # Try to get company's locatie_belgie
+            try:
+                company_master = db.client.table("company_master_data")\
+                    .select("locatie_belgie")\
+                    .eq("company_id", str(company_id))\
+                    .single()\
+                    .execute()
+                
+                if company_master.data and company_master.data.get("locatie_belgie"):
+                    company_location = company_master.data["locatie_belgie"]
+                    # Override with company location if it's more specific
+                    if company_location and company_location.lower() != "niet gevonden":
+                        location_string = f"{company_location}, Belgium"
+                        logger.info(f"Overriding vague location '{location_string}' with company location: {company_location}")
+            except Exception as e:
+                logger.debug(f"Could not fetch company location: {e}")
+        
+        location_data = normalize_location(location_string)
         
         existing_location = db.get_location_by_string(location_data["full_location_string"])
         if existing_location:
