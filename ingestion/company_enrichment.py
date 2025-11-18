@@ -27,7 +27,7 @@ client = OpenAI(
 #             - Detection: direct = normal organizations hiring for themselves
 #             - All v14 features: sectors, factlets, multilingual categories
 COMPANY_ENRICHMENT_PROMPT_ID = "pmpt_68fd06175d7c8190bd8767fddcb5486a0e87d16aa5f38bc2"
-COMPANY_ENRICHMENT_PROMPT_VERSION = "19"  # v19: size_category canonical field, auto-translated to category_nl/en/fr
+COMPANY_ENRICHMENT_PROMPT_VERSION = "20"  # v20: size_category canonical field, auto-translated to category_nl/en/fr
 
 
 def enrich_company(company_id: str, company_name: str, company_url: Optional[str] = None) -> Dict[str, Any]:
