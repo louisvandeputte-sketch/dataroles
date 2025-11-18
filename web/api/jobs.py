@@ -45,94 +45,99 @@ async def list_jobs(
 ):
     """List jobs with filtering and search. Default sort by ranking_position (best first)."""
     
-    # If run_id is provided, filter jobs from that specific scrape run
-    job_ids_filter = None
-    run_info = None
-    if run_id:
-        # Get jobs from this run via job_scrape_history
-        history = db.client.table("job_scrape_history")\
-            .select("job_posting_id")\
-            .eq("scrape_run_id", run_id)\
-            .execute()
+    try:
+        # If run_id is provided, filter jobs from that specific scrape run
+        job_ids_filter = None
+        run_info = None
+        if run_id:
+            # Get jobs from this run via job_scrape_history
+            history = db.client.table("job_scrape_history")\
+                .select("job_posting_id")\
+                .eq("scrape_run_id", run_id)\
+                .execute()
+            
+            if history.data:
+                job_ids_filter = [h["job_posting_id"] for h in history.data]
+            else:
+                # No jobs yet for this run - return empty list instead of all jobs
+                job_ids_filter = []
+            
+            # Get run info for display
+            run = db.client.table("scrape_runs")\
+                .select("search_query, location_query")\
+                .eq("id", run_id)\
+                .execute()
+            
+            if run.data:
+                run_info = run.data[0]
         
-        if history.data:
-            job_ids_filter = [h["job_posting_id"] for h in history.data]
+        # Parse comma-separated IDs
+        company_id_list = company_ids.split(',') if company_ids else None
+        location_id_list = location_ids.split(',') if location_ids else None
+        type_id_list = type_ids.split(',') if type_ids else None
+        
+        # Parse AI enrichment filter
+        ai_enriched_bool = None
+        if ai_enriched == 'true':
+            ai_enriched_bool = True
+        elif ai_enriched == 'false':
+            ai_enriched_bool = False
+        
+        # When filtering by run_id, show ALL jobs from that run (active and inactive)
+        # Otherwise, default to active jobs only
+        if run_id:
+            active_only = is_active if is_active is not None else False
         else:
-            # No jobs yet for this run - return empty list instead of all jobs
-            job_ids_filter = []
+            active_only = is_active if is_active is not None else True
         
-        # Get run info for display
-        run = db.client.table("scrape_runs")\
-            .select("search_query, location_query")\
-            .eq("id", run_id)\
-            .execute()
+        # Build search query
+        jobs, total = db.search_jobs(
+            search_query=search,
+            location=location,
+            company_ids=company_id_list,
+            location_ids=location_id_list,
+            type_ids=type_id_list,
+            seniority=seniority,
+            employment=employment,
+            posted_date=posted_date,
+            ai_enriched=ai_enriched_bool,
+            title_classification=title_classification,
+            type_datarol=type_datarol,
+            source=source,
+            active_only=active_only,
+            job_ids=job_ids_filter,
+            sort_field=sort_field,
+            sort_direction=sort_direction,
+            limit=limit,
+            offset=offset
+        )
         
-        if run.data:
-            run_info = run.data[0]
-    
-    # Parse comma-separated IDs
-    company_id_list = company_ids.split(',') if company_ids else None
-    location_id_list = location_ids.split(',') if location_ids else None
-    type_id_list = type_ids.split(',') if type_ids else None
-    
-    # Parse AI enrichment filter
-    ai_enriched_bool = None
-    if ai_enriched == 'true':
-        ai_enriched_bool = True
-    elif ai_enriched == 'false':
-        ai_enriched_bool = False
-    
-    # When filtering by run_id, show ALL jobs from that run (active and inactive)
-    # Otherwise, default to active jobs only
-    if run_id:
-        active_only = is_active if is_active is not None else False
-    else:
-        active_only = is_active if is_active is not None else True
-    
-    # Build search query
-    jobs, total = db.search_jobs(
-        search_query=search,
-        location=location,
-        company_ids=company_id_list,
-        location_ids=location_id_list,
-        type_ids=type_id_list,
-        seniority=seniority,
-        employment=employment,
-        posted_date=posted_date,
-        ai_enriched=ai_enriched_bool,
-        title_classification=title_classification,
-        type_datarol=type_datarol,
-        source=source,
-        active_only=active_only,
-        job_ids=job_ids_filter,
-        sort_field=sort_field,
-        sort_direction=sort_direction,
-        limit=limit,
-        offset=offset
-    )
-    
-    # Get stats
-    stats = db.get_stats()
-    
-    response = {
-        "jobs": jobs,
-        "total": total,  # Use actual count from search_jobs
-        "stats": {
-            "total_jobs": stats.get("total_jobs", 0),
-            "active_jobs": stats.get("active_jobs", 0),
-            "inactive_jobs": stats.get("total_jobs", 0) - stats.get("active_jobs", 0)
+        # Get stats
+        stats = db.get_stats()
+        
+        response = {
+            "jobs": jobs,
+            "total": total,  # Use actual count from search_jobs
+            "stats": {
+                "total_jobs": stats.get("total_jobs", 0),
+                "active_jobs": stats.get("active_jobs", 0),
+                "inactive_jobs": stats.get("total_jobs", 0) - stats.get("active_jobs", 0)
+            }
         }
-    }
+        
+        # Include run info if filtering by run_id
+        if run_info:
+            response["filter_info"] = {
+                "run_id": run_id,
+                "search_query": run_info.get("search_query"),
+                "location_query": run_info.get("location_query")
+            }
+        
+        return response
     
-    # Include run info if filtering by run_id
-    if run_info:
-        response["filter_info"] = {
-            "run_id": run_id,
-            "search_query": run_info.get("search_query"),
-            "location_query": run_info.get("location_query")
-        }
-    
-    return response
+    except Exception as e:
+        logger.error(f"Error in list_jobs endpoint: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/count")
