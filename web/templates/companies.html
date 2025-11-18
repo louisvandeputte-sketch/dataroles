@@ -235,12 +235,12 @@
                             <!-- Category (Editable Dropdown) -->
                             <td class="px-2 py-2" @click.stop>
                                 <div x-data="{ editing: false, value: company.company_master_data?.size_category || '' }">
-                                    <!-- Display mode - show canonical value or Dutch translation -->
+                                    <!-- Display mode - show canonical size_category value -->
                                     <div x-show="!editing" 
                                          @click="editing = true"
                                          class="text-xs text-gray-600 truncate max-w-[120px] cursor-pointer hover:bg-gray-100 px-1 py-0.5 rounded"
-                                         :title="company.company_master_data?.size_category || 'Click to edit'">
-                                        <span x-text="company.company_master_data?.category_nl || company.company_master_data?.size_category || '-'"></span>
+                                         :title="'Canonical: ' + (company.company_master_data?.size_category || 'none')">
+                                        <span x-text="company.company_master_data?.size_category || '-'"></span>
                                     </div>
                                     <!-- Edit mode (Dropdown) - edit size_category enum -->
                                     <select x-show="editing"
@@ -251,14 +251,14 @@
                                             class="text-xs border border-blue-300 rounded px-1 py-0.5 w-full max-w-[120px] focus:outline-none focus:ring-1 focus:ring-blue-500"
                                             x-init="$watch('editing', value => { if(value) $el.focus() })">
                                         <option value="">-</option>
-                                        <option value="startup">Startup</option>
-                                        <option value="scaleup">Scale-up</option>
-                                        <option value="sme">KMO/SME</option>
-                                        <option value="established_enterprise">Gevestigde onderneming</option>
-                                        <option value="corporate">Corporate</option>
-                                        <option value="public_company">Beursgenoteerd</option>
-                                        <option value="government">Overheid</option>
-                                        <option value="unknown">Onbekend</option>
+                                        <option value="startup">startup</option>
+                                        <option value="scaleup">scaleup</option>
+                                        <option value="sme">sme</option>
+                                        <option value="established_enterprise">established_enterprise</option>
+                                        <option value="corporate">corporate</option>
+                                        <option value="public_company">public_company</option>
+                                        <option value="government">government</option>
+                                        <option value="unknown">unknown</option>
                                     </select>
                                 </div>
                             </td>
