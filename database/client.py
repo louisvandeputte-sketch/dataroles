@@ -468,8 +468,9 @@ class SupabaseClient:
         
         # If sorting by ranking_position, add secondary sort by ranking_score DESC
         # This ensures correct order even if there are duplicate positions
+        # NULLS LAST ensures unranked jobs appear at the bottom
         if sort_field == "ranking_position":
-            result = query.order(sort_field, desc=is_desc)\
+            result = query.order(sort_field, desc=is_desc, nullsfirst=False)\
                 .order("ranking_score", desc=True)\
                 .range(offset, offset + limit - 1)\
                 .execute()
