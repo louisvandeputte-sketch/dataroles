@@ -235,31 +235,33 @@
                             <!-- Category (Editable Dropdown) -->
                             <td class="px-2 py-2" @click.stop>
                                 <div x-data="{ editing: false, value: company.company_master_data?.size_category || '' }">
-                                    <!-- Display mode - show canonical size_category value -->
-                                    <div x-show="!editing" 
-                                         @click="editing = true"
-                                         class="text-xs text-gray-600 truncate max-w-[120px] cursor-pointer hover:bg-gray-100 px-1 py-0.5 rounded"
-                                         :title="'Canonical: ' + (company.company_master_data?.size_category || 'none')">
-                                        <span x-text="company.company_master_data?.size_category || '-'"></span>
-                                    </div>
-                                    <!-- Edit mode (Dropdown) - edit size_category enum -->
-                                    <select x-show="editing"
-                                            x-model="value"
-                                            @change="editing = false; updateCompanyField(company.id, 'size_category', value)"
-                                            @blur="editing = false"
-                                            @keydown.escape="editing = false; value = company.company_master_data?.size_category || ''"
-                                            class="text-xs border border-blue-300 rounded px-1 py-0.5 w-full max-w-[120px] focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                            x-init="$watch('editing', value => { if(value) $el.focus() })">
-                                        <option value="">-</option>
-                                        <option value="startup">startup</option>
-                                        <option value="scaleup">scaleup</option>
-                                        <option value="sme">sme</option>
-                                        <option value="established_enterprise">established_enterprise</option>
-                                        <option value="corporate">corporate</option>
-                                        <option value="public_company">public_company</option>
-                                        <option value="government">government</option>
-                                        <option value="unknown">unknown</option>
-                                    </select>
+                                    <template x-if="!editing">
+                                        <!-- Display mode - show canonical size_category value -->
+                                        <div @click="editing = true"
+                                             class="text-xs text-gray-600 truncate max-w-[120px] cursor-pointer hover:bg-gray-100 px-1 py-0.5 rounded"
+                                             :title="'Canonical: ' + (company.company_master_data?.size_category || 'none')">
+                                            <span x-text="company.company_master_data?.size_category || '-'"></span>
+                                        </div>
+                                    </template>
+                                    <template x-if="editing">
+                                        <!-- Edit mode (Dropdown) - edit size_category enum -->
+                                        <select x-model="value"
+                                                @change="editing = false; updateCompanyField(company.id, 'size_category', value)"
+                                                @blur="editing = false"
+                                                @keydown.escape="editing = false; value = company.company_master_data?.size_category || ''"
+                                                class="text-xs border border-blue-300 rounded px-1 py-0.5 w-full max-w-[120px] focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                                x-init="$nextTick(() => $el.focus())">
+                                            <option value="">-</option>
+                                            <option value="startup">startup</option>
+                                            <option value="scaleup">scaleup</option>
+                                            <option value="sme">sme</option>
+                                            <option value="established_enterprise">established_enterprise</option>
+                                            <option value="corporate">corporate</option>
+                                            <option value="public_company">public_company</option>
+                                            <option value="government">government</option>
+                                            <option value="unknown">unknown</option>
+                                        </select>
+                                    </template>
                                 </div>
                             </td>
                             <!-- Bedrijfswebsite -->
