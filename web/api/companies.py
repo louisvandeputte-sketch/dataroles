@@ -75,7 +75,7 @@ async def list_companies(
             logger.warning(f"companies_list_view not found, falling back to regular query: {view_error}")
             # Fallback to old query method
             query = db.client.table("companies").select(
-                "id, name, logo_url, industry, linkedin_company_id, company_master_data(id, hiring_model, is_consulting, sector_nl, sector_en, sector_fr, category_en, aantal_werknemers, bedrijfswebsite, jobspagina, email_hr, ai_enriched, ai_enriched_at)",
+                "id, name, logo_url, industry, linkedin_company_id, company_master_data(id, hiring_model, is_consulting, sector_nl, sector_en, sector_fr, size_category, category_nl, category_en, category_fr, aantal_werknemers, bedrijfswebsite, jobspagina, email_hr, ai_enriched, ai_enriched_at)",
                 count="exact"
             )
         
@@ -113,7 +113,10 @@ async def list_companies(
                     "sector_nl": row.get("sector_nl"),
                     "sector_en": row.get("sector_en"),
                     "sector_fr": row.get("sector_fr"),
+                    "size_category": row.get("size_category"),
+                    "category_nl": row.get("category_nl"),
                     "category_en": row.get("category_en"),
+                    "category_fr": row.get("category_fr"),
                     "aantal_werknemers": row.get("aantal_werknemers"),
                     "bedrijfswebsite": row.get("bedrijfswebsite"),
                     "jobspagina": row.get("jobspagina"),
