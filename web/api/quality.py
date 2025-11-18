@@ -44,7 +44,7 @@ async def get_inactive_jobs(threshold_days: int = 14, limit: int = 50, offset: i
     
     # Get inactive jobs
     result = db.client.table("job_postings")\
-        .select("*, companies(name), locations(full_location_string)")\
+        .select("*, companies(name), locations!job_postings_location_id_fkey(full_location_string)")\
         .eq("is_active", False)\
         .order("detected_inactive_at", desc=True)\
         .limit(limit)\

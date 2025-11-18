@@ -392,8 +392,9 @@ class SupabaseClient:
         Default sort is by ranking_position (ASC) to show best jobs first.
         """
         # Build query - include job_sources for multi-source support and llm_enrichment for type_datarol/contract filtering
+        # Use explicit relationship name for locations to avoid ambiguity with location_id_override
         query = self.client.table("job_postings")\
-            .select("*, companies(id, name, logo_url), locations(id, city, country_code, subdivision_name_en), job_sources(source, source_job_id), llm_enrichment(type_datarol, seniority, rolniveau, contract)", count="exact")
+            .select("*, companies(id, name, logo_url), locations!job_postings_location_id_fkey(id, city, country_code, subdivision_name_en), job_sources(source, source_job_id), llm_enrichment(type_datarol, seniority, rolniveau, contract)", count="exact")
         
         # NEW: Filter by job IDs if provided (for run_id filtering)
         if job_ids is not None:

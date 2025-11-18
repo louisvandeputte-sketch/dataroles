@@ -103,7 +103,7 @@ async def get_indeed_run_jobs(run_id: str, limit: int = 100, offset: int = 0):
     try:
         # Get jobs via scrape_history
         result = db.client.table("scrape_history")\
-            .select("job_posting_id, job_postings(id, title, company_id, location_id, source, companies(name), locations(city, country_code))")\
+            .select("job_posting_id, job_postings(id, title, company_id, location_id, source, companies(name), locations!job_postings_location_id_fkey(city, country_code))")\
             .eq("scrape_run_id", run_id)\
             .range(offset, offset + limit - 1)\
             .execute()

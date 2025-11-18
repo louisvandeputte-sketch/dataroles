@@ -103,6 +103,8 @@ async def list_jobs(
             ai_enriched=ai_enriched_bool,
             title_classification=title_classification,
             type_datarol=type_datarol,
+            contract=contract,
+            subdivision_name_en=subdivision_name_en,
             source=source,
             active_only=active_only,
             job_ids=job_ids_filter,
@@ -224,7 +226,7 @@ async def get_job_detail(job_id: str):
     """Get detailed information about a specific job."""
     # Get job with all related data including LLM enrichment
     job = db.client.table("job_postings")\
-        .select("*, companies(*), locations(*), job_descriptions(*), job_posters(*), llm_enrichment(*)")\
+        .select("*, companies(*), locations!job_postings_location_id_fkey(*), job_descriptions(*), job_posters(*), llm_enrichment(*)")\
         .eq("id", job_id)\
         .single()\
         .execute()
