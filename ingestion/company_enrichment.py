@@ -182,6 +182,7 @@ def save_enrichment_to_db(company_id: str, enrichment_data: Dict[str, Any]) -> b
             "email_hr": enrichment_data.get("email_hr"),
             "email_hr_bron": enrichment_data.get("email_hr_bron"),
             "email_algemeen": enrichment_data.get("email_algemeen"),
+            "locatie_belgie": enrichment_data.get("locatie_belgie") or enrichment_data.get("belgian_location"),
             "bedrijfsomschrijving_nl": enrichment_data.get("description_nl") or enrichment_data.get("bedrijfsomschrijving_nl"),
             "bedrijfsomschrijving_fr": enrichment_data.get("description_fr") or enrichment_data.get("bedrijfsomschrijving_fr"),
             "bedrijfsomschrijving_en": enrichment_data.get("description_en") or enrichment_data.get("bedrijfsomschrijving_en"),
