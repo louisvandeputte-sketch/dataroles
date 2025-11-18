@@ -56,6 +56,7 @@ class JobData:
     apply_url: Optional[str]
     num_applicants: Optional[int]
     is_active: bool
+    title_classification: Optional[str]  # 'Data', 'NIS', 'Other'
     
     # Company data
     company_industry: Optional[str]
@@ -586,6 +587,7 @@ def load_jobs_from_database(only_needs_ranking: bool = False) -> List[JobData]:
                 apply_url=row.get('apply_url'),
                 num_applicants=row.get('num_applicants'),
                 is_active=row.get('is_active', True),
+                title_classification=row.get('title_classification', 'Data'),  # Default to 'Data' if missing
                 
                 # Company data (from view)
                 company_industry=row.get('company_industry'),
