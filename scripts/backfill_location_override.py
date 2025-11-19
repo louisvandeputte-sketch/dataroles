@@ -39,14 +39,9 @@ def backfill_location_override(dry_run: bool = True, batch_size: int = 100):
     
     logger.info("🔍 Finding jobs with vague locations...")
     
-    # List of vague location cities to check
-    vague_cities = [
-        'Flemish Region',
-        'Walloon Region',
-        'Brussels-Capital Region',
-        'Belgium',
-        'België'
-    ]
+    # Get vague location patterns from database config
+    vague_cities = db.get_vague_location_patterns()
+    logger.info(f"Using {len(vague_cities)} vague location patterns from config")
     
     # Find all vague location IDs
     vague_location_ids = []

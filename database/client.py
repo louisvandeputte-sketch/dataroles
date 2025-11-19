@@ -529,6 +529,41 @@ class SupabaseClient:
             jobs_with_types.append(job)
         
         return jobs_with_types, result.count
+    
+    # ==================== VAGUE LOCATIONS CONFIG ====================
+    
+    def get_vague_location_patterns(self) -> List[str]:
+        """
+        Get list of active vague location patterns from config table.
+        Returns list of pattern strings (e.g., ['Flemish Region', 'Belgium']).
+        Falls back to hardcoded defaults if table doesn't exist or is empty.
+        """
+        try:
+            result = self.client.table("vague_locations_config")\
+                .select("pattern")\
+                .eq("is_active", True)\
+                .execute()
+            
+            if result.data:
+                patterns = [row["pattern"] for row in result.data]
+                logger.debug(f"Loaded {len(patterns)} vague location patterns from config")
+                return patterns
+            else:
+                logger.warning("No vague location patterns found in config, using defaults")
+                return self._get_default_vague_patterns()
+        except Exception as e:
+            logger.warning(f"Could not load vague location patterns from config: {e}, using defaults")
+            return self._get_default_vague_patterns()
+    
+    def _get_default_vague_patterns(self) -> List[str]:
+        """Fallback default vague location patterns."""
+        return [
+            "Flemish Region",
+            "Walloon Region",
+            "Brussels-Capital Region",
+            "Belgium",
+            "België"
+        ]
 
 
 # Global client instance

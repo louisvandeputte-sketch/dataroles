@@ -169,14 +169,8 @@ def process_job_posting(raw_job: Dict[str, Any], scrape_run_id: UUID, source: st
         # create/get location from company master data
         location_id_override = None
         
-        # List of vague location patterns that should use company location
-        vague_patterns = [
-            "Flemish Region",
-            "Walloon Region", 
-            "Brussels-Capital Region",
-            "Belgium",
-            "België"
-        ]
+        # Get vague location patterns from database config
+        vague_patterns = db.get_vague_location_patterns()
         
         # Check if location is vague
         is_vague = any(location_string.strip().startswith(pattern) for pattern in vague_patterns)
