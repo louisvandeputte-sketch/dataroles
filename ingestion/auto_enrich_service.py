@@ -14,23 +14,26 @@ from ingestion.location_enrichment import enrich_location
 from ingestion.job_title_classifier import classify_job_title
 from ingestion.relevance_scorer import score_programming_language, score_ecosystem
 from ingestion.llm_enrichment import process_job_enrichment
+from ingestion.company_enrichment import enrich_companies_batch, get_unenriched_companies
 
 
 class AutoEnrichService:
-    """Service to automatically enrich new location records, classify job titles, enrich Data jobs, and score tech stack relevance."""
+    """Service to automatically enrich new location records, classify job titles, enrich Data jobs, score tech stack relevance, and enrich companies."""
     
     def __init__(self):
         self.running = False
         self.check_interval = 60  # Check every 60 seconds
         self.retry_check_interval = 3600  # Check for retries every hour (3600 seconds)
         self.ranking_check_interval = 3600  # Calculate rankings every hour (3600 seconds)
+        self.company_check_interval = 300  # Check for companies every 5 minutes (300 seconds)
         self.last_retry_check = datetime.utcnow()
         self.last_ranking_check = datetime.utcnow()
+        self.last_company_check = datetime.utcnow()
     
     async def start(self):
         """Start the auto-enrichment service."""
         self.running = True
-        logger.info("🤖 Auto-enrichment service started (locations + job titles + Data jobs + tech relevance)")
+        logger.info("🤖 Auto-enrichment service started (locations + job titles + Data jobs + tech relevance + companies)")
         
         # Wait before first check to avoid blocking startup
         logger.info(f"⏳ Waiting {self.check_interval}s before first enrichment check")
@@ -43,6 +46,13 @@ class AutoEnrichService:
                 await self.process_pending_job_titles()
                 await self.process_pending_data_jobs()
                 await self.process_pending_tech_scores()
+                
+                # Check if it's time for company enrichment (every 5 minutes)
+                time_since_last_company = (datetime.utcnow() - self.last_company_check).total_seconds()
+                if time_since_last_company >= self.company_check_interval:
+                    logger.info("⏰ Running company enrichment check")
+                    await self.process_pending_companies()
+                    self.last_company_check = datetime.utcnow()
                 
                 # Check if it's time for hourly retry check
                 time_since_last_retry = (datetime.utcnow() - self.last_retry_check).total_seconds()
@@ -387,6 +397,45 @@ class AutoEnrichService:
         
         except Exception as e:
             logger.error(f"Failed to retry failed enrichments: {e}")
+    
+    async def process_pending_companies(self):
+        """
+        Process companies that need enrichment in continuous batches.
+        Runs every 5 minutes and processes up to 20 companies per batch.
+        Includes automatic retry for quota errors after 24h.
+        """
+        try:
+            # Get unenriched companies (includes retries)
+            company_ids = await asyncio.to_thread(
+                get_unenriched_companies,
+                limit=20,  # Process 20 companies per batch (5 min interval)
+                include_retries=True
+            )
+            
+            if not company_ids:
+                return  # No pending companies
+            
+            logger.info(f"🏢 Auto-enriching {len(company_ids)} companies...")
+            
+            # Run enrichment in thread to avoid blocking
+            stats = await asyncio.to_thread(
+                enrich_companies_batch,
+                company_ids,
+                max_companies=20
+            )
+            
+            logger.success(
+                f"✅ Company enrichment batch complete: "
+                f"{stats['successful']}/{stats['total']} successful, "
+                f"{stats['failed']} failed"
+            )
+            
+            # If there were failures, log them
+            if stats['failed'] > 0 and stats.get('errors'):
+                logger.warning(f"Errors: {stats['errors'][:3]}")  # Show first 3 errors
+        
+        except Exception as e:
+            logger.error(f"Failed to process pending companies: {e}")
     
     async def calculate_rankings(self):
         """
