@@ -25,10 +25,11 @@ class AutoEnrichService:
         self.check_interval = 60  # Check every 60 seconds
         self.retry_check_interval = 3600  # Check for retries every hour (3600 seconds)
         self.ranking_check_interval = 3600  # Calculate rankings every hour (3600 seconds)
-        self.company_check_interval = 300  # Check for companies every 5 minutes (300 seconds)
+        self.company_check_interval = 600  # Check for companies every 10 minutes (600 seconds)
         self.last_retry_check = datetime.utcnow()
         self.last_ranking_check = datetime.utcnow()
         self.last_company_check = datetime.utcnow()
+        self.company_enrichment_running = False  # Flag to prevent overlapping batches
     
     async def start(self):
         """Start the auto-enrichment service."""
@@ -47,12 +48,16 @@ class AutoEnrichService:
                 await self.process_pending_data_jobs()
                 await self.process_pending_tech_scores()
                 
-                # Check if it's time for company enrichment (every 5 minutes)
+                # Check if it's time for company enrichment (every 10 minutes)
+                # Skip if previous batch is still running
                 time_since_last_company = (datetime.utcnow() - self.last_company_check).total_seconds()
                 if time_since_last_company >= self.company_check_interval:
-                    logger.info("⏰ Running company enrichment check")
-                    await self.process_pending_companies()
-                    self.last_company_check = datetime.utcnow()
+                    if not self.company_enrichment_running:
+                        logger.info("⏰ Running company enrichment check")
+                        await self.process_pending_companies()
+                        self.last_company_check = datetime.utcnow()
+                    else:
+                        logger.warning("⚠️ Skipping company enrichment - previous batch still running")
                 
                 # Check if it's time for hourly retry check
                 time_since_last_retry = (datetime.utcnow() - self.last_retry_check).total_seconds()
@@ -401,27 +406,33 @@ class AutoEnrichService:
     async def process_pending_companies(self):
         """
         Process companies that need enrichment in continuous batches.
-        Runs every 5 minutes and processes up to 20 companies per batch.
+        Runs every 10 minutes and processes up to 5 companies per batch.
+        Each company takes ~2 minutes, so 5 companies = ~10 minutes.
         Includes automatic retry for quota errors after 24h.
         """
+        # Set flag to prevent overlapping batches
+        self.company_enrichment_running = True
+        
         try:
             # Get unenriched companies (includes retries)
+            # Limit to 5 companies: 5 × 2min = 10min (matches interval)
             company_ids = await asyncio.to_thread(
                 get_unenriched_companies,
-                limit=20,  # Process 20 companies per batch (5 min interval)
+                limit=5,  # Process 5 companies per batch (10 min interval)
                 include_retries=True
             )
             
             if not company_ids:
+                logger.debug("No pending companies to enrich")
                 return  # No pending companies
             
-            logger.info(f"🏢 Auto-enriching {len(company_ids)} companies...")
+            logger.info(f"🏢 Auto-enriching {len(company_ids)} companies (estimated time: {len(company_ids) * 2} minutes)...")
             
             # Run enrichment in thread to avoid blocking
             stats = await asyncio.to_thread(
                 enrich_companies_batch,
                 company_ids,
-                max_companies=20
+                max_companies=5
             )
             
             logger.success(
@@ -436,6 +447,10 @@ class AutoEnrichService:
         
         except Exception as e:
             logger.error(f"Failed to process pending companies: {e}")
+        
+        finally:
+            # Always clear the flag when done
+            self.company_enrichment_running = False
     
     async def calculate_rankings(self):
         """
