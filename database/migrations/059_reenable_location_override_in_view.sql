@@ -2,6 +2,7 @@
 -- Date: 2025-11-19
 -- Description: Use location_id_override in view to show specific location when available
 --              Falls back to original location_id if override is NULL
+-- ONLY CHANGE: Line with location_id now uses COALESCE(j.location_id_override, j.location_id)
 
 DROP VIEW IF EXISTS vw_job_listings;
 
@@ -29,31 +30,68 @@ SELECT
     cmd.category_nl,           -- Category in Dutch (startup, scaleup, kmo, etc.)
     cmd.category_en,           -- Category in English (startup, scaleup, sme, etc.)
     cmd.category_fr,           -- Category in French (startup, scaleup, pme, etc.)
+    cmd.size_summary_nl,       -- Dutch size summary
+    cmd.size_summary_en,       -- English size summary
+    cmd.size_summary_fr,       -- French size summary
+    cmd.size_confidence,       -- Confidence score for size classification
     
-    -- Location override: Use override if available, otherwise use original location
-    -- This allows showing specific city when job location is vague (e.g., "Flemish Region")
+    -- Additional company metadata
+    cmd.aantal_werknemers,     -- Number of employees
+    cmd.founded_year,          -- Company founding year
+    cmd.industry,              -- Industry (from original data)
+    
+    -- Location info (multilingual) - WITH OVERRIDE SUPPORT
+    -- CHANGED: Use location_id_override if available, otherwise use location_id
     COALESCE(j.location_id_override, j.location_id) AS location_id,
+    l.city_name_nl,
+    l.city_name_en,
+    l.city_name_fr,
+    l.subdivision_name_nl,
+    l.subdivision_name_en,
+    l.subdivision_name_fr,
     
-    -- Contract type (multilingual) from llm_enrichment
-    le.contract_nl,            -- Contract type in Dutch (Voltijds, Deeltijds, etc.)
-    le.contract_en,            -- Contract type in English (Full-time, Part-time, etc.)
-    le.contract_fr,            -- Contract type in French (Temps plein, Temps partiel, etc.)
+    -- Core classification fields (ACTIVE - used for filtering)
+    e.type_datarol,            -- Data role type (Data Engineer, Data Analyst, etc.)
+    e.rolniveau,               -- Role level array (Technical, Lead, Managerial)
+    e.seniority,               -- Seniority array (Junior, Medior, Senior, Expert)
+    e.contract,                -- Contract type array (Permanent, Freelance, Intern)
+    e.sourcing_type,           -- Sourcing type (Direct, Agency)
     
-    -- Seniority level (multilingual) from llm_enrichment
-    le.seniority_nl,           -- Seniority in Dutch (Junior, Medior, Senior, etc.)
-    le.seniority_en,           -- Seniority in English (Junior, Medior, Senior, etc.)
-    le.seniority_fr,           -- Seniority in French (Junior, Confirmé, Senior, etc.)
+    -- Multilingual labels (ACTIVE - contains all translations)
+    e.labels,                  -- JSONB with NL/EN/FR translations for all fields
     
-    -- Data role type (multilingual) from llm_enrichment
-    le.type_datarol_nl,        -- Data role type in Dutch (Data Engineer, Data Scientist, etc.)
-    le.type_datarol_en,        -- Data role type in English (Data Engineer, Data Scientist, etc.)
-    le.type_datarol_fr         -- Data role type in French (Ingénieur de données, Data Scientist, etc.)
+    -- Summaries in 3 languages (ACTIVE)
+    e.samenvatting_kort_en,
+    e.samenvatting_lang_en,
+    e.samenvatting_kort_nl,
+    e.samenvatting_lang_nl,
+    e.samenvatting_kort_fr,
+    e.samenvatting_lang_fr,
+    
+    -- Legacy summary fields (ACTIVE - for backward compatibility)
+    e.samenvatting_kort,       -- Legacy: English summary
+    e.samenvatting_lang,       -- Legacy: English summary
+    
+    -- Tech stack (ACTIVE)
+    e.must_have_programmeertalen,
+    e.nice_to_have_programmeertalen,
+    e.must_have_ecosystemen,
+    e.nice_to_have_ecosystemen,
+    
+    -- Spoken/written languages (ACTIVE)
+    e.must_have_talen,
+    e.nice_to_have_talen,
+    
+    -- Metadata (ACTIVE)
+    e.created_at,
+    e.updated_at
 
 FROM llm_enrichment e
 JOIN job_postings j ON e.job_posting_id = j.id
 JOIN companies c ON j.company_id = c.id
+-- CHANGED: Join with locations using COALESCE to get override or original location
+LEFT JOIN locations l ON l.id = COALESCE(j.location_id_override, j.location_id)
 LEFT JOIN company_master_data cmd ON c.id = cmd.company_id
-LEFT JOIN llm_enrichment le ON j.id = le.job_posting_id
 WHERE j.is_active = TRUE
   AND j.title_classification = 'Data';
 
