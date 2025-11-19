@@ -165,21 +165,35 @@ def process_job_posting(raw_job: Dict[str, Any], scrape_run_id: UUID, source: st
             location_id = db.insert_location(location_data)
         
         # Step 3b: Determine location override
-        # If location is vague (e.g., "Flemish Region, Belgium"), create/get location from company
+        # If location is vague (e.g., "Flemish Region", "Belgium", "Walloon Region"), 
+        # create/get location from company master data
         location_id_override = None
         
-        if location_string.strip().startswith("Flemish Region"):
+        # List of vague location patterns that should use company location
+        vague_patterns = [
+            "Flemish Region",
+            "Walloon Region", 
+            "Brussels-Capital Region",
+            "Belgium",
+            "België"
+        ]
+        
+        # Check if location is vague
+        is_vague = any(location_string.strip().startswith(pattern) for pattern in vague_patterns)
+        
+        if is_vague:
             # Location is vague - try to use company's locatie_belgie
             try:
                 company_master = db.client.table("company_master_data")\
                     .select("locatie_belgie")\
                     .eq("company_id", str(company_id))\
-                    .single()\
+                    .maybe_single()\
                     .execute()
                 
                 if company_master.data and company_master.data.get("locatie_belgie"):
                     company_location = company_master.data["locatie_belgie"]
-                    if company_location and company_location.lower() != "niet gevonden":
+                    # Check if location is valid (not empty, not "niet gevonden")
+                    if company_location and company_location.strip() and company_location.lower() not in ["niet gevonden", "unknown", "n/a"]:
                         # Create location string from company location
                         override_location_string = f"{company_location}, Belgium"
                         override_location_data = normalize_location(override_location_string)
@@ -191,7 +205,9 @@ def process_job_posting(raw_job: Dict[str, Any], scrape_run_id: UUID, source: st
                         else:
                             location_id_override = db.insert_location(override_location_data)
                         
-                        logger.info(f"Using company location override: {company_location}")
+                        logger.info(f"✓ Location override: '{location_string}' → '{company_location}'")
+                else:
+                    logger.debug(f"No company location available for override (will be added during enrichment)")
             except Exception as e:
                 logger.debug(f"Could not fetch company location: {e}")
         

@@ -37,34 +37,47 @@ def backfill_location_override(dry_run: bool = True, batch_size: int = 100):
     """
     db = SupabaseClient()
     
-    logger.info("🔍 Finding jobs with vague 'Flemish Region' location...")
+    logger.info("🔍 Finding jobs with vague locations...")
     
-    # Find location with city='Flemish Region'
-    flemish_location = db.client.table('locations')\
-        .select('id')\
-        .eq('city', 'Flemish Region')\
-        .single()\
-        .execute()
+    # List of vague location cities to check
+    vague_cities = [
+        'Flemish Region',
+        'Walloon Region',
+        'Brussels-Capital Region',
+        'Belgium',
+        'België'
+    ]
     
-    if not flemish_location.data:
-        logger.info("✅ No vague 'Flemish Region' location found")
+    # Find all vague location IDs
+    vague_location_ids = []
+    for city in vague_cities:
+        result = db.client.table('locations')\
+            .select('id, city')\
+            .eq('city', city)\
+            .execute()
+        
+        if result.data:
+            for loc in result.data:
+                vague_location_ids.append(loc['id'])
+                logger.info(f"  Found vague location: {loc['city']}")
+    
+    if not vague_location_ids:
+        logger.info("✅ No vague locations found")
         return
     
-    flemish_location_id = flemish_location.data['id']
-    
-    # Get total count of jobs with this location
+    # Get total count of jobs with these locations
     count_result = db.client.table('job_postings')\
         .select('id', count='exact')\
-        .eq('location_id', flemish_location_id)\
+        .in_('location_id', vague_location_ids)\
         .execute()
     
     total_jobs = count_result.count or 0
     
     if total_jobs == 0:
-        logger.info("✅ No jobs with vague 'Flemish Region' location")
+        logger.info("✅ No jobs with vague locations")
         return
     
-    logger.info(f"Found {total_jobs} jobs with vague location to backfill")
+    logger.info(f"Found {total_jobs} jobs with vague locations to backfill")
     
     # Process in batches
     offset = 0
@@ -75,10 +88,10 @@ def backfill_location_override(dry_run: bool = True, batch_size: int = 100):
     while offset < total_jobs:
         logger.info(f"\n📦 Processing batch {offset // batch_size + 1} (jobs {offset + 1}-{min(offset + batch_size, total_jobs)})")
         
-        # Get batch of jobs with Flemish Region location
+        # Get batch of jobs with vague locations
         jobs = db.client.table('job_postings')\
             .select('id, company_id')\
-            .eq('location_id', flemish_location_id)\
+            .in_('location_id', vague_location_ids)\
             .range(offset, offset + batch_size - 1)\
             .execute()
         
@@ -97,14 +110,15 @@ def backfill_location_override(dry_run: bool = True, batch_size: int = 100):
                     .execute()
                 
                 if not company_master.data or not company_master.data[0].get('locatie_belgie'):
-                    logger.debug(f"  ⏭️  No company location for job {job_id[:8]}")
+                    logger.debug(f"  ⏭️  No company location for job {job_id[:8]} (will be added during enrichment)")
                     total_skipped += 1
                     continue
                 
                 company_location = company_master.data[0]['locatie_belgie']
                 
-                if company_location.lower() == 'niet gevonden':
-                    logger.debug(f"  ⏭️  Company location is 'niet gevonden' for job {job_id[:8]}")
+                # Check if location is valid
+                if not company_location or company_location.strip() == '' or company_location.lower() in ['niet gevonden', 'unknown', 'n/a']:
+                    logger.debug(f"  ⏭️  Invalid company location for job {job_id[:8]}")
                     total_skipped += 1
                     continue
                 
