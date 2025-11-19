@@ -1,8 +1,10 @@
 """
-Job Ranking Scheduler
-=====================
+Job Ranking & Maintenance Scheduler
+====================================
 
-Runs ranking calculation daily at 3 AM Belgian time (CET/CEST)
+Scheduled tasks:
+- Ranking calculation: Daily at 3:00 AM Belgian time (CET/CEST)
+- Stuck run cleanup: Every hour
 """
 
 import schedule
@@ -12,6 +14,7 @@ from loguru import logger
 import pytz
 
 from ranking.job_ranker import calculate_and_save_rankings
+from ingestion.stuck_run_cleaner import clean_stuck_runs
 
 
 def run_ranking_job():
@@ -25,20 +28,41 @@ def run_ranking_job():
         logger.error(f"❌ Scheduled ranking failed: {e}")
 
 
+def run_stuck_run_cleanup():
+    """Clean up stuck scrape runs"""
+    logger.info("⏰ Scheduled stuck run cleanup triggered")
+    
+    try:
+        num_cleaned = clean_stuck_runs()
+        if num_cleaned > 0:
+            logger.info(f"✅ Cleaned up {num_cleaned} stuck run(s)")
+        else:
+            logger.info("✅ No stuck runs found")
+    except Exception as e:
+        logger.error(f"❌ Stuck run cleanup failed: {e}")
+
+
 def start_scheduler():
     """Start the ranking scheduler"""
     # Belgian timezone
     belgium_tz = pytz.timezone('Europe/Brussels')
     
     logger.info("🕐 Starting job ranking scheduler...")
-    logger.info("📅 Schedule: Daily at 3:00 AM Belgian time")
+    logger.info("📅 Ranking schedule: Daily at 3:00 AM Belgian time")
+    logger.info("📅 Stuck run cleanup: Every hour")
     
     # Schedule daily at 3 AM
     schedule.every().day.at("03:00").do(run_ranking_job)
     
+    # Schedule stuck run cleanup every hour
+    schedule.every().hour.do(run_stuck_run_cleanup)
+    
     # Also run immediately on startup (optional)
     logger.info("🚀 Running initial ranking calculation...")
     run_ranking_job()
+    
+    logger.info("🚀 Running initial stuck run cleanup...")
+    run_stuck_run_cleanup()
     
     # Keep running
     logger.info("✅ Scheduler started. Waiting for scheduled jobs...")
