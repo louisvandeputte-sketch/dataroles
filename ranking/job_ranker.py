@@ -144,13 +144,20 @@ class JobRankingSystem:
     MAX_CONSECUTIVE_SAME_ROLE = 2
     
     def calculate_freshness_score(self, job: JobData) -> float:
-        """Bereken versheid score (0-100) op basis van posted_date"""
+        """
+        Bereken versheid score (0-100) op basis van posted_date
+        MEGA BOOST: Jobs <= 30 uur oud krijgen 150 punten (50% extra!)
+        """
         if not job.posted_date:
             return 20
         
         age = datetime.now() - job.posted_date
+        hours_old = age.total_seconds() / 3600
         
-        if age <= timedelta(days=1):
+        # MEGA BOOST: <= 30 uur = 150 punten (50% extra!)
+        if hours_old <= 30:
+            return 150
+        elif age <= timedelta(days=1):
             return 100
         elif age <= timedelta(days=3):
             return 90
