@@ -3,7 +3,7 @@ Job Ranking & Maintenance Scheduler
 ====================================
 
 Scheduled tasks:
-- Ranking calculation: Daily at 3:00 AM Belgian time (CET/CEST)
+- Ranking calculation: Every hour (for dynamic rankings with hourly multiplier)
 - Stuck run cleanup: Every hour
 """
 
@@ -48,16 +48,16 @@ def start_scheduler():
     belgium_tz = pytz.timezone('Europe/Brussels')
     
     logger.info("🕐 Starting job ranking scheduler...")
-    logger.info("📅 Ranking schedule: Daily at 3:00 AM Belgian time")
+    logger.info("📅 Ranking schedule: Every hour (dynamic rankings with random multiplier)")
     logger.info("📅 Stuck run cleanup: Every hour")
     
-    # Schedule daily at 3 AM
-    schedule.every().day.at("03:00").do(run_ranking_job)
+    # Schedule ranking calculation every hour
+    schedule.every().hour.do(run_ranking_job)
     
     # Schedule stuck run cleanup every hour
     schedule.every().hour.do(run_stuck_run_cleanup)
     
-    # Also run immediately on startup (optional)
+    # Also run immediately on startup
     logger.info("🚀 Running initial ranking calculation...")
     run_ranking_job()
     
@@ -66,6 +66,7 @@ def start_scheduler():
     
     # Keep running
     logger.info("✅ Scheduler started. Waiting for scheduled jobs...")
+    logger.info("⏰ Next ranking: in 1 hour")
     
     while True:
         schedule.run_pending()
