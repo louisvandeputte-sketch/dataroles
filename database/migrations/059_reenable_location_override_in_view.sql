@@ -83,8 +83,7 @@ SELECT
     e.nice_to_have_talen,
     
     -- Metadata (ACTIVE)
-    e.created_at,
-    e.updated_at
+    e.created_at
 
 FROM llm_enrichment e
 JOIN job_postings j ON e.job_posting_id = j.id
