@@ -399,56 +399,32 @@ class JobRankingSystem:
         
         return sorted_jobs
     
-    def calculate_hourly_variance(self, job: JobData) -> float:
+    def calculate_hourly_multiplier(self, job: JobData) -> float:
         """
-        Bereken hourly variance voor dynamische rankings.
-        - Elk uur verandert de ranking door nieuwe variance
-        - Recente jobs krijgen extra boost
-        - Recent gescrapete jobs krijgen GROTE bonus (binnen 26u)
-        - Max impact: ~10-15 punten op final score
+        Bereken hourly multiplier voor dynamische rankings.
+        - Elk uur verandert de ranking door nieuwe random multiplier
+        - Multiplier tussen 0.8 en 1.2 (±20% variatie)
+        - Stabiel binnen hetzelfde uur, verandert elk uur
         """
         import hashlib
         
-        variance = 0.0
-        
-        # 1. Recent scrape bonus (NIEUW - binnen 26 uur)
-        if job.scraped_at:
-            hours_since_scraped = (datetime.now() - job.scraped_at).total_seconds() / 3600
-            
-            # GROTE BONUS voor recent gescrapete jobs (< 26 uur)
-            if hours_since_scraped < 26:
-                # Linear decay: 10 punten bij 0u, 0 punten bij 26u
-                scrape_bonus = max(0, 10 * (1 - hours_since_scraped / 26))
-                variance += scrape_bonus
-                # Extra boost voor zeer recente scrapes (< 6 uur)
-                if hours_since_scraped < 6:
-                    variance += 5  # Extra 5 punten voor super fresh scrapes
-        
-        # 2. Time-based freshness boost (afneemt over tijd)
-        if job.posted_date:
-            hours_since_posted = (datetime.now() - job.posted_date).total_seconds() / 3600
-            
-            # Boost voor jobs < 48 uur oud
-            if hours_since_posted < 48:
-                freshness_boost = max(0, 5 - (hours_since_posted / 10))  # Max 5 punten
-                variance += freshness_boost
-        
-        # 3. Hourly rotation factor (VERHOOGD voor meer variatie)
-        current_hour = datetime.now().hour
-        hour_factor = (current_hour % 6) * 0.8  # 0, 0.8, 1.6, 2.4, 3.2, 4.0 punten
-        variance += hour_factor
-        
-        # 4. Hourly tie-breaker (verandert elk uur, stabiel binnen uur)
+        # Hourly seed (verandert elk uur, stabiel binnen uur)
         hour_str = datetime.now().strftime('%Y-%m-%d-%H')  # Include hour for hourly change
         seed_str = f"{hour_str}-{job.id}"
         hash_val = int(hashlib.md5(seed_str.encode()).hexdigest()[:8], 16)
-        tiebreaker = (hash_val % 200) / 100  # -1.0 tot +1.0 punten
-        variance += tiebreaker
         
-        return variance
+        # Convert hash to multiplier between 0.8 and 1.2
+        # hash_val % 10000 gives range 0-9999
+        # Divide by 10000 to get 0.0-0.9999
+        # Multiply by 0.4 to get 0.0-0.4
+        # Add 0.8 to get 0.8-1.2
+        random_factor = (hash_val % 10000) / 10000  # 0.0 to 1.0
+        multiplier = 0.8 + (random_factor * 0.4)  # 0.8 to 1.2
+        
+        return multiplier
     
     def apply_diversity_modifiers(self, jobs: List[JobData]) -> List[JobData]:
-        """Pas diversity modifiers en hourly variance toe"""
+        """Pas diversity modifiers en hourly multiplier toe"""
         for job in jobs:
             score = job.base_score
             
@@ -471,9 +447,10 @@ class JobRankingSystem:
             seniority_modifier = max(0.5, seniority_modifier)
             score *= seniority_modifier
             
-            # Add hourly variance for freshness
-            hourly_variance = self.calculate_hourly_variance(job)
-            score += hourly_variance
+            # Apply hourly random multiplier (0.8 to 1.2)
+            # This creates dynamic ranking that changes every hour
+            hourly_multiplier = self.calculate_hourly_multiplier(job)
+            score *= hourly_multiplier
             
             job.final_score = score
         
