@@ -345,7 +345,8 @@ def get_unenriched_companies(limit: int = 100, include_retries: bool = True) -> 
             master_data = company.get("company_master_data")
             
             # Case 1: No master data at all → needs enrichment
-            if not master_data:
+            # Check for None, empty dict, or empty list
+            if not master_data or master_data == {} or master_data == []:
                 unenriched_ids.append(company["id"])
                 continue
             
