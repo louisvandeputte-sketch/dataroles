@@ -415,12 +415,18 @@ class AutoEnrichService:
         
         try:
             # Get unenriched companies (includes retries)
-            # Limit to 5 companies: 5 × 2min = 10min (matches interval)
+            # Query limit is high (1000) to find all pending companies
+            # But we only process 5 at a time (5 × 2min = 10min)
             company_ids = await asyncio.to_thread(
                 get_unenriched_companies,
-                limit=5,  # Process 5 companies per batch (10 min interval)
+                limit=1000,  # Query limit: check up to 1000 companies
                 include_retries=True
             )
+            
+            # Only process first 5 companies per batch
+            if len(company_ids) > 5:
+                logger.info(f"Found {len(company_ids)} pending companies, processing first 5")
+                company_ids = company_ids[:5]
             
             if not company_ids:
                 logger.debug("No pending companies to enrich")
