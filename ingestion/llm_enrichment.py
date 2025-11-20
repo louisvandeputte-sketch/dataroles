@@ -300,15 +300,16 @@ def process_job_enrichment(job_id: str, force: bool = False) -> Dict[str, Any]:
             existing = db.client.table("llm_enrichment")\
                 .select("enrichment_completed_at")\
                 .eq("job_posting_id", job_id)\
-                .single()\
+                .maybe_single()\
                 .execute()
             
             if existing.data and existing.data.get("enrichment_completed_at"):
-                logger.info(f"Job {job_id} already enriched, skipping (use force=True to re-enrich)")
+                logger.debug(f"Job {job_id} already enriched, skipping (use force=True to re-enrich)")
                 return {
-                    "success": False,
+                    "success": True,  # Changed to True so caller knows to skip
                     "job_id": job_id,
-                    "error": "Already enriched. Use force=True to re-enrich."
+                    "skipped": True,
+                    "message": "Already enriched"
                 }
         else:
             logger.info(f"Force re-enrichment enabled for job {job_id}")

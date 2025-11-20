@@ -203,37 +203,30 @@ class AutoEnrichService:
             logger.error(f"Failed to fetch pending job titles: {e}")
     
     async def process_pending_data_jobs(self):
-        """Process Data jobs that need LLM enrichment."""
+        """
+        Process Data jobs that need LLM enrichment.
+        Uses LEFT JOIN to efficiently find jobs without enrichment.
+        """
         try:
-            # Find jobs that:
-            # 1. Have title_classification = 'Data'
-            # 2. Don't have enrichment yet (no enrichment_completed_at in llm_enrichment)
-            # 3. Are active
-            
-            # First get all enriched job IDs (limit to recent ones to avoid huge lists)
-            enriched_result = db.client.table("llm_enrichment")\
-                .select("job_posting_id")\
-                .not_.is_("enrichment_completed_at", "null")\
-                .order("enrichment_completed_at", desc=True)\
-                .limit(1000)\
+            # Find Data jobs that don't have completed enrichment
+            # Use LEFT JOIN to check for missing or incomplete enrichment
+            result = db.client.table("job_postings")\
+                .select("id, title, llm_enrichment!left(enrichment_completed_at)")\
+                .eq("title_classification", "Data")\
+                .eq("is_active", True)\
+                .limit(20)\
                 .execute()
             
-            enriched_job_ids = [row["job_posting_id"] for row in enriched_result.data] if enriched_result.data else []
+            if not result.data:
+                return  # No Data jobs at all
             
-            # Now find Data jobs that are not in the enriched list
-            query = db.client.table("job_postings")\
-                .select("id, title")\
-                .eq("title_classification", "Data")\
-                .eq("is_active", True)
-            
-            # Exclude already enriched jobs (but limit check to recent 1000 to avoid PostgREST issues)
-            if enriched_job_ids and len(enriched_job_ids) < 500:
-                # Only use not_.in_ if list is manageable
-                query = query.not_.in_("id", enriched_job_ids)
-            
-            result = query.limit(20).execute()  # Process 20 at a time for faster bulk processing
-            
-            jobs = result.data if result.data else []
+            # Filter to only jobs without completed enrichment
+            jobs = []
+            for job in result.data:
+                enrichment = job.get("llm_enrichment")
+                # Include if no enrichment record OR enrichment_completed_at is null
+                if not enrichment or not enrichment.get("enrichment_completed_at"):
+                    jobs.append({"id": job["id"], "title": job["title"]})
             
             if not jobs:
                 return  # No pending Data jobs
@@ -249,14 +242,17 @@ class AutoEnrichService:
                     logger.info(f"Enriching Data job: {title}")
                     
                     # Process LLM enrichment (force=False, so it won't re-enrich)
-                    success = await asyncio.to_thread(
+                    result = await asyncio.to_thread(
                         process_job_enrichment,
                         job_id,
                         force=False
                     )
                     
-                    if success:
-                        logger.success(f"✅ Auto-enriched Data job: {title}")
+                    if result and result.get("success"):
+                        if result.get("skipped"):
+                            logger.debug(f"⏭️  Skipped (already enriched): {title}")
+                        else:
+                            logger.success(f"✅ Auto-enriched Data job: {title}")
                     else:
                         logger.warning(f"⚠️ Failed to auto-enrich Data job: {title}")
                     
