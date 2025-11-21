@@ -106,6 +106,9 @@ class JobData:
     location_rank: int = 0
     seniority_rank: int = 0
     
+    # Hourly multiplier (changes every hour)
+    hourly_multiplier: float = 1.0
+    
     # Final score
     final_score: float = 0.0
     final_rank: int = 0
@@ -450,6 +453,7 @@ class JobRankingSystem:
             # Apply hourly random multiplier (0.8 to 1.2)
             # This creates dynamic ranking that changes every hour
             hourly_multiplier = self.calculate_hourly_multiplier(job)
+            job.hourly_multiplier = hourly_multiplier  # Store for database
             score *= hourly_multiplier
             
             job.final_score = score
@@ -686,6 +690,7 @@ def save_rankings_to_database(ranked_jobs: List[JobData]):
             'ranking_position': job.final_rank,
             'ranking_updated_at': ranking_timestamp,  # Same for all jobs!
             'ranking_metadata': metadata,
+            'hourly_multiplier': round(job.hourly_multiplier, 3),  # Store hourly multiplier
             'needs_ranking': False  # Mark as ranked
         }).eq('id', job.id).execute()
     
