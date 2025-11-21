@@ -444,16 +444,20 @@
                         <td class="px-3 py-1.5">
                             <div class="text-xs text-gray-600 max-w-xs">
                                 <div class="space-y-0.5">
-                                    <!-- Base score from column (stable, nightly) -->
+                                    <!-- Base score (stable, nightly) -->
                                     <div x-show="job.base_score !== null && job.base_score !== undefined">
-                                        Base: <span class="font-mono font-semibold" x-text="job.base_score?.toFixed(1)"></span>
+                                        <span class="text-gray-500">Base:</span> <span class="font-mono font-semibold text-gray-900" x-text="job.base_score?.toFixed(1)"></span>
                                     </div>
                                     <!-- Hourly multiplier (changes every hour) -->
-                                    <div x-show="job.hourly_multiplier !== null && job.hourly_multiplier !== undefined" class="text-xs text-gray-500">
-                                        ×<span class="font-mono" x-text="job.hourly_multiplier?.toFixed(3)"></span>
+                                    <div x-show="job.hourly_multiplier !== null && job.hourly_multiplier !== undefined">
+                                        <span class="text-gray-500">Mult:</span> <span class="font-mono text-gray-700" x-text="job.hourly_multiplier?.toFixed(3)"></span>
+                                    </div>
+                                    <!-- Final score (base × multiplier) -->
+                                    <div x-show="job.ranking_score !== null && job.ranking_score !== undefined">
+                                        <span class="text-gray-500">Final:</span> <span class="font-mono font-semibold text-blue-600" x-text="job.ranking_score?.toFixed(1)"></span>
                                     </div>
                                     <!-- Score breakdown from metadata -->
-                                    <div x-show="job.ranking_metadata?.freshness_score !== undefined" class="text-xs">
+                                    <div x-show="job.ranking_metadata?.freshness_score !== undefined" class="text-xs text-gray-500 pt-0.5 border-t border-gray-200 mt-1">
                                         F:<span class="font-mono" x-text="job.ranking_metadata.freshness_score"></span>
                                         Q:<span class="font-mono" x-text="job.ranking_metadata.quality_score"></span>
                                         T:<span class="font-mono" x-text="job.ranking_metadata.transparency_score"></span>
