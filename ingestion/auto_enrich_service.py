@@ -420,10 +420,10 @@ class AutoEnrichService:
                 include_retries=True
             )
             
-            # Only process first 3 companies per batch (reduced from 5 due to rate limiting)
-            if len(company_ids) > 3:
-                logger.info(f"Found {len(company_ids)} pending companies, processing first 3")
-                company_ids = company_ids[:3]
+            # Process up to 500 companies per batch (increased for backlog clearing)
+            if len(company_ids) > 500:
+                logger.info(f"Found {len(company_ids)} pending companies, processing first 500")
+                company_ids = company_ids[:500]
             
             if not company_ids:
                 logger.debug("No pending companies to enrich")
@@ -435,7 +435,7 @@ class AutoEnrichService:
             stats = await asyncio.to_thread(
                 enrich_companies_batch,
                 company_ids,
-                max_companies=3  # Reduced from 5 to account for rate limiting delays
+                max_companies=500  # Increased from 3 to clear backlog faster
             )
             
             logger.success(
