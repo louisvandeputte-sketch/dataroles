@@ -20,15 +20,16 @@ client = OpenAI(
 )
 
 # Prompt ID for unified company enrichment (includes both info + size classification)
-# Version 21: Added Belgian location field (hoofdkantoor_be)
-#             - hoofdkantoor_be: Belgian office city in native language (e.g., "Gent", "Bruxelles")
+# Version 25: Belgian location field (locatie_belgie)
+#             - locatie_belgie: Belgian office city in native language (e.g., "Gent", "Bruxelles")
 #             - For international companies: main Belgian HQ or largest Belgian office
 #             - Improved sector rules: Title Case, 1-2 words max, no lists
 #             - Funding factlet must be first if funding exists
+#             - Stricter maturity classification: always choose best-fit, avoid "unknown"
 # Version 20: size_category canonical field, auto-translated to category_nl/en/fr
 # Version 15: Added hiring_model field to distinguish recruitment vs direct hiring
 COMPANY_ENRICHMENT_PROMPT_ID = "pmpt_68fd06175d7c8190bd8767fddcb5486a0e87d16aa5f38bc2"
-COMPANY_ENRICHMENT_PROMPT_VERSION = "21"  # v21: Belgian location field (hoofdkantoor_be)
+COMPANY_ENRICHMENT_PROMPT_VERSION = "25"  # v25: locatie_belgie field, stricter classification
 
 
 def enrich_company(company_id: str, company_name: str, company_url: Optional[str] = None) -> Dict[str, Any]:
@@ -85,10 +86,14 @@ def enrich_company(company_id: str, company_name: str, company_url: Optional[str
         
         # Log all keys to debug location fields
         logger.info(f"LLM response keys for {company_name}: {list(enrichment_data.keys())}")
-        if "hoofdkantoor_be" in enrichment_data:
-            logger.info(f"✅ Belgian location found: {enrichment_data.get('hoofdkantoor_be')}")
+        if "locatie_belgie" in enrichment_data:
+            location = enrichment_data.get('locatie_belgie')
+            if location and location != "[locatie]":
+                logger.info(f"✅ Belgian location found: {location}")
+            else:
+                logger.warning(f"⚠️ Location placeholder returned: {location}")
         else:
-            logger.warning(f"⚠️ No hoofdkantoor_be field in LLM response for {company_name}")
+            logger.warning(f"⚠️ No locatie_belgie field in LLM response for {company_name}")
         
         # Validate required fields
         if not isinstance(enrichment_data, dict):
@@ -190,10 +195,8 @@ def save_enrichment_to_db(company_id: str, enrichment_data: Dict[str, Any]) -> b
             "email_hr": enrichment_data.get("email_hr"),
             "email_hr_bron": enrichment_data.get("email_hr_bron"),
             "email_algemeen": enrichment_data.get("email_algemeen"),
-            # Belgian location field (v21+)
-            "hoofdkantoor_be": enrichment_data.get("hoofdkantoor_be"),
-            # Legacy location field (for backwards compatibility with processor.py)
-            "locatie_belgie": enrichment_data.get("locatie_belgie") or enrichment_data.get("belgian_location") or enrichment_data.get("hoofdkantoor_be"),
+            # Belgian location field (v25+) - uses existing locatie_belgie column
+            "locatie_belgie": enrichment_data.get("locatie_belgie"),
             "bedrijfsomschrijving_nl": enrichment_data.get("description_nl") or enrichment_data.get("bedrijfsomschrijving_nl"),
             "bedrijfsomschrijving_fr": enrichment_data.get("description_fr") or enrichment_data.get("bedrijfsomschrijving_fr"),
             "bedrijfsomschrijving_en": enrichment_data.get("description_en") or enrichment_data.get("bedrijfsomschrijving_en"),
