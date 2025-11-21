@@ -1,6 +1,7 @@
 """Company enrichment using OpenAI LLM to extract company information."""
 
 import json
+import time
 from typing import Dict, Any, Optional
 from datetime import datetime
 from loguru import logger
@@ -303,6 +304,11 @@ def enrich_companies_batch(company_ids: list, max_companies: int = 50) -> Dict[s
                     "company_name": company_name,
                     "error": result.get("error", "Unknown error")
                 })
+            
+            # Add delay between companies to avoid rate limiting (except for last company)
+            if i < len(company_ids):
+                logger.debug(f"Waiting 3s before next company to avoid rate limits...")
+                time.sleep(3)
                 
         except Exception as e:
             logger.error(f"Error processing company {company_id}: {e}")
@@ -311,6 +317,10 @@ def enrich_companies_batch(company_ids: list, max_companies: int = 50) -> Dict[s
                 "company_id": company_id,
                 "error": str(e)
             })
+            
+            # Add delay even after errors to avoid rate limiting
+            if i < len(company_ids):
+                time.sleep(3)
     
     logger.info(f"Batch enrichment complete. Successful: {stats['successful']}, Failed: {stats['failed']}")
     

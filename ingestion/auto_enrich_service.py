@@ -402,8 +402,9 @@ class AutoEnrichService:
     async def process_pending_companies(self):
         """
         Process companies that need enrichment in continuous batches.
-        Runs every 10 minutes and processes up to 5 companies per batch.
-        Each company takes ~2 minutes, so 5 companies = ~10 minutes.
+        Runs every 10 minutes and processes up to 3 companies per batch.
+        Each company takes ~2 minutes + 3s delay = ~2.05 min per company.
+        3 companies × 2.05 min = ~6 minutes (safe margin for 10 min interval).
         Includes automatic retry for quota errors after 24h.
         """
         # Set flag to prevent overlapping batches
@@ -412,17 +413,17 @@ class AutoEnrichService:
         try:
             # Get unenriched companies (includes retries)
             # Query limit is high (1000) to find all pending companies
-            # But we only process 5 at a time (5 × 2min = 10min)
+            # But we only process 3 at a time (3 × 2min = 6min, safe for 10min interval)
             company_ids = await asyncio.to_thread(
                 get_unenriched_companies,
                 limit=1000,  # Query limit: check up to 1000 companies
                 include_retries=True
             )
             
-            # Only process first 5 companies per batch
-            if len(company_ids) > 5:
-                logger.info(f"Found {len(company_ids)} pending companies, processing first 5")
-                company_ids = company_ids[:5]
+            # Only process first 3 companies per batch (reduced from 5 due to rate limiting)
+            if len(company_ids) > 3:
+                logger.info(f"Found {len(company_ids)} pending companies, processing first 3")
+                company_ids = company_ids[:3]
             
             if not company_ids:
                 logger.debug("No pending companies to enrich")
@@ -434,7 +435,7 @@ class AutoEnrichService:
             stats = await asyncio.to_thread(
                 enrich_companies_batch,
                 company_ids,
-                max_companies=5
+                max_companies=3  # Reduced from 5 to account for rate limiting delays
             )
             
             logger.success(
