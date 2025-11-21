@@ -401,14 +401,21 @@ class AutoEnrichService:
     
     async def process_pending_companies(self):
         """
-        Process companies that need enrichment in continuous batches.
+        Process companies that need enrichment.
         Runs every 10 minutes and processes up to 3 companies per batch.
         Each company takes ~2 minutes + 3s delay = ~2.05 min per company.
         3 companies × 2.05 min = ~6 minutes (safe margin for 10 min interval).
         Includes automatic retry for quota errors after 24h.
         """
+        # Check if already running (safety check)
+        if self.company_enrichment_running:
+            logger.warning("⚠️ Company enrichment already running, skipping this cycle")
+            return
+        
         # Set flag to prevent overlapping batches
         self.company_enrichment_running = True
+        start_time = datetime.utcnow()
+        logger.info(f"🏢 Starting company enrichment batch at {start_time.isoformat()}")
         
         try:
             # Get unenriched companies (includes retries)
@@ -420,10 +427,10 @@ class AutoEnrichService:
                 include_retries=True
             )
             
-            # Process up to 500 companies per batch (increased for backlog clearing)
-            if len(company_ids) > 500:
-                logger.info(f"Found {len(company_ids)} pending companies, processing first 500")
-                company_ids = company_ids[:500]
+            # Process up to 3 companies per batch (safe for 10min interval)
+            if len(company_ids) > 3:
+                logger.info(f"Found {len(company_ids)} pending companies, processing first 3")
+                company_ids = company_ids[:3]
             
             if not company_ids:
                 logger.debug("No pending companies to enrich")
@@ -435,11 +442,14 @@ class AutoEnrichService:
             stats = await asyncio.to_thread(
                 enrich_companies_batch,
                 company_ids,
-                max_companies=500  # Increased from 3 to clear backlog faster
+                max_companies=3  # Keep at 3 for stability
             )
             
+            # Calculate duration
+            duration = (datetime.utcnow() - start_time).total_seconds()
+            
             logger.success(
-                f"✅ Company enrichment batch complete: "
+                f"✅ Company enrichment batch complete in {duration:.1f}s: "
                 f"{stats['successful']}/{stats['total']} successful, "
                 f"{stats['failed']} failed"
             )
@@ -449,11 +459,16 @@ class AutoEnrichService:
                 logger.warning(f"Errors: {stats['errors'][:3]}")  # Show first 3 errors
         
         except Exception as e:
-            logger.error(f"Failed to process pending companies: {e}")
+            duration = (datetime.utcnow() - start_time).total_seconds()
+            logger.error(f"❌ Failed to process pending companies after {duration:.1f}s: {e}")
+            # Log full traceback for debugging
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
         
         finally:
-            # Always clear the flag when done
+            # Always clear the flag when done (CRITICAL for preventing stuck state)
             self.company_enrichment_running = False
+            logger.info(f"🔓 Company enrichment flag cleared, ready for next batch")
     
     async def calculate_rankings(self):
         """
