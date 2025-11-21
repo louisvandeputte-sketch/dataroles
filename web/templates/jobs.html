@@ -442,11 +442,17 @@
                             </div>
                         </td>
                         <td class="px-3 py-1.5">
-                            <div class="text-xs text-gray-600 max-w-xs" x-show="job.ranking_metadata">
+                            <div class="text-xs text-gray-600 max-w-xs">
                                 <div class="space-y-0.5">
-                                    <div x-show="job.ranking_metadata?.base_score !== undefined">
-                                        Base: <span class="font-mono" x-text="job.ranking_metadata.base_score"></span>
+                                    <!-- Base score from column (stable, nightly) -->
+                                    <div x-show="job.base_score !== null && job.base_score !== undefined">
+                                        Base: <span class="font-mono font-semibold" x-text="job.base_score?.toFixed(1)"></span>
                                     </div>
+                                    <!-- Hourly multiplier (changes every hour) -->
+                                    <div x-show="job.hourly_multiplier !== null && job.hourly_multiplier !== undefined" class="text-xs text-gray-500">
+                                        ×<span class="font-mono" x-text="job.hourly_multiplier?.toFixed(3)"></span>
+                                    </div>
+                                    <!-- Score breakdown from metadata -->
                                     <div x-show="job.ranking_metadata?.freshness_score !== undefined" class="text-xs">
                                         F:<span class="font-mono" x-text="job.ranking_metadata.freshness_score"></span>
                                         Q:<span class="font-mono" x-text="job.ranking_metadata.quality_score"></span>
@@ -455,7 +461,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <span x-show="!job.ranking_metadata" class="text-xs text-gray-400">-</span>
+                            <span x-show="job.base_score === null || job.base_score === undefined" class="text-xs text-gray-400">-</span>
                         </td>
                         <td class="px-3 py-1.5">
                             <div class="text-sm font-medium text-gray-900 truncate max-w-xs" x-text="job.title"></div>
