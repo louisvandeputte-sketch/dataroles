@@ -686,7 +686,8 @@ def save_rankings_to_database(ranked_jobs: List[JobData]):
         
         # Update database - use SAME timestamp for all jobs
         db.client.table("job_postings").update({
-            'ranking_score': round(job.final_score, 2),
+            'base_score': round(job.base_score, 2),  # Stable score (recalculated nightly)
+            'ranking_score': round(job.final_score, 2),  # Final score (base × multiplier, hourly)
             'ranking_position': job.final_rank,
             'ranking_updated_at': ranking_timestamp,  # Same for all jobs!
             'ranking_metadata': metadata,
