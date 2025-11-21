@@ -23,9 +23,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from openai import OpenAI
 from loguru import logger
 from database.client import db
+from config.settings import settings
 
 # Initialize OpenAI client
-client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY") or settings.openai_api_key)
 
 # Parser prompt ID
 LOCATION_PARSER_PROMPT_ID = "pmpt_692050bb9ac48193bbe40d1fcfcd67de07f0d791b20ce220"
@@ -43,21 +44,11 @@ def get_companies_without_location(limit: Optional[int] = None) -> list:
         List of company records with master data
     """
     try:
-        query = db.client.table("companies")\
-            .select("""
-                id, 
-                name,
-                company_master_data!inner(
-                    bedrijfswebsite,
-                    bedrijfsomschrijving_nl,
-                    bedrijfsomschrijving_en,
-                    sector_en,
-                    ai_enriched,
-                    locatie_belgie
-                )
-            """)\
-            .eq("company_master_data.ai_enriched", True)\
-            .is_("company_master_data.locatie_belgie", "null")
+        # Get companies with master data (including weetjes for location hints)
+        query = db.client.table("company_master_data")\
+            .select("company_id, bedrijfswebsite, bedrijfsomschrijving_nl, bedrijfsomschrijving_en, sector_en, aantal_werknemers, weetjes, size_key_arguments, locatie_belgie, companies!inner(id, name)")\
+            .eq("ai_enriched", True)\
+            .is_("locatie_belgie", "null")
         
         if limit:
             query = query.limit(limit)
@@ -67,10 +58,17 @@ def get_companies_without_location(limit: Optional[int] = None) -> list:
         companies = []
         for row in result.data:
             # Flatten structure
+            company_info = row.get("companies", {})
             company = {
-                "id": row["id"],
-                "name": row["name"],
-                **row["company_master_data"]
+                "id": row["company_id"],
+                "name": company_info.get("name", "Unknown"),
+                "bedrijfswebsite": row.get("bedrijfswebsite"),
+                "bedrijfsomschrijving_nl": row.get("bedrijfsomschrijving_nl"),
+                "bedrijfsomschrijving_en": row.get("bedrijfsomschrijving_en"),
+                "sector_en": row.get("sector_en"),
+                "aantal_werknemers": row.get("aantal_werknemers"),
+                "weetjes": row.get("weetjes"),
+                "size_key_arguments": row.get("size_key_arguments")
             }
             companies.append(company)
         
@@ -85,6 +83,7 @@ def get_companies_without_location(limit: Optional[int] = None) -> list:
 def construct_input_text(company: Dict[str, Any]) -> str:
     """
     Construct input text for location parser from company data.
+    Uses all available enriched data including factlets and size arguments.
     
     Args:
         company: Company record with master data
@@ -105,10 +104,34 @@ def construct_input_text(company: Dict[str, Any]) -> str:
     if company.get('sector_en'):
         parts.append(f"Sector: {company['sector_en']}")
     
+    # Employee count
+    if company.get('aantal_werknemers'):
+        parts.append(f"Employees: {company['aantal_werknemers']}")
+    
     # Description (prefer Dutch, fallback to English)
     description = company.get('bedrijfsomschrijving_nl') or company.get('bedrijfsomschrijving_en')
     if description:
         parts.append(f"Description: {description}")
+    
+    # Factlets (weetjes) - may contain hq_location category with city info
+    weetjes = company.get('weetjes')
+    if weetjes and isinstance(weetjes, list):
+        factlet_texts = []
+        for weetje in weetjes:
+            if isinstance(weetje, dict):
+                # Prefer Dutch text, fallback to English
+                text = weetje.get('text_nl') or weetje.get('text_en')
+                category = weetje.get('category', '')
+                if text:
+                    factlet_texts.append(f"[{category}] {text}")
+        
+        if factlet_texts:
+            parts.append(f"Facts: {' | '.join(factlet_texts)}")
+    
+    # Size key arguments - may mention headquarters or office locations
+    size_args = company.get('size_key_arguments')
+    if size_args and isinstance(size_args, list):
+        parts.append(f"Key facts: {' | '.join(size_args)}")
     
     return "\n".join(parts)
 
