@@ -444,7 +444,7 @@ function queriesPage() {
             
             try {
                 const response = await fetch(`/api/indeed/queries/${this.editQuery.id}`, {
-                    method: 'PUT',
+                    method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         job_type_id: this.editQuery.job_type_id,
