@@ -173,13 +173,21 @@ def save_enrichment_to_db(job_id: str, enrichment_data: Dict[str, Any]) -> bool:
         sourcing_type = enrichment_data.get("sourcing_type")
         remote_work_policy = enrichment_data.get("remote_work_policy")
         
-        # Summaries (3 languages at root level)
+        # Summaries (3 languages at root level) - v20: only short summaries
         summary_short_en = enrichment_data.get("summary_short")
-        summary_long_en = enrichment_data.get("summary_long")
         summary_short_nl = enrichment_data.get("summary_short_nl")
-        summary_long_nl = enrichment_data.get("summary_long_nl")
         summary_short_fr = enrichment_data.get("summary_short_fr")
-        summary_long_fr = enrichment_data.get("summary_long_fr")
+        
+        # Structured sections (v20: arrays of bullets)
+        responsibilities = enrichment_data.get("responsibilities", [])
+        responsibilities_nl = enrichment_data.get("responsibilities_nl", [])
+        responsibilities_fr = enrichment_data.get("responsibilities_fr", [])
+        requirements = enrichment_data.get("requirements", [])
+        requirements_nl = enrichment_data.get("requirements_nl", [])
+        requirements_fr = enrichment_data.get("requirements_fr", [])
+        offerings = enrichment_data.get("offerings", [])
+        offerings_nl = enrichment_data.get("offerings_nl", [])
+        offerings_fr = enrichment_data.get("offerings_fr", [])
         
         # Tech stack
         must_have_languages = enrichment_data.get("must_have_languages", [])
@@ -206,17 +214,26 @@ def save_enrichment_to_db(job_id: str, enrichment_data: Dict[str, Any]) -> bool:
         logger.debug(f"labels keys: {list(labels_data.keys())}")
         logger.debug(f"Perk values: remote={perk_remote_policy}, salary={perk_salary_range}, car={perk_company_car}")
         
-        # Prepare data for database (v17 schema)
+        # Prepare data for database (v20 schema)
         db_data = {
-            # Summaries (3 languages)
+            # Short summaries (3 languages)
             "samenvatting_kort_en": summary_short_en,
-            "samenvatting_lang_en": summary_long_en,
             "samenvatting_kort_nl": summary_short_nl,
-            "samenvatting_lang_nl": summary_long_nl,
             "samenvatting_kort_fr": summary_short_fr,
-            "samenvatting_lang_fr": summary_long_fr,
+            "samenvatting_kort": summary_short_en,  # Legacy: use English
             
-            # Labels as JSONB (contains all translations including perks and spoken languages)
+            # Structured sections (v20: arrays as JSONB)
+            "responsibilities": json.dumps(responsibilities) if responsibilities else None,
+            "responsibilities_nl": json.dumps(responsibilities_nl) if responsibilities_nl else None,
+            "responsibilities_fr": json.dumps(responsibilities_fr) if responsibilities_fr else None,
+            "requirements": json.dumps(requirements) if requirements else None,
+            "requirements_nl": json.dumps(requirements_nl) if requirements_nl else None,
+            "requirements_fr": json.dumps(requirements_fr) if requirements_fr else None,
+            "offerings": json.dumps(offerings) if offerings else None,
+            "offerings_nl": json.dumps(offerings_nl) if offerings_nl else None,
+            "offerings_fr": json.dumps(offerings_fr) if offerings_fr else None,
+            
+            # Labels as JSONB (contains all translations including section headers)
             "labels": json.dumps(labels_data) if labels_data else None,
             
             # Legacy fields for backward compatibility (use English canonical values)
@@ -225,8 +242,6 @@ def save_enrichment_to_db(job_id: str, enrichment_data: Dict[str, Any]) -> bool:
             "seniority": _format_array_for_postgres(seniority),
             "contract": _format_array_for_postgres(contract),
             "sourcing_type": sourcing_type,
-            "samenvatting_kort": summary_short_en,  # Legacy: use English
-            "samenvatting_lang": summary_long_en,   # Legacy: use English
             
             # Programming languages and ecosystems (language-agnostic canonical names)
             "must_have_programmeertalen": _format_array_for_postgres(must_have_languages),
