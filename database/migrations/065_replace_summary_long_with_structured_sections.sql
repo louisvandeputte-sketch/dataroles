@@ -15,12 +15,11 @@ ADD COLUMN IF NOT EXISTS offerings JSONB,
 ADD COLUMN IF NOT EXISTS offerings_nl JSONB,
 ADD COLUMN IF NOT EXISTS offerings_fr JSONB;
 
--- 2. Drop old summary_long columns
-ALTER TABLE llm_enrichment
-DROP COLUMN IF EXISTS samenvatting_lang,
-DROP COLUMN IF EXISTS samenvatting_lang_nl,
-DROP COLUMN IF EXISTS samenvatting_lang_fr,
-DROP COLUMN IF EXISTS samenvatting_lang_en;
+-- 2. Keep old summary_long columns for backwards compatibility (will no longer be populated)
+COMMENT ON COLUMN llm_enrichment.samenvatting_lang IS 'DEPRECATED (v20): No longer populated. Use structured sections (responsibilities/requirements/offerings) instead.';
+COMMENT ON COLUMN llm_enrichment.samenvatting_lang_nl IS 'DEPRECATED (v20): No longer populated. Use structured sections instead.';
+COMMENT ON COLUMN llm_enrichment.samenvatting_lang_fr IS 'DEPRECATED (v20): No longer populated. Use structured sections instead.';
+COMMENT ON COLUMN llm_enrichment.samenvatting_lang_en IS 'DEPRECATED (v20): No longer populated. Use structured sections instead.';
 
 -- 3. Add comments for new columns
 COMMENT ON COLUMN llm_enrichment.responsibilities IS 'Array of responsibility bullets in English (max 7, typically 4-5)';

@@ -69,6 +69,12 @@ SELECT
     -- Legacy short summary field (ACTIVE - for backward compatibility)
     e.samenvatting_kort,       -- Legacy: English summary
     
+    -- DEPRECATED: Long summaries (no longer populated in v20, kept for backwards compatibility)
+    e.samenvatting_lang_en,
+    e.samenvatting_lang_nl,
+    e.samenvatting_lang_fr,
+    e.samenvatting_lang,       -- Legacy: English summary
+    
     -- NEW: Structured sections in 3 languages (v20)
     e.responsibilities,        -- Array of responsibility bullets (EN)
     e.responsibilities_nl,     -- Array of responsibility bullets (NL)
