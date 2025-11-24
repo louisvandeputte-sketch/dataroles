@@ -52,13 +52,30 @@ def enrich_job_with_llm(job_id: str, job_description: str, max_retries: int = 3)
             
             # Extract structured output from response
             enrichment_data = None
+            raw_text = None
             if hasattr(response, 'output') and response.output:
                 for item in response.output:
                     if hasattr(item, 'type') and item.type == 'message' and hasattr(item, 'content'):
                         for content in item.content:
                             if hasattr(content, 'type') and content.type == 'output_text':
-                                # Parse JSON from text output
-                                enrichment_data = json.loads(content.text)
+                                raw_text = content.text
+                                # Try to parse JSON from text output
+                                try:
+                                    enrichment_data = json.loads(raw_text)
+                                except json.JSONDecodeError as parse_error:
+                                    # Log the problematic JSON for debugging
+                                    logger.error(f"JSON parsing failed for job {job_id}")
+                                    logger.error(f"Parse error: {parse_error}")
+                                    logger.error(f"Raw response (first 500 chars): {raw_text[:500]}")
+                                    logger.error(f"Error location: line {parse_error.lineno}, col {parse_error.colno}")
+                                    
+                                    # Try to extract the problematic section
+                                    if parse_error.pos:
+                                        start = max(0, parse_error.pos - 100)
+                                        end = min(len(raw_text), parse_error.pos + 100)
+                                        logger.error(f"Context around error: ...{raw_text[start:end]}...")
+                                    
+                                    raise  # Re-raise to be caught by outer try-except
                                 break
                     if enrichment_data:
                         break
