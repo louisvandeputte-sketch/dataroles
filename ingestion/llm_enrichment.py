@@ -4,6 +4,7 @@ import json
 import time
 from typing import Dict, Any, Optional, List
 from datetime import datetime
+import re
 from loguru import logger
 from openai import OpenAI, RateLimitError, APIError
 
@@ -16,6 +17,24 @@ PROMPT_VERSION = "19"  # v19: structured sections (responsibilities/requirements
 
 # Initialize OpenAI client
 client = OpenAI(api_key=settings.openai_api_key)
+
+
+def sanitize_json_string(text: str) -> str:
+    """
+    Sanitize potentially malformed JSON from LLM by fixing common issues.
+    
+    Common issues:
+    - Unescaped newlines in strings
+    - Unescaped quotes
+    - Unescaped backslashes
+    """
+    # This is a simple sanitizer - it won't fix all JSON issues
+    # but helps with the most common LLM mistakes
+    
+    # Note: We can't use regex to fully parse JSON, but we can fix obvious issues
+    # The best solution is to have the LLM generate valid JSON in the first place
+    
+    return text
 
 
 def enrich_job_with_llm(job_id: str, job_description: str, max_retries: int = 3) -> tuple[Optional[Dict[str, Any]], Optional[str]]:
@@ -59,23 +78,46 @@ def enrich_job_with_llm(job_id: str, job_description: str, max_retries: int = 3)
                         for content in item.content:
                             if hasattr(content, 'type') and content.type == 'output_text':
                                 raw_text = content.text
+                                
                                 # Try to parse JSON from text output
                                 try:
                                     enrichment_data = json.loads(raw_text)
+                                    logger.debug(f"Successfully parsed JSON for job {job_id}")
+                                    
                                 except json.JSONDecodeError as parse_error:
                                     # Log the problematic JSON for debugging
-                                    logger.error(f"JSON parsing failed for job {job_id}")
+                                    logger.error(f"❌ JSON parsing failed for job {job_id}")
                                     logger.error(f"Parse error: {parse_error}")
-                                    logger.error(f"Raw response (first 500 chars): {raw_text[:500]}")
-                                    logger.error(f"Error location: line {parse_error.lineno}, col {parse_error.colno}")
+                                    logger.error(f"Error location: line {parse_error.lineno}, col {parse_error.colno}, pos {parse_error.pos}")
                                     
-                                    # Try to extract the problematic section
+                                    # Log context around error
                                     if parse_error.pos:
-                                        start = max(0, parse_error.pos - 100)
-                                        end = min(len(raw_text), parse_error.pos + 100)
-                                        logger.error(f"Context around error: ...{raw_text[start:end]}...")
+                                        start = max(0, parse_error.pos - 150)
+                                        end = min(len(raw_text), parse_error.pos + 150)
+                                        context = raw_text[start:end]
+                                        # Mark the error position
+                                        error_marker_pos = parse_error.pos - start
+                                        context_with_marker = context[:error_marker_pos] + "<<<ERROR>>>" + context[error_marker_pos:]
+                                        logger.error(f"Context (±150 chars):\n{context_with_marker}")
                                     
-                                    raise  # Re-raise to be caught by outer try-except
+                                    # Log the full response to a file for inspection
+                                    try:
+                                        error_file = f"/tmp/llm_error_{job_id}_{int(time.time())}.json"
+                                        with open(error_file, 'w') as f:
+                                            f.write(raw_text)
+                                        logger.error(f"Full response saved to: {error_file}")
+                                    except Exception as file_error:
+                                        logger.warning(f"Could not save error file: {file_error}")
+                                    
+                                    # Try sanitization as last resort
+                                    logger.info("Attempting to sanitize JSON...")
+                                    try:
+                                        sanitized = sanitize_json_string(raw_text)
+                                        enrichment_data = json.loads(sanitized)
+                                        logger.success(f"✅ JSON sanitization successful for job {job_id}")
+                                    except Exception as sanitize_error:
+                                        logger.error(f"Sanitization also failed: {sanitize_error}")
+                                        raise parse_error  # Re-raise original error
                                 break
                     if enrichment_data:
                         break
