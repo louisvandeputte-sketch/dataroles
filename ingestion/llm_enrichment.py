@@ -12,7 +12,7 @@ from database.client import db
 
 # OpenAI Responses API configuration
 PROMPT_TEMPLATE_ID = "pmpt_68ee0e7890788197b06ced94ab8af4d50759bbe1e2c42f88"
-PROMPT_VERSION = "18"  # Latest version with all v17 features
+PROMPT_VERSION = "19"  # v19: structured sections (responsibilities/requirements/offerings)
 
 # Initialize OpenAI client
 client = OpenAI(api_key=settings.openai_api_key)

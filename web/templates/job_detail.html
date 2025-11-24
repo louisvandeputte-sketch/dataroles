@@ -497,12 +497,51 @@
                                     <span class="text-xs font-medium text-gray-700">Short Summary</span>
                                     <p class="text-sm text-gray-900 mt-1" x-text="getCurrentSummary('kort')"></p>
                                 </div>
-                                <div>
-                                    <span class="text-xs font-medium text-gray-700">Detailed Summary</span>
+                                <!-- Show detailed summary only if no structured sections available -->
+                                <div x-show="!getStructuredSection('responsibilities')">
+                                    <span class="text-xs font-medium text-gray-700">Detailed Summary (deprecated)</span>
                                     <p class="text-sm text-gray-900 mt-1" x-text="getCurrentSummary('lang')"></p>
                                 </div>
                             </div>
                         </div>
+                        
+                        <!-- Structured Sections (v19+) -->
+                        <template x-if="getStructuredSection('responsibilities') || getStructuredSection('requirements') || getStructuredSection('offerings')">
+                            <div class="bg-white rounded-lg border border-gray-200 p-4 md:col-span-2">
+                                <h4 class="text-sm font-semibold text-gray-900 mb-4">Job Details</h4>
+                                <div class="space-y-6">
+                                    <!-- Responsibilities -->
+                                    <div x-show="getStructuredSection('responsibilities')">
+                                        <h5 class="text-xs font-semibold text-blue-700 mb-2" x-text="getSectionLabel('responsibilities_label') || 'Your Responsibilities'"></h5>
+                                        <ul class="list-disc list-inside space-y-1 text-sm text-gray-900">
+                                            <template x-for="item in getStructuredSection('responsibilities')" :key="item">
+                                                <li x-text="item"></li>
+                                            </template>
+                                        </ul>
+                                    </div>
+                                    
+                                    <!-- Requirements -->
+                                    <div x-show="getStructuredSection('requirements')">
+                                        <h5 class="text-xs font-semibold text-green-700 mb-2" x-text="getSectionLabel('requirements_label') || 'What We Expect'"></h5>
+                                        <ul class="list-disc list-inside space-y-1 text-sm text-gray-900">
+                                            <template x-for="item in getStructuredSection('requirements')" :key="item">
+                                                <li x-text="item"></li>
+                                            </template>
+                                        </ul>
+                                    </div>
+                                    
+                                    <!-- Offerings -->
+                                    <div x-show="getStructuredSection('offerings')">
+                                        <h5 class="text-xs font-semibold text-purple-700 mb-2" x-text="getSectionLabel('offerings_label') || 'What We Offer'"></h5>
+                                        <ul class="list-disc list-inside space-y-1 text-sm text-gray-900">
+                                            <template x-for="item in getStructuredSection('offerings')" :key="item">
+                                                <li x-text="item"></li>
+                                            </template>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
                         
                         <!-- Languages -->
                         <div class="bg-indigo-50 rounded-lg p-4 md:col-span-2">
@@ -758,6 +797,57 @@ function jobDetailPage(jobId) {
             }
             
             return '-';
+        },
+        
+        getStructuredSection(sectionType) {
+            // Get structured section (responsibilities/requirements/offerings) in current language
+            if (!this.enrichment) return null;
+            
+            const field = `${sectionType}_${this.enrichmentLang}`;
+            let section = this.enrichment[field];
+            
+            // Fallback to English if current language not available
+            if (!section || (Array.isArray(section) && section.length === 0)) {
+                section = this.enrichment[sectionType];
+            }
+            
+            // Parse if string (JSONB stored as string)
+            if (typeof section === 'string') {
+                try {
+                    section = JSON.parse(section);
+                } catch (e) {
+                    console.error(`Failed to parse ${sectionType}:`, e);
+                    return null;
+                }
+            }
+            
+            // Return array if valid and not empty
+            return (Array.isArray(section) && section.length > 0) ? section : null;
+        },
+        
+        getSectionLabel(labelKey) {
+            // Get section header label (responsibilities_label, requirements_label, offerings_label)
+            if (!this.enrichment) return null;
+            
+            // Try to parse labels JSONB field
+            let labels = null;
+            if (this.enrichment.labels) {
+                try {
+                    labels = typeof this.enrichment.labels === 'string' 
+                        ? JSON.parse(this.enrichment.labels) 
+                        : this.enrichment.labels;
+                } catch (e) {
+                    console.error('Failed to parse labels:', e);
+                    return null;
+                }
+            }
+            
+            // Get label for current language
+            if (labels && labels[this.enrichmentLang]) {
+                return labels[this.enrichmentLang][labelKey] || null;
+            }
+            
+            return null;
         },
         
         getCurrentPerkLabel(perkField) {
