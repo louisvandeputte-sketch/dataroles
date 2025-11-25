@@ -13,7 +13,7 @@ from database.client import db
 
 # OpenAI Responses API configuration
 PROMPT_TEMPLATE_ID = "pmpt_68ee0e7890788197b06ced94ab8af4d50759bbe1e2c42f88"
-PROMPT_VERSION = "20"  # v20: structured sections with improved JSON formatting
+PROMPT_VERSION = "22"  # v22: increased max_tokens to prevent JSON truncation
 
 # Initialize OpenAI client
 client = OpenAI(api_key=settings.openai_api_key)
@@ -26,30 +26,37 @@ def sanitize_json_string(text: str) -> str:
     Common issues:
     - Missing commas between fields
     - Unterminated strings (missing closing quotes)
-    - Unescaped newlines in strings
+    - Orphaned quotes after commas
     - Trailing commas before closing braces
     """
     import re
     
-    # Fix 1: Remove orphaned quotes that appear alone on a line
-    # Pattern: lines with just whitespace and a single quote
-    text = re.sub(r'^\s*"\s*$', '', text, flags=re.MULTILINE)
+    # Fix 1: Remove orphaned quotes after commas (most common issue)
+    # Pattern: ,\n      " with nothing after -> just remove the quote line
+    # This handles: "field": "value",\n      "\n      "next_field"
+    lines = text.split('\n')
+    cleaned_lines = []
+    for i, line in enumerate(lines):
+        # Skip lines that are just whitespace + a single quote
+        if re.match(r'^\s*"\s*$', line):
+            continue
+        cleaned_lines.append(line)
+    text = '\n'.join(cleaned_lines)
     
-    # Fix 2: Add missing commas between fields
+    # Fix 2: Remove orphaned quotes between fields
+    # Pattern: ",\n      "\n      "field" -> ",\n      "field"
+    text = re.sub(r',(\s*\n\s*)"\s*\n\s*"', r',\1"', text)
+    
+    # Fix 3: Add missing commas between fields
     # Pattern: "field": value\n  "nextfield" -> "field": value,\n  "nextfield"
-    # This handles missing commas after strings, numbers, arrays, and objects
     text = re.sub(
         r'("\w+"\s*:\s*(?:"[^"]*"|[\d.]+|true|false|null|\[[^\]]*\]|\{[^}]*\}))\s*\n\s*(")',
         r'\1,\n  \2',
         text
     )
     
-    # Fix 3: Remove trailing commas before closing braces/brackets
+    # Fix 4: Remove trailing commas before closing braces/brackets
     text = re.sub(r',(\s*[}\]])', r'\1', text)
-    
-    # Fix 4: Try to close unterminated strings before field names
-    # Pattern: ",\n  " (orphaned quote before field) -> just remove it
-    text = re.sub(r'",\s*\n\s*"(\w+"\s*:)', r',\n  "\1', text)
     
     return text
 
