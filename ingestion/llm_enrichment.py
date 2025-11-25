@@ -56,7 +56,12 @@ def sanitize_json_string(text: str) -> str:
     )
     
     # Fix 4: Remove trailing commas before closing braces/brackets
+    # This handles: "field": "value",\n    } or "field": "value",}
     text = re.sub(r',(\s*[}\]])', r'\1', text)
+    
+    # Fix 5: Remove trailing commas at end of objects/arrays more aggressively
+    # Pattern: ,\n} or ,\n] with any whitespace
+    text = re.sub(r',\s*\n\s*([}\]])', r'\n\1', text)
     
     return text
 
@@ -123,6 +128,9 @@ def enrich_job_with_llm(job_id: str, job_description: str, max_retries: int = 3)
                                         error_marker_pos = parse_error.pos - start
                                         context_with_marker = context[:error_marker_pos] + "<<<ERROR>>>" + context[error_marker_pos:]
                                         logger.error(f"Context (±150 chars):\n{context_with_marker}")
+                                    
+                                    # Log first 1000 chars of response for quick debugging
+                                    logger.error(f"First 1000 chars of response:\n{raw_text[:1000]}")
                                     
                                     # Log the full response to a file for inspection
                                     try:
