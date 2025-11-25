@@ -25,13 +25,17 @@ def sanitize_json_string(text: str) -> str:
     
     Common issues:
     - Missing commas between fields
+    - Unterminated strings (missing closing quotes)
     - Unescaped newlines in strings
-    - Unescaped quotes
     - Trailing commas before closing braces
     """
     import re
     
-    # Fix 1: Add missing commas between fields
+    # Fix 1: Remove orphaned quotes that appear alone on a line
+    # Pattern: lines with just whitespace and a single quote
+    text = re.sub(r'^\s*"\s*$', '', text, flags=re.MULTILINE)
+    
+    # Fix 2: Add missing commas between fields
     # Pattern: "field": value\n  "nextfield" -> "field": value,\n  "nextfield"
     # This handles missing commas after strings, numbers, arrays, and objects
     text = re.sub(
@@ -40,13 +44,12 @@ def sanitize_json_string(text: str) -> str:
         text
     )
     
-    # Fix 2: Remove trailing commas before closing braces/brackets
+    # Fix 3: Remove trailing commas before closing braces/brackets
     text = re.sub(r',(\s*[}\]])', r'\1', text)
     
-    # Fix 3: Escape unescaped newlines within strings (basic attempt)
-    # This is tricky and may not catch all cases
-    # Pattern: "text with\nnewline" -> "text with\\nnewline"
-    # Note: This is a simplified approach and may have edge cases
+    # Fix 4: Try to close unterminated strings before field names
+    # Pattern: ",\n  " (orphaned quote before field) -> just remove it
+    text = re.sub(r'",\s*\n\s*"(\w+"\s*:)', r',\n  "\1', text)
     
     return text
 
