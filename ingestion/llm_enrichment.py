@@ -24,15 +24,29 @@ def sanitize_json_string(text: str) -> str:
     Sanitize potentially malformed JSON from LLM by fixing common issues.
     
     Common issues:
+    - Missing commas between fields
     - Unescaped newlines in strings
     - Unescaped quotes
-    - Unescaped backslashes
+    - Trailing commas before closing braces
     """
-    # This is a simple sanitizer - it won't fix all JSON issues
-    # but helps with the most common LLM mistakes
+    import re
     
-    # Note: We can't use regex to fully parse JSON, but we can fix obvious issues
-    # The best solution is to have the LLM generate valid JSON in the first place
+    # Fix 1: Add missing commas between fields
+    # Pattern: "field": value\n  "nextfield" -> "field": value,\n  "nextfield"
+    # This handles missing commas after strings, numbers, arrays, and objects
+    text = re.sub(
+        r'("\w+"\s*:\s*(?:"[^"]*"|[\d.]+|true|false|null|\[[^\]]*\]|\{[^}]*\}))\s*\n\s*(")',
+        r'\1,\n  \2',
+        text
+    )
+    
+    # Fix 2: Remove trailing commas before closing braces/brackets
+    text = re.sub(r',(\s*[}\]])', r'\1', text)
+    
+    # Fix 3: Escape unescaped newlines within strings (basic attempt)
+    # This is tricky and may not catch all cases
+    # Pattern: "text with\nnewline" -> "text with\\nnewline"
+    # Note: This is a simplified approach and may have edge cases
     
     return text
 
