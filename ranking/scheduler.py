@@ -5,6 +5,7 @@ Job Ranking & Maintenance Scheduler
 Scheduled tasks:
 - Ranking calculation: Every hour (for dynamic rankings with hourly multiplier)
 - Stuck run cleanup: Every hour
+- Location geocoding: Every 6 hours (50 locations per batch)
 """
 
 import schedule
@@ -15,6 +16,7 @@ import pytz
 
 from ranking.job_ranker import calculate_and_save_rankings
 from ingestion.stuck_run_cleaner import clean_stuck_runs
+from ingestion.location_geocoder import enrich_all_locations
 
 
 def run_ranking_job():
@@ -42,20 +44,36 @@ def run_stuck_run_cleanup():
         logger.error(f"❌ Stuck run cleanup failed: {e}")
 
 
+def run_geocoding_job():
+    """Geocode locations without coordinates"""
+    logger.info("⏰ Scheduled geocoding job triggered")
+    
+    try:
+        # Process 50 locations at a time
+        enrich_all_locations(limit=50, only_missing=True)
+        logger.info("✅ Scheduled geocoding complete")
+    except Exception as e:
+        logger.error(f"❌ Scheduled geocoding failed: {e}")
+
+
 def start_scheduler():
     """Start the ranking scheduler"""
     # Belgian timezone
     belgium_tz = pytz.timezone('Europe/Brussels')
     
-    logger.info("🕐 Starting job ranking scheduler...")
+    logger.info("🕐 Starting job ranking & maintenance scheduler...")
     logger.info("📅 Ranking schedule: Every hour (dynamic rankings with random multiplier)")
     logger.info("📅 Stuck run cleanup: Every hour")
+    logger.info("📅 Location geocoding: Every 6 hours (50 locations per batch)")
     
     # Schedule ranking calculation every hour
     schedule.every().hour.do(run_ranking_job)
     
     # Schedule stuck run cleanup every hour
     schedule.every().hour.do(run_stuck_run_cleanup)
+    
+    # Schedule geocoding every 6 hours
+    schedule.every(6).hours.do(run_geocoding_job)
     
     # Also run immediately on startup
     logger.info("🚀 Running initial ranking calculation...")
@@ -64,9 +82,13 @@ def start_scheduler():
     logger.info("🚀 Running initial stuck run cleanup...")
     run_stuck_run_cleanup()
     
+    logger.info("🚀 Running initial geocoding...")
+    run_geocoding_job()
+    
     # Keep running
     logger.info("✅ Scheduler started. Waiting for scheduled jobs...")
     logger.info("⏰ Next ranking: in 1 hour")
+    logger.info("⏰ Next geocoding: in 6 hours")
     
     while True:
         schedule.run_pending()
