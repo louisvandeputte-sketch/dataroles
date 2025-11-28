@@ -206,6 +206,30 @@
                             </div>
                         </div>
 
+                        <!-- Geographic Coordinates -->
+                        <div class="border-t pt-4">
+                            <h4 class="text-sm font-semibold text-gray-700 mb-3">🌍 Geographic Coordinates</h4>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Longitude</label>
+                                    <input type="number" step="0.0000001" x-model="editingLocation.longitude" 
+                                           placeholder="-180 to 180"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                    <p class="mt-1 text-xs text-gray-500">WGS84 coordinate (-180 to 180)</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Latitude</label>
+                                    <input type="number" step="0.0000001" x-model="editingLocation.latitude" 
+                                           placeholder="-90 to 90"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                    <p class="mt-1 text-xs text-gray-500">WGS84 coordinate (-90 to 90)</p>
+                                </div>
+                            </div>
+                            <div class="mt-2 text-xs text-gray-500" x-show="editingLocation.coordinates_enriched">
+                                ✅ Coordinates enriched at: <span x-text="editingLocation.coordinates_enriched_at ? new Date(editingLocation.coordinates_enriched_at).toLocaleString() : 'N/A'"></span>
+                            </div>
+                        </div>
+
                         <!-- Multilingual Names -->
                         <div class="border-t pt-4">
                             <h4 class="text-sm font-semibold text-gray-700 mb-3">Multilingual Names</h4>
