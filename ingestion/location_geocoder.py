@@ -66,7 +66,19 @@ def geocode_location(city: str, country: str) -> Tuple[Optional[float], Optional
         
         # Parse JSON response
         try:
-            result = json.loads(content) if isinstance(content, str) else content
+            # If content is a string, parse as JSON
+            if isinstance(content, str):
+                result = json.loads(content)
+            # If content is a dict, use directly
+            elif isinstance(content, dict):
+                result = content
+            # If content has 'content' attribute (ResponseReasoningItem), extract it
+            elif hasattr(content, 'content'):
+                result = json.loads(content.content) if isinstance(content.content, str) else content.content
+            else:
+                # Try to convert to dict
+                result = dict(content) if hasattr(content, '__dict__') else {}
+            
             longitude = result.get("longitude")
             latitude = result.get("latitude")
             
