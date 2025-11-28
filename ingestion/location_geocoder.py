@@ -54,24 +54,25 @@ def geocode_location(city: str, country: str) -> Tuple[Optional[float], Optional
         # The response object has an 'output' attribute with the content
         if hasattr(response, 'output'):
             content = response.output
-            # If output is a list, find the ResponseOutputText item
-            if isinstance(content, list):
-                for item in content:
-                    # Check for ResponseOutputText with text attribute
-                    if hasattr(item, 'text') and item.text:
-                        content = item.text
-                        break
-                    # Fallback: check for content attribute
-                    elif hasattr(item, 'content') and item.content:
-                        content = item.content
-                        break
-                else:
-                    content = "{}"
         elif hasattr(response, 'content'):
             content = response.content
         else:
             # Fallback to standard chat completion format
             content = response.choices[0].message.content
+        
+        # If output is a list, find the ResponseOutputText item
+        if isinstance(content, list):
+            extracted_text = None
+            for item in content:
+                # Check for ResponseOutputText with text attribute
+                if hasattr(item, 'text') and item.text:
+                    extracted_text = item.text
+                    break
+                # Fallback: check for content attribute
+                elif hasattr(item, 'content') and item.content:
+                    extracted_text = item.content
+                    break
+            content = extracted_text if extracted_text else "{}"
         
         # Parse JSON response
         try:
