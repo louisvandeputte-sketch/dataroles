@@ -140,25 +140,25 @@ def enrich_location_coordinates(location_id: str) -> bool:
         # Geocode
         longitude, latitude = geocode_location(city, country)
         
-        # Update database
-        update_data = {
-            "longitude": longitude,
-            "latitude": latitude,
-            "coordinates_enriched": True,
-            "coordinates_enriched_at": datetime.utcnow().isoformat()
-        }
-        
-        db.client.table("locations")\
-            .update(update_data)\
-            .eq("id", location_id)\
-            .execute()
-        
-        if longitude and latitude:
+        # Only update if we got valid coordinates
+        if longitude is not None and latitude is not None:
+            update_data = {
+                "longitude": longitude,
+                "latitude": latitude,
+                "coordinates_enriched": True,
+                "coordinates_enriched_at": datetime.utcnow().isoformat()
+            }
+            
+            db.client.table("locations")\
+                .update(update_data)\
+                .eq("id", location_id)\
+                .execute()
+            
             logger.success(f"✅ Updated location {location_id} with coordinates: ({longitude}, {latitude})")
+            return True
         else:
-            logger.warning(f"⚠️ Updated location {location_id} but coordinates not found")
-        
-        return True
+            logger.warning(f"⚠️ Could not geocode location {location_id}: {city}, {country}")
+            return False
         
     except Exception as e:
         logger.error(f"❌ Error enriching location {location_id}: {e}")
