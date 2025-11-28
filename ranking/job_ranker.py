@@ -48,6 +48,7 @@ class JobData:
     company_name: str
     location_id: str
     posted_date: Optional[datetime]
+    posted_date_corrected: Optional[datetime]  # Minimum of first_seen_at and posted_date
     seniority_level: Optional[str]
     employment_type: Optional[str]
     function_areas: Optional[List[str]]
@@ -148,13 +149,19 @@ class JobRankingSystem:
     
     def calculate_freshness_score(self, job: JobData) -> float:
         """
-        Bereken versheid score (0-100) op basis van posted_date
+        Bereken versheid score (0-100) op basis van posted_date_corrected
+        posted_date_corrected = minimum van first_seen_at en posted_date
+        Dit voorkomt dat re-posted jobs onterecht als "nieuw" worden gezien
+        
         MEGA BOOST: Jobs <= 30 uur oud krijgen 150 punten (50% extra!)
         """
-        if not job.posted_date:
+        # Use posted_date_corrected for accurate age, fallback to posted_date
+        effective_date = job.posted_date_corrected or job.posted_date
+        
+        if not effective_date:
             return 20
         
-        age = datetime.now() - job.posted_date
+        age = datetime.now() - effective_date
         hours_old = age.total_seconds() / 3600
         
         # MEGA BOOST: <= 30 uur = 150 punten (50% extra!)
@@ -567,6 +574,7 @@ def load_jobs_from_database(only_needs_ranking: bool = False) -> List[JobData]:
                 company_name=row.get('company_name', ''),
                 location_id=row['location_id'],
                 posted_date=parse_datetime(row.get('posted_date')),
+                posted_date_corrected=parse_datetime(row.get('posted_date_corrected')),
                 seniority_level=row.get('seniority_level'),
                 employment_type=row.get('employment_type'),
                 function_areas=row.get('function_areas'),
