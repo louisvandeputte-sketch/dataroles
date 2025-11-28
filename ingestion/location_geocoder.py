@@ -41,24 +41,27 @@ def geocode_location(city: str, country: str) -> Tuple[Optional[float], Optional
         
         logger.info(f"🌍 Geocoding location: {location_input}")
         
-        # Call OpenAI Chat Completions API with JSON mode for reliable parsing
+        # Call OpenAI Chat Completions API with GPT-4o and web search
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4o",  # Latest GPT-4o model
             messages=[
                 {
                     "role": "system",
-                    "content": """Convert a city and country name into geographic coordinates (longitude and latitude).
+                    "content": """You are a geographic coordinate lookup assistant with access to web search.
+Convert a city and country name into accurate geographic coordinates (longitude and latitude).
+Use web search to find the most accurate, up-to-date coordinates.
 Return ONLY a JSON object with two keys: "longitude" and "latitude" as floating point numbers.
 If coordinates cannot be found, use null for both values.
 Example: {"longitude": 4.9041, "latitude": 52.3676}"""
                 },
                 {
                     "role": "user",
-                    "content": location_input
+                    "content": f"Find the geographic coordinates for: {location_input}"
                 }
             ],
             response_format={"type": "json_object"},
-            temperature=0
+            temperature=0,
+            tools=[{"type": "web_search"}]  # Enable web search
         )
         
         # Extract content from Chat Completions response
