@@ -434,36 +434,14 @@ class JobRankingSystem:
         return multiplier
     
     def apply_diversity_modifiers(self, jobs: List[JobData]) -> List[JobData]:
-        """Pas diversity modifiers en hourly multiplier toe"""
+        """Apply hourly multiplier to base score (diversity modifiers removed)"""
         for job in jobs:
-            score = job.base_score
-            
-            # Company diversity penalty
-            company_modifier = 1 - (job.company_rank - 1) * self.COMPANY_PENALTY_PER_EXTRA
-            company_modifier = max(0.1, company_modifier)
-            score *= company_modifier
-            
-            # Role type diversity penalty
-            role_modifier = 1 - (job.role_type_rank - 1) * self.ROLE_PENALTY_PER_EXTRA
-            role_modifier = max(0.3, role_modifier)
-            score *= role_modifier
-            
-            # Location diversity boost
-            if job.location_rank == 1:
-                score *= self.LOCATION_BOOST_FIRST
-            
-            # Seniority diversity penalty
-            seniority_modifier = 1 - (job.seniority_rank - 1) * self.SENIORITY_PENALTY_PER_EXTRA
-            seniority_modifier = max(0.5, seniority_modifier)
-            score *= seniority_modifier
-            
-            # Apply hourly random multiplier (0.8 to 1.2)
-            # This creates dynamic ranking that changes every hour
+            # Simple formula: final_score = base_score × hourly_multiplier
+            # No diversity penalties applied
             hourly_multiplier = self.calculate_hourly_multiplier(job)
             job.hourly_multiplier = hourly_multiplier  # Store for database
-            score *= hourly_multiplier
             
-            job.final_score = score
+            job.final_score = job.base_score * hourly_multiplier
         
         return jobs
     
@@ -679,18 +657,7 @@ def save_rankings_to_database(ranked_jobs: List[JobData]):
     failed_updates = []
     for job in ranked_jobs:
         try:
-            # Calculate diversity modifiers for metadata (using same constants as JobRanker)
-            COMPANY_PENALTY_PER_EXTRA = 0.15
-            ROLE_PENALTY_PER_EXTRA = 0.10
-            LOCATION_BOOST_FIRST = 1.05
-            SENIORITY_PENALTY_PER_EXTRA = 0.05
-            
-            company_modifier = max(0.1, 1 - (job.company_rank - 1) * COMPANY_PENALTY_PER_EXTRA)
-            role_modifier = max(0.3, 1 - (job.role_type_rank - 1) * ROLE_PENALTY_PER_EXTRA)
-            location_modifier = LOCATION_BOOST_FIRST if job.location_rank == 1 else 1.0
-            seniority_modifier = max(0.5, 1 - (job.seniority_rank - 1) * SENIORITY_PENALTY_PER_EXTRA)
-            
-            # Create metadata JSON
+            # Create metadata JSON (simplified - no diversity modifiers)
             metadata = {
                 'freshness_score': round(job.freshness_score, 2),
                 'quality_score': round(job.quality_score, 2),
@@ -699,14 +666,6 @@ def save_rankings_to_database(ranked_jobs: List[JobData]):
                 'completeness_score': round(job.completeness_score, 2),
                 'reputation_score': round(job.reputation_score, 2),
                 'base_score': round(job.base_score, 2),
-                'company_rank': job.company_rank,
-                'role_type_rank': job.role_type_rank,
-                'location_rank': job.location_rank,
-                'seniority_rank': job.seniority_rank,
-                'company_modifier': round(company_modifier, 3),
-                'role_modifier': round(role_modifier, 3),
-                'location_modifier': round(location_modifier, 3),
-                'seniority_modifier': round(seniority_modifier, 3),
                 'hourly_multiplier': round(job.hourly_multiplier, 3),
                 'final_score': round(job.final_score, 2)
             }
