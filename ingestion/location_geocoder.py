@@ -95,7 +95,7 @@ def enrich_location_coordinates(location_id: str) -> bool:
     try:
         # Fetch location data
         location = db.client.table("locations")\
-            .select("id, city, country, city_name_en, country_name_en")\
+            .select("id, city_name_en, country_name_en, city_official_name, country_name")\
             .eq("id", location_id)\
             .single()\
             .execute()
@@ -106,9 +106,9 @@ def enrich_location_coordinates(location_id: str) -> bool:
         
         loc = location.data
         
-        # Use English names if available, otherwise use original
-        city = loc.get("city_name_en") or loc.get("city")
-        country = loc.get("country_name_en") or loc.get("country")
+        # Use English names if available, otherwise use official names
+        city = loc.get("city_name_en") or loc.get("city_official_name")
+        country = loc.get("country_name_en") or loc.get("country_name")
         
         if not city or not country:
             logger.warning(f"⚠️ Location {location_id} missing city or country")
@@ -155,7 +155,7 @@ def enrich_all_locations(limit: Optional[int] = None, only_missing: bool = True)
     try:
         # Build query
         query = db.client.table("locations")\
-            .select("id, city, country, city_name_en, country_name_en, longitude, latitude")
+            .select("id, city_name_en, country_name_en, city_official_name, country_name, longitude, latitude")
         
         if only_missing:
             query = query.is_("coordinates_enriched", "false")
