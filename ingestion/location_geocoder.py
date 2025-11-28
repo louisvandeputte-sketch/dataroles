@@ -36,65 +36,37 @@ def geocode_location(city: str, country: str) -> Tuple[Optional[float], Optional
         (4.9041, 52.3676)
     """
     try:
-        # Combine city and country
+        # Prepare input
         location_input = f"{city}, {country}"
         
         logger.info(f"🌍 Geocoding location: {location_input}")
         
-        # Call OpenAI Responses API
-        response = client.responses.create(
-            prompt={
-                "id": GEOCODER_PROMPT_ID,
-                "version": GEOCODER_PROMPT_VERSION
-            },
-            input=location_input
+        # Call OpenAI Chat Completions API with JSON mode for reliable parsing
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": """Convert a city and country name into geographic coordinates (longitude and latitude).
+Return ONLY a JSON object with two keys: "longitude" and "latitude" as floating point numbers.
+If coordinates cannot be found, use null for both values.
+Example: {"longitude": 4.9041, "latitude": 52.3676}"""
+                },
+                {
+                    "role": "user",
+                    "content": location_input
+                }
+            ],
+            response_format={"type": "json_object"},
+            temperature=0
         )
         
-        # Parse response - Responses API has different structure
-        # The response object has an 'output' attribute with the content
-        if hasattr(response, 'output'):
-            content = response.output
-        elif hasattr(response, 'content'):
-            content = response.content
-        else:
-            # Fallback to standard chat completion format
-            content = response.choices[0].message.content
-        
-        # If output is a list, find the ResponseOutputText item
-        if isinstance(content, list):
-            extracted_text = None
-            for item in content:
-                # Check for ResponseOutputText with text attribute
-                if hasattr(item, 'text') and item.text:
-                    extracted_text = item.text
-                    break
-                # Fallback: check for content attribute
-                elif hasattr(item, 'content') and item.content:
-                    extracted_text = item.content
-                    break
-            content = extracted_text if extracted_text else "{}"
+        # Extract content from Chat Completions response
+        content = response.choices[0].message.content
         
         # Parse JSON response
         try:
-            # Debug: log the content type and value
-            logger.debug(f"Content type: {type(content)}, Content: {content}")
-            
-            # If content is a string, parse as JSON
-            if isinstance(content, str):
-                result = json.loads(content)
-            # If content is a dict, use directly
-            elif isinstance(content, dict):
-                result = content
-            # If content has 'content' attribute (ResponseReasoningItem), extract it
-            elif hasattr(content, 'content'):
-                result = json.loads(content.content) if isinstance(content.content, str) else content.content
-            else:
-                # Try to convert to dict
-                result = dict(content) if hasattr(content, '__dict__') else {}
-            
-            if result is None:
-                logger.error(f"❌ Result is None after parsing content: {content}")
-                return (None, None)
+            result = json.loads(content)
             
             longitude = result.get("longitude")
             latitude = result.get("latitude")
