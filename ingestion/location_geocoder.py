@@ -171,6 +171,9 @@ def enrich_all_locations(limit: Optional[int] = None, only_missing: bool = True)
         if only_missing:
             query = query.is_("coordinates_enriched", "false")
         
+        # Only select locations that have city and country data
+        query = query.not_.is_("city_name_en", "null").not_.is_("country_name_en", "null")
+        
         if limit:
             query = query.limit(limit)
         
