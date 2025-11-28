@@ -54,21 +54,19 @@ def geocode_location(city: str, country: str) -> Tuple[Optional[float], Optional
         # The response object has an 'output' attribute with the content
         if hasattr(response, 'output'):
             content = response.output
-            # If output is a list, find the item with type='output' or 'text'
+            # If output is a list, find the ResponseOutputText item
             if isinstance(content, list):
                 for item in content:
-                    if hasattr(item, 'type') and item.type in ['output', 'text']:
-                        if hasattr(item, 'content') and item.content:
-                            content = item.content
-                            break
+                    # Check for ResponseOutputText with text attribute
+                    if hasattr(item, 'text') and item.text:
+                        content = item.text
+                        break
+                    # Fallback: check for content attribute
+                    elif hasattr(item, 'content') and item.content:
+                        content = item.content
+                        break
                 else:
-                    # If no output/text item found, try first item with content
-                    for item in content:
-                        if hasattr(item, 'content') and item.content:
-                            content = item.content
-                            break
-                    else:
-                        content = "{}"
+                    content = "{}"
         elif hasattr(response, 'content'):
             content = response.content
         else:
