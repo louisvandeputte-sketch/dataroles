@@ -50,8 +50,15 @@ def geocode_location(city: str, country: str) -> Tuple[Optional[float], Optional
             input=location_input
         )
         
-        # Parse response - Responses API returns content directly
-        content = response.content if hasattr(response, 'content') else response.choices[0].message.content
+        # Parse response - Responses API has different structure
+        # The response object has an 'output' attribute with the content
+        if hasattr(response, 'output'):
+            content = response.output
+        elif hasattr(response, 'content'):
+            content = response.content
+        else:
+            # Fallback to standard chat completion format
+            content = response.choices[0].message.content
         
         # Parse JSON response
         try:
