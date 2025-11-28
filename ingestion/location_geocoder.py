@@ -60,9 +60,13 @@ def geocode_location(city: str, country: str) -> Tuple[Optional[float], Optional
             # Fallback to standard chat completion format
             content = response.choices[0].message.content
         
+        # Handle list response (Responses API sometimes returns list)
+        if isinstance(content, list):
+            content = content[0] if content else "{}"
+        
         # Parse JSON response
         try:
-            result = json.loads(content)
+            result = json.loads(content) if isinstance(content, str) else content
             longitude = result.get("longitude")
             latitude = result.get("latitude")
             
