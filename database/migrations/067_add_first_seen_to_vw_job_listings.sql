@@ -21,6 +21,9 @@ SELECT
     -- First seen date (earliest scrape from any source)
     js.first_seen_at,          -- When job was first scraped (may differ from posted_date)
     
+    -- Corrected posted date (minimum of first_seen_at and posted_date)
+    LEAST(js.first_seen_at, j.posted_date) AS posted_date_corrected,  -- Most accurate job age
+    
     -- Company info from companies (for convenience)
     c.logo_url,                -- Company logo URL
     c.name AS company_name,    -- Company name
@@ -116,4 +119,4 @@ LEFT JOIN LATERAL (
 WHERE j.is_active = TRUE
   AND j.title_classification = 'Data';
 
-COMMENT ON VIEW vw_job_listings IS 'View of enriched job listings with structured sections (v20) and first_seen_at. Includes responsibilities/requirements/offerings arrays instead of summary_long. Section headers in labels JSONB. first_seen_at shows when job was first scraped (may differ from posted_date for re-posted jobs).';
+COMMENT ON VIEW vw_job_listings IS 'View of enriched job listings with structured sections (v20) and first_seen_at. Includes responsibilities/requirements/offerings arrays instead of summary_long. Section headers in labels JSONB. first_seen_at shows when job was first scraped (may differ from posted_date for re-posted jobs). posted_date_corrected is the minimum of first_seen_at and posted_date, providing the most accurate job age.';
