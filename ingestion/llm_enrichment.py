@@ -13,7 +13,7 @@ from database.client import db
 
 # OpenAI Responses API configuration
 PROMPT_TEMPLATE_ID = "pmpt_68ee0e7890788197b06ced94ab8af4d50759bbe1e2c42f88"
-PROMPT_VERSION = "23"  # v23: latest prompt updates
+PROMPT_VERSION = "24"  # v24: updated skill extraction
 
 # Initialize OpenAI client
 client = OpenAI(api_key=settings.openai_api_key)
