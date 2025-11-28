@@ -679,6 +679,17 @@ def save_rankings_to_database(ranked_jobs: List[JobData]):
     failed_updates = []
     for job in ranked_jobs:
         try:
+            # Calculate diversity modifiers for metadata (using same constants as JobRanker)
+            COMPANY_PENALTY_PER_EXTRA = 0.15
+            ROLE_PENALTY_PER_EXTRA = 0.10
+            LOCATION_BOOST_FIRST = 1.05
+            SENIORITY_PENALTY_PER_EXTRA = 0.05
+            
+            company_modifier = max(0.1, 1 - (job.company_rank - 1) * COMPANY_PENALTY_PER_EXTRA)
+            role_modifier = max(0.3, 1 - (job.role_type_rank - 1) * ROLE_PENALTY_PER_EXTRA)
+            location_modifier = LOCATION_BOOST_FIRST if job.location_rank == 1 else 1.0
+            seniority_modifier = max(0.5, 1 - (job.seniority_rank - 1) * SENIORITY_PENALTY_PER_EXTRA)
+            
             # Create metadata JSON
             metadata = {
                 'freshness_score': round(job.freshness_score, 2),
@@ -691,7 +702,13 @@ def save_rankings_to_database(ranked_jobs: List[JobData]):
                 'company_rank': job.company_rank,
                 'role_type_rank': job.role_type_rank,
                 'location_rank': job.location_rank,
-                'seniority_rank': job.seniority_rank
+                'seniority_rank': job.seniority_rank,
+                'company_modifier': round(company_modifier, 3),
+                'role_modifier': round(role_modifier, 3),
+                'location_modifier': round(location_modifier, 3),
+                'seniority_modifier': round(seniority_modifier, 3),
+                'hourly_multiplier': round(job.hourly_multiplier, 3),
+                'final_score': round(job.final_score, 2)
             }
             
             # Update database - use SAME timestamp for all jobs
