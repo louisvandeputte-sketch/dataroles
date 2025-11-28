@@ -1,6 +1,7 @@
 -- Migration 071: Add posted_date_corrected to job_postings
 -- Date: 2025-11-28
 -- Description: Add column for corrected posted date (minimum of first_seen_at and posted_date)
+--              Frontend displays both dates in same column when they differ
 
 -- Add posted_date_corrected column
 ALTER TABLE job_postings
@@ -24,4 +25,4 @@ ON job_postings(posted_date_corrected)
 WHERE posted_date_corrected IS NOT NULL;
 
 -- Add comment
-COMMENT ON COLUMN job_postings.posted_date_corrected IS 'Corrected posted date: minimum of first_seen_at (from job_sources) and posted_date. This represents the true age of the job, accounting for re-posts. Updated via trigger when job_sources changes.';
+COMMENT ON COLUMN job_postings.posted_date_corrected IS 'Corrected posted date: minimum of first_seen_at (from job_sources) and posted_date. Displayed in frontend below posted_date in orange when different.';
