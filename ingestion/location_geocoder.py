@@ -54,18 +54,32 @@ def geocode_location(city: str, country: str) -> Tuple[Optional[float], Optional
         # The response object has an 'output' attribute with the content
         if hasattr(response, 'output'):
             content = response.output
+            # If output is a list, find the item with type='output' or 'text'
+            if isinstance(content, list):
+                for item in content:
+                    if hasattr(item, 'type') and item.type in ['output', 'text']:
+                        if hasattr(item, 'content') and item.content:
+                            content = item.content
+                            break
+                else:
+                    # If no output/text item found, try first item with content
+                    for item in content:
+                        if hasattr(item, 'content') and item.content:
+                            content = item.content
+                            break
+                    else:
+                        content = "{}"
         elif hasattr(response, 'content'):
             content = response.content
         else:
             # Fallback to standard chat completion format
             content = response.choices[0].message.content
         
-        # Handle list response (Responses API sometimes returns list)
-        if isinstance(content, list):
-            content = content[0] if content else "{}"
-        
         # Parse JSON response
         try:
+            # Debug: log the content type and value
+            logger.debug(f"Content type: {type(content)}, Content: {content}")
+            
             # If content is a string, parse as JSON
             if isinstance(content, str):
                 result = json.loads(content)
@@ -78,6 +92,10 @@ def geocode_location(city: str, country: str) -> Tuple[Optional[float], Optional
             else:
                 # Try to convert to dict
                 result = dict(content) if hasattr(content, '__dict__') else {}
+            
+            if result is None:
+                logger.error(f"❌ Result is None after parsing content: {content}")
+                return (None, None)
             
             longitude = result.get("longitude")
             latitude = result.get("latitude")
