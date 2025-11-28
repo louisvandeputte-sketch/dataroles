@@ -14,7 +14,7 @@ from database.client import db
 
 # OpenAI Responses API configuration
 GEOCODER_PROMPT_ID = "pmpt_69295e6a81a881968564c739240cb7b40901cbdc9ad22b65"
-GEOCODER_PROMPT_VERSION = "1"  # v1: initial geocoding prompt
+GEOCODER_PROMPT_VERSION = "2"  # v2: improved geocoding prompt
 
 # Initialize OpenAI client
 client = OpenAI(api_key=settings.openai_api_key)
@@ -50,8 +50,8 @@ def geocode_location(city: str, country: str) -> Tuple[Optional[float], Optional
             input=location_input
         )
         
-        # Parse response
-        content = response.choices[0].message.content
+        # Parse response - Responses API returns content directly
+        content = response.content if hasattr(response, 'content') else response.choices[0].message.content
         
         # Parse JSON response
         try:
