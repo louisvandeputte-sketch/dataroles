@@ -12,9 +12,9 @@ from openai import OpenAI
 from config.settings import settings
 from database.client import db
 
-# OpenAI Responses API configuration
-GEOCODER_PROMPT_ID = "pmpt_69295e6a81a881968564c739240cb7b40901cbdc9ad22b65"
-GEOCODER_PROMPT_VERSION = "2"  # v2: improved geocoding prompt
+# OpenAI configuration
+# Model: Use GPT-5.1 (o1) with web search enabled in OpenAI platform settings
+GEOCODER_MODEL = "o1"  # GPT-5.1 with reasoning and web search
 
 # Initialize OpenAI client
 client = OpenAI(api_key=settings.openai_api_key)
@@ -42,8 +42,9 @@ def geocode_location(city: str, country: str) -> Tuple[Optional[float], Optional
         logger.info(f"🌍 Geocoding location: {location_input}")
         
         # Call OpenAI Chat Completions API
-        # Model and web search are configured in OpenAI platform settings
+        # Web search is enabled in OpenAI platform settings for the model
         response = client.chat.completions.create(
+            model=GEOCODER_MODEL,
             messages=[
                 {
                     "role": "user",
