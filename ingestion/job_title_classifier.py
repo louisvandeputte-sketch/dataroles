@@ -10,7 +10,7 @@ from database.client import db
 
 # OpenAI Responses API configuration
 TITLE_CLASSIFIER_PROMPT_ID = "pmpt_690724c8e4f48190a9d249a76325af9d056897bd40d5b2a3"
-TITLE_CLASSIFIER_PROMPT_VERSION = "4"
+TITLE_CLASSIFIER_PROMPT_VERSION = "5"  # v5: latest title classification improvements
 
 # Initialize OpenAI client
 client = OpenAI(api_key=settings.openai_api_key)
