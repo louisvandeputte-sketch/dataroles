@@ -655,7 +655,14 @@ def save_rankings_to_database(ranked_jobs: List[JobData]):
     ranking_timestamp = datetime.now().isoformat()
     
     failed_updates = []
-    for job in ranked_jobs:
+    successful_updates = 0
+    
+    for i, job in enumerate(ranked_jobs):
+        # Log progress every 500 jobs
+        if i > 0 and i % 500 == 0:
+            logger.info(f"Progress: {i}/{len(ranked_jobs)} jobs updated ({successful_updates} successful, {len(failed_updates)} failed)")
+        
+
         try:
             # Create metadata JSON (simplified - no diversity modifiers)
             metadata = {
@@ -680,6 +687,7 @@ def save_rankings_to_database(ranked_jobs: List[JobData]):
                 'hourly_multiplier': round(job.hourly_multiplier, 3),  # Store hourly multiplier
                 'needs_ranking': False  # Mark as ranked
             }).eq('id', job.id).execute()
+            successful_updates += 1
         except Exception as e:
             logger.error(f"❌ Failed to update job {job.id}: {e}")
             failed_updates.append((job.id, str(e)))
