@@ -676,34 +676,44 @@ def save_rankings_to_database(ranked_jobs: List[JobData]):
     # This is critical for queries that filter by latest ranking_updated_at
     ranking_timestamp = datetime.now().isoformat()
     
+    failed_updates = []
     for job in ranked_jobs:
-        # Create metadata JSON
-        metadata = {
-            'freshness_score': round(job.freshness_score, 2),
-            'quality_score': round(job.quality_score, 2),
-            'transparency_score': round(job.transparency_score, 2),
-            'role_match_score': round(job.role_match_score, 2),
-            'completeness_score': round(job.completeness_score, 2),
-            'reputation_score': round(job.reputation_score, 2),
-            'base_score': round(job.base_score, 2),
-            'company_rank': job.company_rank,
-            'role_type_rank': job.role_type_rank,
-            'location_rank': job.location_rank,
-            'seniority_rank': job.seniority_rank
-        }
-        
-        # Update database - use SAME timestamp for all jobs
-        db.client.table("job_postings").update({
-            'base_score': round(job.base_score, 2),  # Stable score (recalculated nightly)
-            'ranking_score': round(job.final_score, 2),  # Final score (base × multiplier, hourly)
-            'ranking_position': job.final_rank,
-            'ranking_updated_at': ranking_timestamp,  # Same for all jobs!
-            'ranking_metadata': metadata,
-            'hourly_multiplier': round(job.hourly_multiplier, 3),  # Store hourly multiplier
-            'needs_ranking': False  # Mark as ranked
-        }).eq('id', job.id).execute()
+        try:
+            # Create metadata JSON
+            metadata = {
+                'freshness_score': round(job.freshness_score, 2),
+                'quality_score': round(job.quality_score, 2),
+                'transparency_score': round(job.transparency_score, 2),
+                'role_match_score': round(job.role_match_score, 2),
+                'completeness_score': round(job.completeness_score, 2),
+                'reputation_score': round(job.reputation_score, 2),
+                'base_score': round(job.base_score, 2),
+                'company_rank': job.company_rank,
+                'role_type_rank': job.role_type_rank,
+                'location_rank': job.location_rank,
+                'seniority_rank': job.seniority_rank
+            }
+            
+            # Update database - use SAME timestamp for all jobs
+            db.client.table("job_postings").update({
+                'base_score': round(job.base_score, 2),  # Stable score (recalculated nightly)
+                'ranking_score': round(job.final_score, 2),  # Final score (base × multiplier, hourly)
+                'ranking_position': job.final_rank,
+                'ranking_updated_at': ranking_timestamp,  # Same for all jobs!
+                'ranking_metadata': metadata,
+                'hourly_multiplier': round(job.hourly_multiplier, 3),  # Store hourly multiplier
+                'needs_ranking': False  # Mark as ranked
+            }).eq('id', job.id).execute()
+        except Exception as e:
+            logger.error(f"❌ Failed to update job {job.id}: {e}")
+            failed_updates.append((job.id, str(e)))
     
-    logger.info("✅ Rankings saved to database")
+    if failed_updates:
+        logger.warning(f"⚠️ {len(failed_updates)} jobs failed to update:")
+        for job_id, error in failed_updates[:10]:  # Show first 10
+            logger.warning(f"   - {job_id}: {error}")
+    
+    logger.info(f"✅ Rankings saved to database ({len(ranked_jobs) - len(failed_updates)}/{len(ranked_jobs)} successful)")
 
 
 def calculate_and_save_rankings():
