@@ -6,6 +6,7 @@ Scheduled tasks:
 - Ranking calculation: Every hour (for dynamic rankings with hourly multiplier)
 - Stuck run cleanup: Every hour
 - Location geocoding: Every 6 hours (50 locations per batch)
+- Auto-archive old runs: Every day at 3 AM (archives runs >2 days old)
 """
 
 import schedule
@@ -17,6 +18,7 @@ import pytz
 from ranking.job_ranker import calculate_and_save_rankings
 from ingestion.stuck_run_cleaner import clean_stuck_runs
 from ingestion.location_geocoder import enrich_all_locations
+from ingestion.auto_archive_runs import archive_old_runs
 
 
 def run_ranking_job():
@@ -56,6 +58,20 @@ def run_geocoding_job():
         logger.error(f"❌ Scheduled geocoding failed: {e}")
 
 
+def run_archive_job():
+    """Archive old scrape runs (>2 days)"""
+    logger.info("⏰ Scheduled archive job triggered")
+    
+    try:
+        num_archived = archive_old_runs(days_threshold=2)
+        if num_archived > 0:
+            logger.info(f"✅ Archived {num_archived} old run(s)")
+        else:
+            logger.info("✅ No runs to archive")
+    except Exception as e:
+        logger.error(f"❌ Archive job failed: {e}")
+
+
 def start_scheduler():
     """Start the ranking scheduler"""
     # Belgian timezone
@@ -65,6 +81,7 @@ def start_scheduler():
     logger.info("📅 Ranking schedule: Every hour (dynamic rankings with random multiplier)")
     logger.info("📅 Stuck run cleanup: Every hour")
     logger.info("📅 Location geocoding: Every 6 hours (50 locations per batch)")
+    logger.info("📅 Auto-archive old runs: Every day at 3:00 AM (archives runs >2 days old)")
     
     # Schedule ranking calculation every hour
     schedule.every().hour.do(run_ranking_job)
@@ -74,6 +91,9 @@ def start_scheduler():
     
     # Schedule geocoding every 6 hours
     schedule.every(6).hours.do(run_geocoding_job)
+    
+    # Schedule auto-archive every day at 3 AM (Belgian time)
+    schedule.every().day.at("03:00").do(run_archive_job)
     
     # Also run immediately on startup
     logger.info("🚀 Running initial ranking calculation...")
@@ -89,6 +109,7 @@ def start_scheduler():
     logger.info("✅ Scheduler started. Waiting for scheduled jobs...")
     logger.info("⏰ Next ranking: in 1 hour")
     logger.info("⏰ Next geocoding: in 6 hours")
+    logger.info("⏰ Next archive: tomorrow at 3:00 AM")
     
     while True:
         schedule.run_pending()
