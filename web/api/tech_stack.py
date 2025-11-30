@@ -504,6 +504,40 @@ async def delete_ecosystem_logo(ecosystem_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ==================== LOOKUP ====================
+
+@router.get("/lookup")
+async def get_tech_stack_lookup():
+    """
+    Get all tech stack items with logos for client-side caching.
+    Returns ~1100 items (~50KB). Frontend should cache this for optimal performance.
+    
+    Response format:
+    [
+        {
+            "name": "Python",
+            "display_name": "Python",
+            "logo_url": "/api/programming-languages/{id}/logo",
+            "category": "General Purpose",
+            "type": "language"
+        },
+        ...
+    ]
+    """
+    try:
+        result = db.client.table("tech_stack_lookup")\
+            .select("*")\
+            .execute()
+        
+        return {
+            "data": result.data,
+            "total": len(result.data),
+            "cache_hint": "max-age=3600"  # Cache for 1 hour
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ==================== STATS ====================
 
 @router.get("/stats")
