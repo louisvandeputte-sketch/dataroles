@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Query
 from typing import Optional
-from database import db
+from database.client import db
 
 router = APIRouter(prefix="/api/verification", tags=["verification"])
 
