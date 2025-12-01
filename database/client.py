@@ -549,7 +549,7 @@ class SupabaseClient:
 
         # Fetch run metadata for all referenced runs
         run_ids = [h["scrape_run_id"] for h in history if h.get("scrape_run_id")]
-        run_map = {}
+        run_map: Dict[str, Dict] = {}
         if run_ids:
             runs_result = self.client.table("scrape_runs")\
                 .select("id, search_query, source, started_at")\
@@ -560,26 +560,34 @@ class SupabaseClient:
 
         # Fetch job details for all referenced jobs (include inactive)
         job_ids = [h["job_posting_id"] for h in history if h.get("job_posting_id")]
-        job_map = {}
-        seen_counts = {}
+        job_map: Dict[str, Dict] = {}
+        earliest_detected: Dict[str, str] = {}
         if job_ids:
             unique_job_ids = list(set(job_ids))
             jobs, _ = self.search_jobs(job_ids=unique_job_ids, active_only=False, limit=len(unique_job_ids))
             job_map = {job["id"]: job for job in jobs}
-            counts_result = self.client.table("job_scrape_history")\
-                .select("job_posting_id", count="exact")\
+
+            all_history = self.client.table("job_scrape_history")\
+                .select("job_posting_id, detected_at")\
                 .in_("job_posting_id", unique_job_ids)\
+                .order("detected_at", desc=False)\
                 .execute()
-            seen_counts = {row["job_posting_id"]: row["count"] for row in (counts_result.data or [])}
+
+            for row in all_history.data or []:
+                jp = row.get("job_posting_id")
+                if jp and jp not in earliest_detected:
+                    earliest_detected[jp] = row.get("detected_at")
 
         recent_jobs: List[Dict] = []
         for entry in history:
             job = job_map.get(entry.get("job_posting_id"))
             if not job:
                 continue
+
             run = run_map.get(entry.get("scrape_run_id"))
             company = job.get("companies") or {}
             job_types = job.get("job_types") or []
+            detected_at = entry.get("detected_at")
 
             recent_jobs.append({
                 "job_id": job.get("id"),
@@ -592,14 +600,14 @@ class SupabaseClient:
                 "run_search_query": run.get("search_query") if run else None,
                 "run_source": run.get("source") if run else job.get("source"),
                 "run_started_at": run.get("started_at") if run else None,
-                "detected_at": entry.get("detected_at"),
-                "is_new": seen_counts.get(job.get("id"), 0) <= 1
+                "detected_at": detected_at,
+                "is_new": detected_at == earliest_detected.get(job.get("id"))
             })
 
         return recent_jobs
 
     # ==================== VAGUE LOCATIONS CONFIG ====================
-    
+
     def get_vague_location_patterns(self) -> List[str]:
         """
         Get list of active vague location patterns from config table.
