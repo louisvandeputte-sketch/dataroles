@@ -18,9 +18,19 @@ async def list_runs(
     limit: int = 50,
     offset: int = 0
 ):
-    """List scrape runs with filtering."""
-    # Get runs from database - order by created_at desc to show newest first
-    runs = db.get_scrape_runs(status=status, limit=limit, offset=offset)
+    """List LinkedIn scrape runs with filtering."""
+    # Get LinkedIn runs only (filter by source)
+    query = db.client.table("scrape_runs").select("*")
+    
+    # Filter for LinkedIn runs (source='linkedin' or NULL for backward compatibility)
+    query = query.or_("source.eq.linkedin,source.is.null")
+    
+    if status:
+        query = query.eq("status", status)
+    
+    runs = query.order("started_at", desc=True)\
+        .range(offset, offset + limit - 1)\
+        .execute().data
     
     # Convert to list of dicts with proper formatting
     runs_list = []
