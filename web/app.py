@@ -262,9 +262,3 @@ async def tech_stack_page(request: Request):
 async def locations_page(request: Request):
     """Locations master data management page."""
     return templates.TemplateResponse("locations.html", {"request": request})
-
-
-@app.get("/health")
-async def health_check():
-    """Health check endpoint."""
-    return {"status": "healthy"}
