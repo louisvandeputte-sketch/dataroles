@@ -1,7 +1,7 @@
 """API endpoints for data quality tools."""
 
 from fastapi import APIRouter
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 
 from database import db
