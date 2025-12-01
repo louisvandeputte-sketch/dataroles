@@ -265,7 +265,8 @@ class SchedulerService:
             stats = await verification_service.verify_active_jobs(
                 batch_size=100,
                 only_data_jobs=True,  # Only verify Data jobs
-                source=None  # Verify both LinkedIn and Indeed
+                source=None,  # Verify both LinkedIn and Indeed
+                trigger_type="scheduled"
             )
             
             logger.success(

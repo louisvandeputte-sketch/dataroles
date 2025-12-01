@@ -10,7 +10,7 @@ from pathlib import Path
 from contextlib import asynccontextmanager
 from loguru import logger
 
-from web.api import queries, runs, jobs, quality, job_types, companies, tech_stack, locations, indeed_queries, indeed_runs, ranking
+from web.api import queries, runs, jobs, quality, job_types, companies, tech_stack, locations, indeed_queries, indeed_runs, ranking, verification
 import asyncio
 
 # Try to import background services - may fail if dependencies missing
@@ -159,6 +159,9 @@ app.include_router(indeed_runs.router, prefix="/api/indeed/runs", tags=["indeed-
 # Ranking API router
 app.include_router(ranking.router, prefix="/api/ranking", tags=["ranking"])
 
+# Verification API router
+app.include_router(verification.router)
+
 
 # Main pages
 @app.get("/health")
@@ -214,6 +217,12 @@ async def jobs_page(request: Request):
 async def jobs_recent_page(request: Request):
     """Jobs scraped in last 24 hours."""
     return templates.TemplateResponse("jobs_recent.html", {"request": request})
+
+
+@app.get("/verification", response_class=HTMLResponse)
+async def job_verification_page(request: Request):
+    """Job verification runs and statistics."""
+    return templates.TemplateResponse("job_verification.html", {"request": request})
 
 
 @app.get("/jobs/{job_id}", response_class=HTMLResponse)

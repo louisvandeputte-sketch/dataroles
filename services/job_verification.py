@@ -33,7 +33,8 @@ class JobVerificationService:
         self,
         batch_size: int = 100,
         only_data_jobs: bool = True,
-        source: Optional[str] = None
+        source: Optional[str] = None,
+        trigger_type: str = "manual"
     ) -> Dict[str, int]:
         """
         Verify all active jobs by checking if they still exist.
@@ -42,6 +43,7 @@ class JobVerificationService:
             batch_size: Number of jobs to verify per batch
             only_data_jobs: Only verify jobs where title_classification = 'Data'
             source: Filter by source ('linkedin', 'indeed', or None for both)
+            trigger_type: How the run was triggered ('scheduled' or 'manual')
         
         Returns:
             Dictionary with counts: verified, still_active, marked_inactive, errors
@@ -58,33 +60,73 @@ class JobVerificationService:
         
         for src in sources:
             logger.info(f"\n📍 Verifying {src.upper()} jobs...")
-            jobs_to_verify = self._get_jobs_to_verify(
+            
+            # Create verification run record
+            run_id = self._create_verification_run(
+                source=src,
+                batch_size=batch_size,
                 only_data_jobs=only_data_jobs,
-                source=src
+                trigger_type=trigger_type
             )
-        
-            if not jobs_to_verify:
-                logger.info(f"No {src} jobs to verify")
-                continue
             
-            logger.info(f"Found {len(jobs_to_verify)} {src} jobs to verify")
+            try:
+                jobs_to_verify = self._get_jobs_to_verify(
+                    only_data_jobs=only_data_jobs,
+                    source=src
+                )
             
-            # Process in batches
-            for i in range(0, len(jobs_to_verify), batch_size):
-                batch = jobs_to_verify[i:i + batch_size]
-                logger.info(f"Processing {src} batch {i // batch_size + 1} ({len(batch)} jobs)")
+                if not jobs_to_verify:
+                    logger.info(f"No {src} jobs to verify")
+                    # Complete run with 0 jobs
+                    self._complete_verification_run(run_id, {
+                        "verified": 0,
+                        "still_active": 0,
+                        "marked_inactive": 0,
+                        "errors": 0
+                    })
+                    continue
                 
-                batch_stats = await self._verify_batch(batch, source=src)
+                logger.info(f"Found {len(jobs_to_verify)} {src} jobs to verify")
                 
-                total_stats["verified"] += batch_stats["verified"]
-                total_stats["still_active"] += batch_stats["still_active"]
-                total_stats["marked_inactive"] += batch_stats["marked_inactive"]
-                total_stats["errors"] += batch_stats["errors"]
+                run_stats = {
+                    "verified": 0,
+                    "still_active": 0,
+                    "marked_inactive": 0,
+                    "errors": 0,
+                    "inactive_jobs": []  # Track jobs marked inactive
+                }
                 
-                # Rate limiting: wait between batches
-                if i + batch_size < len(jobs_to_verify):
-                    logger.info("Waiting 60s before next batch...")
-                    await asyncio.sleep(60)
+                # Process in batches
+                for i in range(0, len(jobs_to_verify), batch_size):
+                    batch = jobs_to_verify[i:i + batch_size]
+                    logger.info(f"Processing {src} batch {i // batch_size + 1} ({len(batch)} jobs)")
+                    
+                    batch_stats = await self._verify_batch(batch, source=src, run_id=run_id)
+                    
+                    run_stats["verified"] += batch_stats["verified"]
+                    run_stats["still_active"] += batch_stats["still_active"]
+                    run_stats["marked_inactive"] += batch_stats["marked_inactive"]
+                    run_stats["errors"] += batch_stats["errors"]
+                    run_stats["inactive_jobs"].extend(batch_stats.get("inactive_jobs", []))
+                    
+                    # Rate limiting: wait between batches
+                    if i + batch_size < len(jobs_to_verify):
+                        logger.info("Waiting 60s before next batch...")
+                        await asyncio.sleep(60)
+                
+                # Complete run successfully
+                self._complete_verification_run(run_id, run_stats)
+                
+                # Add to total stats
+                total_stats["verified"] += run_stats["verified"]
+                total_stats["still_active"] += run_stats["still_active"]
+                total_stats["marked_inactive"] += run_stats["marked_inactive"]
+                total_stats["errors"] += run_stats["errors"]
+            
+            except Exception as e:
+                logger.error(f"Error in {src} verification run: {e}")
+                self._fail_verification_run(run_id, str(e))
+                total_stats["errors"] += 1
         
         logger.success(
             f"✅ Verification complete: {total_stats['verified']} verified, "
@@ -139,7 +181,8 @@ class JobVerificationService:
     async def _verify_batch(
         self,
         jobs: List[Dict],
-        source: str = "linkedin"
+        source: str = "linkedin",
+        run_id: Optional[str] = None
     ) -> Dict[str, int]:
         """
         Verify a batch of jobs via Bright Data API.
@@ -155,7 +198,8 @@ class JobVerificationService:
             "verified": 0,
             "still_active": 0,
             "marked_inactive": 0,
-            "errors": 0
+            "errors": 0,
+            "inactive_jobs": []  # Track jobs marked inactive in this batch
         }
         
         # Prepare URLs for Bright Data
@@ -209,11 +253,21 @@ class JobVerificationService:
                         # Job exists but no title = likely removed
                         stats["marked_inactive"] += 1
                         db.mark_jobs_inactive([UUID(job["id"])])
+                        stats["inactive_jobs"].append({
+                            "job_id": job["id"],
+                            "title": job["title"],
+                            "reason": "no_title"
+                        })
                         logger.info(f"❌ {source.upper()} job inactive (no title): {job['title']}")
                 else:
                     # Job not found in API results = removed
                     stats["marked_inactive"] += 1
                     db.mark_jobs_inactive([UUID(job["id"])])
+                    stats["inactive_jobs"].append({
+                        "job_id": job["id"],
+                        "title": job["title"],
+                        "reason": "not_found"
+                    })
                     logger.info(f"❌ {source.upper()} job inactive (not found): {job['title']}")
         
         except Exception as e:
@@ -308,6 +362,73 @@ class JobVerificationService:
         except Exception as e:
             logger.error(f"Error verifying job {job_id}: {e}")
             return False, str(e)
+
+
+    def _create_verification_run(
+        self,
+        source: str,
+        batch_size: int,
+        only_data_jobs: bool,
+        trigger_type: str
+    ) -> str:
+        """Create a new verification run record in database."""
+        result = db.client.table("job_verification_runs").insert({
+            "source": source,
+            "batch_size": batch_size,
+            "only_data_jobs": only_data_jobs,
+            "trigger_type": trigger_type,
+            "status": "running"
+        }).execute()
+        
+        run_id = result.data[0]["id"]
+        logger.info(f"Created verification run: {run_id}")
+        return run_id
+    
+    def _complete_verification_run(self, run_id: str, stats: Dict):
+        """Mark verification run as completed with stats."""
+        db.client.table("job_verification_runs").update({
+            "status": "completed",
+            "completed_at": datetime.utcnow().isoformat(),
+            "jobs_checked": stats["verified"],
+            "jobs_still_active": stats["still_active"],
+            "jobs_marked_inactive": stats["marked_inactive"],
+            "jobs_errors": stats["errors"]
+        }).eq("id", run_id).execute()
+        
+        # Log inactive jobs
+        inactive_jobs = stats.get("inactive_jobs", [])
+        if inactive_jobs:
+            for job_info in inactive_jobs:
+                # Get full job details
+                job_result = db.client.table("job_postings")\
+                    .select("id, title, url, source, companies(name)")\
+                    .eq("id", job_info["job_id"])\
+                    .single()\
+                    .execute()
+                
+                if job_result.data:
+                    job = job_result.data
+                    db.client.table("job_verification_inactive_jobs").insert({
+                        "verification_run_id": run_id,
+                        "job_posting_id": job["id"],
+                        "job_title": job.get("title"),
+                        "company_name": job.get("companies", {}).get("name") if job.get("companies") else None,
+                        "source": job.get("source"),
+                        "url": job.get("url"),
+                        "reason": job_info["reason"]
+                    }).execute()
+        
+        logger.info(f"Completed verification run: {run_id}")
+    
+    def _fail_verification_run(self, run_id: str, error_message: str):
+        """Mark verification run as failed."""
+        db.client.table("job_verification_runs").update({
+            "status": "failed",
+            "completed_at": datetime.utcnow().isoformat(),
+            "error_message": error_message
+        }).eq("id", run_id).execute()
+        
+        logger.error(f"Failed verification run: {run_id} - {error_message}")
 
 
 # Global service instance
