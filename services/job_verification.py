@@ -214,6 +214,17 @@ class JobVerificationService:
             logger.info(f"Fetching {len(urls)} {source} job URLs from Bright Data...")
             results = await self._fetch_jobs_by_url(urls, source=source)
             
+            # Safety check: If API returns no results at all, something is wrong
+            # Don't mark jobs as inactive in this case
+            if not results or len(results) == 0:
+                logger.error(f"⚠️ Bright Data API returned 0 results for {len(urls)} URLs - skipping batch to avoid false negatives")
+                stats["errors"] += len(jobs)
+                return stats
+            
+            # Additional safety: If we get less than 10% of expected results, log warning
+            if len(results) < len(urls) * 0.1:
+                logger.warning(f"⚠️ Only got {len(results)} results for {len(urls)} URLs ({len(results)/len(urls)*100:.1f}%) - API may be having issues")
+            
             # Create lookup map: source_job_id -> job data
             # LinkedIn uses 'job_posting_id', Indeed uses 'jobid'
             results_map = {}
