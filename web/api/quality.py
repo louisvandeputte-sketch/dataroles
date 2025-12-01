@@ -79,6 +79,38 @@ async def reactivate_jobs(job_ids: List[str]):
     return {"message": f"Reactivated {len(job_ids)} jobs"}
 
 
+@router.post("/verify-jobs")
+async def verify_active_jobs(
+    batch_size: int = 100,
+    only_data_jobs: bool = True,
+    source: Optional[str] = None
+):
+    """
+    Verify active jobs by checking if they still exist via Bright Data API.
+    
+    Args:
+        batch_size: Number of jobs to verify per batch
+        only_data_jobs: Only verify jobs where title_classification = 'Data'
+        source: Filter by source ('linkedin', 'indeed', or None for both)
+    
+    Returns:
+        Statistics about verification results
+    """
+    from services.job_verification import get_verification_service
+    
+    verification_service = get_verification_service()
+    stats = await verification_service.verify_active_jobs(
+        batch_size=batch_size,
+        only_data_jobs=only_data_jobs,
+        source=source
+    )
+    
+    return {
+        "message": "Job verification completed",
+        "stats": stats
+    }
+
+
 @router.post("/cleanup/normalize-companies")
 async def normalize_company_names():
     """Normalize company names (fix capitalization, etc)."""

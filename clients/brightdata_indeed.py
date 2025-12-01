@@ -306,6 +306,78 @@ class BrightDataIndeedClient:
         elapsed = time.time() - start_time
         raise SnapshotTimeoutError(f"Indeed snapshot {snapshot_id} did not complete in {timeout}s (elapsed: {elapsed:.0f}s, polls: {poll_count})")
     
+    async def trigger_collection_by_urls(self, urls: List[str]) -> str:
+        """
+        Trigger a data collection for specific job URLs.
+        
+        Args:
+            urls: List of Indeed job URLs to fetch
+        
+        Returns:
+            snapshot_id for polling
+        """
+        payload = {
+            "input": [{"url": url} for url in urls]
+        }
+        
+        try:
+            logger.info(f"Triggering Bright Data Indeed collection for {len(urls)} URLs")
+            
+            url = f"{self.BASE_URL}/trigger"
+            params = {
+                "dataset_id": self.dataset_id,
+                "include_errors": "true",
+                "type": "discover_new",
+                "discover_by": "url"
+            }
+            
+            response = await self.client.post(
+                url,
+                json=payload,
+                params=params
+            )
+            
+            response.raise_for_status()
+            data = response.json()
+            
+            snapshot_id = data.get("snapshot_id")
+            
+            if not snapshot_id:
+                raise BrightDataError(f"No snapshot_id in response: {data}")
+            
+            logger.success(f"Indeed URL collection triggered: snapshot_id={snapshot_id}")
+            return snapshot_id
+            
+        except httpx.TimeoutException as e:
+            logger.error(f"Timeout triggering Indeed URL collection: {e}")
+            raise BrightDataError(f"Bright Data API timeout: {e}")
+        except httpx.HTTPStatusError as e:
+            logger.error(f"HTTP error triggering Indeed URL collection: {e.response.status_code} - {e.response.text}")
+            if e.response.status_code == 429:
+                raise QuotaExceededError("Rate limit exceeded")
+            elif e.response.status_code == 402:
+                raise QuotaExceededError("Subscription quota exceeded")
+            elif e.response.status_code == 401:
+                raise BrightDataError("Invalid API token")
+            else:
+                raise BrightDataError(f"API error {e.response.status_code}: {e.response.text}")
+        except Exception as e:
+            logger.exception(f"Unexpected error triggering Indeed URL collection: {e}")
+            raise BrightDataError(f"Failed to trigger Indeed URL collection: {e}")
+    
+    async def get_snapshot_data(self, snapshot_id: str) -> List[Dict]:
+        """
+        Wait for snapshot completion and return data.
+        Alias for wait_for_completion for cleaner API.
+        
+        Args:
+            snapshot_id: Snapshot to wait for
+        
+        Returns:
+            List of job postings
+        """
+        return await self.wait_for_completion(snapshot_id)
+    
     async def close(self):
         """Close the HTTP client."""
         await self.client.aclose()

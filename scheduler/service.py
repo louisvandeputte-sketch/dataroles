@@ -47,6 +47,15 @@ class SchedulerService:
             )
             logger.info("🔄 Retry processor scheduled (every 30 minutes)")
             
+            # Add job verification (runs daily at 3 AM)
+            self.scheduler.add_job(
+                self._verify_active_jobs,
+                trigger=CronTrigger(hour=3, minute=0),
+                id="job_verifier",
+                replace_existing=True
+            )
+            logger.info("✅ Job verification scheduled (daily at 3:00 AM)")
+            
             # Load and schedule all active queries
             self._load_scheduled_queries()
     
@@ -244,6 +253,28 @@ class SchedulerService:
             await retry_service.process_pending_retries()
         except Exception as e:
             logger.error(f"Error processing retries: {e}")
+    
+    async def _verify_active_jobs(self):
+        """Verify active LinkedIn and Indeed jobs via Bright Data API."""
+        logger.info("✅ Starting scheduled job verification...")
+        
+        try:
+            from services.job_verification import get_verification_service
+            
+            verification_service = get_verification_service()
+            stats = await verification_service.verify_active_jobs(
+                batch_size=100,
+                only_data_jobs=True,  # Only verify Data jobs
+                source=None  # Verify both LinkedIn and Indeed
+            )
+            
+            logger.success(
+                f"✅ Job verification complete: {stats['verified']} verified, "
+                f"{stats['still_active']} still active, "
+                f"{stats['marked_inactive']} marked inactive"
+            )
+        except Exception as e:
+            logger.error(f"Error verifying jobs: {e}")
 
 
 # Global scheduler instance
