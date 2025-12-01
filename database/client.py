@@ -537,7 +537,7 @@ class SupabaseClient:
         since = (datetime.utcnow() - timedelta(hours=hours)).isoformat()
 
         history_result = self.client.table("job_scrape_history")\
-            .select("job_posting_id, run_id, is_new, detected_at")\
+            .select("job_posting_id, scrape_run_id, detected_at")\
             .gte("detected_at", since)\
             .order("detected_at", desc=True)\
             .limit(limit)\
@@ -548,7 +548,7 @@ class SupabaseClient:
             return []
 
         # Fetch run metadata for all referenced runs
-        run_ids = [h["run_id"] for h in history if h.get("run_id")]
+        run_ids = [h["scrape_run_id"] for h in history if h.get("scrape_run_id")]
         run_map = {}
         if run_ids:
             runs_result = self.client.table("scrape_runs")\
@@ -561,17 +561,23 @@ class SupabaseClient:
         # Fetch job details for all referenced jobs (include inactive)
         job_ids = [h["job_posting_id"] for h in history if h.get("job_posting_id")]
         job_map = {}
+        seen_counts = {}
         if job_ids:
             unique_job_ids = list(set(job_ids))
             jobs, _ = self.search_jobs(job_ids=unique_job_ids, active_only=False, limit=len(unique_job_ids))
             job_map = {job["id"]: job for job in jobs}
+            counts_result = self.client.table("job_scrape_history")\
+                .select("job_posting_id", count="exact")\
+                .in_("job_posting_id", unique_job_ids)\
+                .execute()
+            seen_counts = {row["job_posting_id"]: row["count"] for row in (counts_result.data or [])}
 
         recent_jobs: List[Dict] = []
         for entry in history:
             job = job_map.get(entry.get("job_posting_id"))
             if not job:
                 continue
-            run = run_map.get(entry.get("run_id"))
+            run = run_map.get(entry.get("scrape_run_id"))
             company = job.get("companies") or {}
             job_types = job.get("job_types") or []
 
@@ -582,12 +588,12 @@ class SupabaseClient:
                 "posted_date": job.get("posted_date"),
                 "title_classification": job.get("title_classification"),
                 "job_types": job_types,
-                "run_id": entry.get("run_id"),
+                "run_id": entry.get("scrape_run_id"),
                 "run_search_query": run.get("search_query") if run else None,
                 "run_source": run.get("source") if run else job.get("source"),
                 "run_started_at": run.get("started_at") if run else None,
                 "detected_at": entry.get("detected_at"),
-                "is_new": entry.get("is_new", False)
+                "is_new": seen_counts.get(job.get("id"), 0) <= 1
             })
 
         return recent_jobs
