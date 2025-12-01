@@ -16,6 +16,23 @@ class ClassifyJobsRequest(BaseModel):
     job_ids: List[str]
 
 
+@router.get("/recent")
+async def recent_jobs(hours: int = 24, limit: int = 200):
+    """Return jobs scraped in the last N hours with run metadata."""
+    try:
+        safe_limit = max(1, min(limit, 500))
+        safe_hours = max(1, min(hours, 168))  # up to 7 days
+        jobs = db.get_recent_jobs_with_runs(hours=safe_hours, limit=safe_limit)
+        return {
+            "jobs": jobs,
+            "count": len(jobs),
+            "hours": safe_hours
+        }
+    except Exception as e:
+        logger.error(f"Error fetching recent jobs: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/")
 async def list_jobs(
     search: Optional[str] = None,

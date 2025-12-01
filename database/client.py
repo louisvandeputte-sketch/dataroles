@@ -530,6 +530,68 @@ class SupabaseClient:
         
         return jobs_with_types, result.count
     
+    def get_recent_jobs_with_runs(self, hours: int = 24, limit: int = 200) -> List[Dict]:
+        """Get jobs scraped in the last N hours with run metadata."""
+        from datetime import datetime, timedelta
+
+        since = (datetime.utcnow() - timedelta(hours=hours)).isoformat()
+
+        history_result = self.client.table("job_scrape_history")\
+            .select("job_posting_id, run_id, is_new, detected_at")\
+            .gte("detected_at", since)\
+            .order("detected_at", desc=True)\
+            .limit(limit)\
+            .execute()
+
+        history = history_result.data or []
+        if not history:
+            return []
+
+        # Fetch run metadata for all referenced runs
+        run_ids = [h["run_id"] for h in history if h.get("run_id")]
+        run_map = {}
+        if run_ids:
+            runs_result = self.client.table("scrape_runs")\
+                .select("id, search_query, source, started_at")\
+                .in_("id", list(set(run_ids)))\
+                .execute()
+            if runs_result.data:
+                run_map = {run["id"]: run for run in runs_result.data}
+
+        # Fetch job details for all referenced jobs (include inactive)
+        job_ids = [h["job_posting_id"] for h in history if h.get("job_posting_id")]
+        job_map = {}
+        if job_ids:
+            unique_job_ids = list(set(job_ids))
+            jobs, _ = self.search_jobs(job_ids=unique_job_ids, active_only=False, limit=len(unique_job_ids))
+            job_map = {job["id"]: job for job in jobs}
+
+        recent_jobs: List[Dict] = []
+        for entry in history:
+            job = job_map.get(entry.get("job_posting_id"))
+            if not job:
+                continue
+            run = run_map.get(entry.get("run_id"))
+            company = job.get("companies") or {}
+            job_types = job.get("job_types") or []
+
+            recent_jobs.append({
+                "job_id": job.get("id"),
+                "title": job.get("title"),
+                "company_name": company.get("name"),
+                "posted_date": job.get("posted_date"),
+                "title_classification": job.get("title_classification"),
+                "job_types": job_types,
+                "run_id": entry.get("run_id"),
+                "run_search_query": run.get("search_query") if run else None,
+                "run_source": run.get("source") if run else job.get("source"),
+                "run_started_at": run.get("started_at") if run else None,
+                "detected_at": entry.get("detected_at"),
+                "is_new": entry.get("is_new", False)
+            })
+
+        return recent_jobs
+
     # ==================== VAGUE LOCATIONS CONFIG ====================
     
     def get_vague_location_patterns(self) -> List[str]:

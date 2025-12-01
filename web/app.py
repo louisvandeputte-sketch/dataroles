@@ -210,6 +210,12 @@ async def jobs_page(request: Request):
     return templates.TemplateResponse("jobs.html", {"request": request})
 
 
+@app.get("/jobs/recent", response_class=HTMLResponse)
+async def jobs_recent_page(request: Request):
+    """Jobs scraped in last 24 hours."""
+    return templates.TemplateResponse("jobs_recent.html", {"request": request})
+
+
 @app.get("/jobs/{job_id}", response_class=HTMLResponse)
 async def job_detail_page(request: Request, job_id: str):
     """Job detail page."""
