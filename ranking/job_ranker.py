@@ -499,8 +499,19 @@ def load_jobs_from_database(only_needs_ranking: bool = False) -> List[JobData]:
     while True:
         # Use denormalized view for efficient data loading
         # This avoids Supabase/PostgREST join limitations
+        # NOTE: We select specific columns instead of "*" because PostgREST has a bug
+        # with views containing LEAST() functions - it skips some rows with select("*")
         query = db.client.table("job_ranking_view")\
-            .select("*")\
+            .select("id, title, company_id, location_id, posted_date, posted_date_corrected, "
+                   "seniority_level, employment_type, function_areas, base_salary_min, base_salary_max, "
+                   "apply_url, num_applicants, is_active, title_classification, "
+                   "company_name, company_industry, company_url, company_logo_data, "
+                   "company_employee_count_range, company_rating, company_reviews_count, hiring_model, "
+                   "location_city, enrichment_completed_at, data_role_type, skills_must_have, "
+                   "samenvatting_kort, samenvatting_lang, must_have_programmeertalen, "
+                   "nice_to_have_programmeertalen, must_have_ecosystemen, nice_to_have_ecosystemen, "
+                   "labels, description_text")\
+            .order("id")\
             .range(offset, offset + page_size - 1)
         
         # Optionally filter to only jobs that need ranking
@@ -515,37 +526,41 @@ def load_jobs_from_database(only_needs_ranking: bool = False) -> List[JobData]:
         
         logger.info(f"Loaded batch: {len(result.data)} jobs (offset {offset})")
         
+        batch_loaded = 0
+        batch_failed = 0
+        
         # Process this batch
         for row in result.data:
-            # All data is already denormalized in the view
-            # Check if FAANG
-            faang_companies = ['google', 'microsoft', 'meta', 'amazon', 'apple', 'netflix', 'facebook', 'alphabet']
-            is_faang = row.get('company_name', '').lower() in faang_companies
-            
-            # Parse labels JSON for seniority
-            labels = row.get('labels')
-            if isinstance(labels, str):
-                import json
-                try:
-                    labels = json.loads(labels)
-                except:
-                    labels = {}
-            
-            seniority = None
-            if labels:
-                # Try different language keys for seniority
-                for lang in ['nl', 'en', 'fr']:
-                    if lang in labels:
-                        seniority_value = labels[lang].get('seniority')
-                        if seniority_value:
-                            # Handle both string and list
-                            if isinstance(seniority_value, list):
-                                seniority = seniority_value[0] if seniority_value else None
-                            else:
-                                seniority = seniority_value
-                            break
-            
-            job = JobData(
+            try:
+                # All data is already denormalized in the view
+                # Check if FAANG
+                faang_companies = ['google', 'microsoft', 'meta', 'amazon', 'apple', 'netflix', 'facebook', 'alphabet']
+                is_faang = row.get('company_name', '').lower() in faang_companies
+                
+                # Parse labels JSON for seniority
+                labels = row.get('labels')
+                if isinstance(labels, str):
+                    import json
+                    try:
+                        labels = json.loads(labels)
+                    except:
+                        labels = {}
+                
+                seniority = None
+                if labels:
+                    # Try different language keys for seniority
+                    for lang in ['nl', 'en', 'fr']:
+                        if lang in labels:
+                            seniority_value = labels[lang].get('seniority')
+                            if seniority_value:
+                                # Handle both string and list
+                                if isinstance(seniority_value, list):
+                                    seniority = seniority_value[0] if seniority_value else None
+                                else:
+                                    seniority = seniority_value
+                                break
+                
+                job = JobData(
                 id=row['id'],
                 title=row['title'],
                 company_id=row['company_id'],
@@ -596,8 +611,16 @@ def load_jobs_from_database(only_needs_ranking: bool = False) -> List[JobData]:
                 # Description data (from view)
                 description_text=row.get('description_text')
             )
-            
-            jobs.append(job)
+                
+                jobs.append(job)
+                batch_loaded += 1
+            except Exception as e:
+                batch_failed += 1
+                logger.warning(f"⚠️ Failed to load job {row.get('id', 'unknown')}: {row.get('title', 'unknown')[:50]} - {e}")
+                # Continue to next job instead of failing entire batch
+        
+        if batch_failed > 0:
+            logger.warning(f"Batch summary: {batch_loaded} loaded, {batch_failed} failed")
         
         # Check if we got less than page_size (last page)
         if len(result.data) < page_size:
