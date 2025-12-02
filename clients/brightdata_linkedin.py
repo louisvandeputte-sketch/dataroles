@@ -3,6 +3,7 @@
 import httpx
 import asyncio
 import time
+import json
 from typing import List, Dict, Optional
 from loguru import logger
 from config.settings import settings
@@ -184,6 +185,68 @@ class BrightDataLinkedInClient:
             logger.exception(f"Unexpected error triggering collection: {e}")
             raise BrightDataError(f"Failed to trigger collection: {e}")
     
+    async def fetch_jobs_by_urls(self, urls: List[str]) -> List[Dict]:
+        """Fetch job data synchronously via scrape endpoint for specific URLs."""
+        if not urls:
+            return []
+
+        payload = {"input": [{"url": url} for url in urls]}
+        params = {
+            "dataset_id": self.dataset_id,
+            "notify": "false",
+            "include_errors": "true"
+        }
+
+        try:
+            logger.info(f"Scraping {len(urls)} LinkedIn URLs via Bright Data scrape endpoint...")
+            response = await self.client.post(
+                f"{self.BASE_URL}/scrape",
+                json=payload,
+                params=params
+            )
+            response.raise_for_status()
+
+            text_body = response.text.strip()
+            results: List[Dict] = []
+
+            try:
+                data = response.json()
+            except ValueError:
+                # Some endpoints return NDJSON (one JSON object per line)
+                items: List[Dict] = []
+                for line in text_body.splitlines():
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        items.append(json.loads(line))
+                    except ValueError as parse_err:
+                        logger.warning(f"Failed to parse NDJSON line: {parse_err} | line={line[:120]}")
+                data = items
+
+            if isinstance(data, dict):
+                errors = data.get("errors") or []
+                if errors:
+                    logger.warning(f"Bright Data reported {len(errors)} errors: {errors[:3]}")
+                results = data.get("data") or data.get("items") or []
+            elif isinstance(data, list):
+                results = data
+            else:
+                logger.warning(f"Unexpected Bright Data response type: {type(data)}")
+
+            logger.info(f"Scrape endpoint returned {len(results)} LinkedIn results")
+            return results or []
+        except httpx.HTTPStatusError as e:
+            logger.error(
+                "HTTP error scraping LinkedIn URLs: %s - %s",
+                e.response.status_code,
+                e.response.text
+            )
+            raise BrightDataError(f"HTTP error scraping URLs: {e.response.status_code}")
+        except Exception as e:
+            logger.exception(f"Unexpected error scraping LinkedIn URLs: {e}")
+            raise BrightDataError(f"Failed to scrape LinkedIn URLs: {e}")
+
     async def get_snapshot_status(self, snapshot_id: str) -> Dict:
         """
         Check status of a collection.

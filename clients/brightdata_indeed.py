@@ -3,6 +3,7 @@
 import httpx
 import asyncio
 import time
+import json
 from typing import List, Dict, Optional
 from loguru import logger
 from config.settings import settings
@@ -377,6 +378,70 @@ class BrightDataIndeedClient:
             List of job postings
         """
         return await self.wait_for_completion(snapshot_id)
+
+    async def fetch_jobs_by_urls(
+        self,
+        urls: List[str],
+        max_polls: int = 6,
+        poll_interval: int = 5
+    ) -> List[Dict]:
+        """Fetch Indeed jobs via scrape endpoint with short polling loop."""
+        if not urls:
+            return []
+
+        payload = {"input": [{"url": url} for url in urls]}
+        params = {
+            "dataset_id": self.dataset_id,
+            "notify": "false",
+            "include_errors": "true"
+        }
+
+        for attempt in range(max_polls):
+            logger.info(
+                f"Scraping {len(urls)} Indeed URLs via Bright Data scrape endpoint (attempt {attempt + 1}/{max_polls})"
+            )
+            response = await self.client.post(
+                f"{self.BASE_URL}/scrape",
+                json=payload,
+                params=params
+            )
+            response.raise_for_status()
+
+            body_text = response.text.strip()
+            try:
+                data = response.json()
+            except ValueError:
+                items: List[Dict] = []
+                for line in body_text.splitlines():
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        items.append(json.loads(line))
+                    except ValueError as parse_err:
+                        logger.warning(f"Failed to parse NDJSON line: {parse_err} | line={line[:120]}")
+                data = items
+
+            if isinstance(data, dict) and data.get("status") in {"starting", "building"}:
+                logger.info("Indeed scrape still building, waiting %ss before retry", poll_interval)
+                await asyncio.sleep(poll_interval)
+                continue
+
+            results: List[Dict] = []
+            if isinstance(data, dict):
+                errors = data.get("errors") or []
+                if errors:
+                    logger.warning(f"Bright Data reported {len(errors)} Indeed errors: {errors[:3]}")
+                results = data.get("data") or data.get("items") or []
+            elif isinstance(data, list):
+                results = data
+            else:
+                logger.warning(f"Unexpected Indeed scrape response type: {type(data)}")
+
+            logger.info(f"Scrape endpoint returned {len(results)} Indeed results")
+            return results or []
+
+        raise BrightDataError("Indeed scrape endpoint did not return data within polling window")
     
     async def close(self):
         """Close the HTTP client."""

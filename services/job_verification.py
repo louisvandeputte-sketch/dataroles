@@ -6,6 +6,7 @@ Verifies if active LinkedIn jobs still exist by checking their URLs via Bright D
 import asyncio
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional, Tuple
+from urllib.parse import urlparse, parse_qsl, urlencode, urlunparse
 from uuid import UUID
 from loguru import logger
 
@@ -15,18 +16,35 @@ from clients.brightdata_indeed import BrightDataIndeedClient
 from config.settings import settings
 
 
+ALT_SOURCE_GRACE_DAYS = 3
+
+
 class JobVerificationService:
     """Service for verifying if LinkedIn and Indeed jobs are still active."""
     
     def __init__(self):
         """Initialize the verification service."""
+        linkedin_dataset_id = getattr(
+            settings,
+            "brightdata_linkedin_dataset_id",
+            getattr(settings, "brightdata_dataset_id", None)
+        )
+        if not linkedin_dataset_id:
+            raise ValueError("LinkedIn dataset ID is not configured")
+
+        indeed_dataset_id = getattr(
+            settings,
+            "brightdata_indeed_dataset_id",
+            "gd_l4dx9j9sscpvs7no2"  # Default Indeed dataset ID
+        )
+
         self.linkedin_client = BrightDataLinkedInClient(
-            api_token=settings.BRIGHTDATA_API_TOKEN,
-            dataset_id=settings.BRIGHTDATA_LINKEDIN_DATASET_ID
+            api_token=settings.brightdata_api_token,
+            dataset_id=linkedin_dataset_id
         )
         self.indeed_client = BrightDataIndeedClient(
-            api_token=settings.BRIGHTDATA_API_TOKEN,
-            dataset_id=settings.BRIGHTDATA_INDEED_DATASET_ID
+            api_token=settings.brightdata_api_token,
+            dataset_id=indeed_dataset_id
         )
     
     async def verify_active_jobs(
@@ -152,31 +170,77 @@ class JobVerificationService:
         Returns:
             List of job dictionaries with id, source_job_id, url, title, source
         """
-        # Select appropriate ID field based on source
-        if source == "linkedin":
-            id_field = "linkedin_job_id"
-        elif source == "indeed":
-            id_field = "indeed_job_id"
-        else:
-            raise ValueError(f"Unsupported source: {source}")
-        
-        query = db.client.table("job_postings")\
-            .select(f"id, {id_field}, url, title, title_classification, source")\
-            .eq("is_active", True)\
+        # Get job IDs that have this source via job_sources bridge table
+        source_rows = db.client.table("job_sources")\
+            .select("job_posting_id, source_job_id")\
             .eq("source", source)\
-            .not_.is_(id_field, "null")
+            .execute()
+        source_rows = source_rows.data or []
+        if not source_rows:
+            return []
         
-        if only_data_jobs:
-            query = query.eq("title_classification", "Data")
+        job_id_to_source_id = {
+            row["job_posting_id"]: row.get("source_job_id")
+            for row in source_rows if row.get("job_posting_id")
+        }
+        job_ids = list(job_id_to_source_id.keys())
+        if not job_ids:
+            return []
         
-        result = query.execute()
-        
-        # Normalize the response to have consistent 'source_job_id' field
-        jobs = result.data or []
-        for job in jobs:
-            job["source_job_id"] = job.get(id_field)
+        jobs: List[Dict] = []
+        chunk_size = 200
+        for i in range(0, len(job_ids), chunk_size):
+            chunk = job_ids[i:i + chunk_size]
+            query = db.client.table("job_postings")\
+                .select("id, job_url, apply_url, title, title_classification, source, is_active, job_sources(source, source_job_id, last_seen_at)")\
+                .in_("id", chunk)\
+                .eq("is_active", True)
+            if only_data_jobs:
+                query = query.eq("title_classification", "Data")
+            chunk_result = query.execute()
+            for job in chunk_result.data or []:
+                source_job_id = job_id_to_source_id.get(job["id"])
+                if not source_job_id:
+                    continue
+                raw_url = job.get("job_url") or job.get("apply_url")
+                normalized_url = self._normalize_job_url(raw_url)
+                if not normalized_url:
+                    continue
+                jobs.append({
+                    "id": job["id"],
+                    "source_job_id": source_job_id,
+                    "title": job.get("title"),
+                    "title_classification": job.get("title_classification"),
+                    "source": source,
+                    "job_url": job.get("job_url"),
+                    "apply_url": job.get("apply_url"),
+                    "url": normalized_url,
+                    "all_sources": job.get("job_sources") or []
+                })
         
         return jobs
+
+    def _normalize_job_url(self, url: Optional[str]) -> Optional[str]:
+        """Strip unsupported LinkedIn query params keeping only `_l` if present."""
+        if not url:
+            return None
+
+        try:
+            parsed = urlparse(url)
+            if not parsed.query:
+                return url
+
+            params = parse_qsl(parsed.query, keep_blank_values=True)
+            filtered = [(k, v) for k, v in params if k == "_l"]
+
+            new_query = urlencode(filtered, doseq=True)
+            normalized = parsed._replace(query=new_query)
+            normalized_url = urlunparse(normalized)
+            if normalized_url != url:
+                logger.debug(f"Normalized job URL: {url} -> {normalized_url}")
+            return normalized_url
+        except Exception:
+            return url
     
     async def _verify_batch(
         self,
@@ -204,6 +268,10 @@ class JobVerificationService:
         
         # Prepare URLs for Bright Data
         urls = [job["url"] for job in jobs if job.get("url")]
+        if urls:
+            logger.debug(
+                f"Prepared {len(urls)} {source} URLs for verification (sample: {urls[:3]})"
+            )
         
         if not urls:
             logger.warning("No valid URLs in batch")
@@ -254,11 +322,11 @@ class JobVerificationService:
                     
                     # Job still exists if it has a title
                     if api_job.get("job_title"):
-                        stats["still_active"] += 1
-                        # Update last_seen_at
                         db.update_job_posting(UUID(job["id"]), {
                             "last_seen_at": datetime.utcnow().isoformat()
                         })
+                        self._update_source_last_seen(job["id"], source)
+                        stats["still_active"] += 1
                         logger.debug(f"✅ {source.upper()} job still active: {job['title']}")
                     else:
                         # Job exists but no title = likely removed
@@ -271,6 +339,12 @@ class JobVerificationService:
                         })
                         logger.info(f"❌ {source.upper()} job inactive (no title): {job['title']}")
                 else:
+                    if self._has_recent_alternative_source(job, source):
+                        stats["still_active"] += 1
+                        logger.info(
+                            f"🔁 Skipping inactive mark for {job['title']} because alternate source is still active"
+                        )
+                        continue
                     # Job not found in API results = removed
                     stats["marked_inactive"] += 1
                     db.mark_jobs_inactive([UUID(job["id"])])
@@ -305,23 +379,61 @@ class JobVerificationService:
         try:
             # Select appropriate client based on source
             if source == "linkedin":
-                client = self.linkedin_client
+                return await self.linkedin_client.fetch_jobs_by_urls(urls)
             elif source == "indeed":
-                client = self.indeed_client
+                return await self.indeed_client.fetch_jobs_by_urls(urls)
             else:
                 raise ValueError(f"Unsupported source: {source}")
             
-            # Trigger collection with URLs
-            snapshot_id = await client.trigger_collection_by_urls(urls)
-            
-            # Wait for results
-            results = await client.get_snapshot_data(snapshot_id)
+            # Unreachable but keeps structure consistent for future sources
+            results = []
+            if results:
+                sample_ids = []
+                for item in results[:5]:
+                    if source == "linkedin":
+                        sample_ids.append(item.get("job_posting_id"))
+                    elif source == "indeed":
+                        sample_ids.append(item.get("jobid"))
+                logger.debug(
+                    f"Bright Data returned {len(results)} {source} results (sample IDs: {sample_ids})"
+                )
+            else:
+                logger.debug(f"Bright Data returned 0 {source} results for URLs: {urls[:3]}")
             
             return results
         
         except Exception as e:
             logger.error(f"Error fetching {source} jobs by URL: {e}")
             return []
+
+    def _update_source_last_seen(self, job_id: str, source: str):
+        try:
+            db.client.table("job_sources")\
+                .update({"last_seen_at": datetime.utcnow().isoformat()})\
+                .eq("job_posting_id", job_id)\
+                .eq("source", source)\
+                .execute()
+        except Exception as e:
+            logger.warning(f"Failed to update last_seen for job {job_id} source {source}: {e}")
+
+    def _has_recent_alternative_source(self, job: Dict, current_source: str) -> bool:
+        sources = job.get("all_sources") or []
+        if not sources:
+            return False
+        threshold = datetime.utcnow() - timedelta(days=ALT_SOURCE_GRACE_DAYS)
+        for src in sources:
+            if src.get("source") == current_source:
+                continue
+            last_seen = src.get("last_seen_at")
+            if not last_seen:
+                continue
+            try:
+                parsed = datetime.fromisoformat(last_seen.replace("Z", "+00:00"))
+            except Exception:
+                continue
+            if parsed >= threshold:
+                return True
+        return False
     
     async def verify_single_job(self, job_id: UUID) -> Tuple[bool, Optional[str]]:
         """
