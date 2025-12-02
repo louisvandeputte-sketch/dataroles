@@ -164,7 +164,7 @@ class JobVerificationService:
         Get active jobs that need verification.
         
         Args:
-            only_data_jobs: Only get jobs where title_classification = 'Data'
+            only_data_jobs: Only get jobs where title_classification matches their job_type
             source: Source platform ('linkedin' or 'indeed')
         
         Returns:
@@ -191,21 +191,41 @@ class JobVerificationService:
         chunk_size = 200
         for i in range(0, len(job_ids), chunk_size):
             chunk = job_ids[i:i + chunk_size]
+            # Get jobs with their type assignments
             query = db.client.table("job_postings")\
-                .select("id, job_url, apply_url, title, title_classification, source, is_active, job_sources(source, source_job_id, last_seen_at)")\
+                .select("id, job_url, apply_url, title, title_classification, source, is_active, job_sources(source, source_job_id, last_seen_at), job_type_assignments(job_types(name))")\
                 .in_("id", chunk)\
                 .eq("is_active", True)
-            if only_data_jobs:
-                query = query.eq("title_classification", "Data")
             chunk_result = query.execute()
+            
             for job in chunk_result.data or []:
                 source_job_id = job_id_to_source_id.get(job["id"])
                 if not source_job_id:
                     continue
+                
+                # Only verify if title_classification matches job_type
+                if only_data_jobs:
+                    title_class = job.get("title_classification")
+                    if not title_class:
+                        continue
+                    
+                    # Get job types for this job
+                    job_type_assignments = job.get("job_type_assignments") or []
+                    job_type_names = [
+                        assignment.get("job_types", {}).get("name")
+                        for assignment in job_type_assignments
+                        if assignment.get("job_types")
+                    ]
+                    
+                    # Skip if title_classification doesn't match any assigned job_type
+                    if title_class not in job_type_names:
+                        continue
+                
                 raw_url = job.get("job_url") or job.get("apply_url")
                 normalized_url = self._normalize_job_url(raw_url)
                 if not normalized_url:
                     continue
+                    
                 jobs.append({
                     "id": job["id"],
                     "source_job_id": source_job_id,

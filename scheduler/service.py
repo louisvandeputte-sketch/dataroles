@@ -47,14 +47,14 @@ class SchedulerService:
             )
             logger.info("🔄 Retry processor scheduled (every 30 minutes)")
             
-            # Add job verification (runs daily at 3 AM)
+            # Add job verification (runs weekly on Saturday at 10:00 AM)
             self.scheduler.add_job(
                 self._verify_active_jobs,
-                trigger=CronTrigger(hour=3, minute=0),
+                trigger=CronTrigger(day_of_week='sat', hour=10, minute=0),
                 id="job_verifier",
                 replace_existing=True
             )
-            logger.info("✅ Job verification scheduled (daily at 3:00 AM)")
+            logger.info("✅ Job verification scheduled (weekly on Saturday at 10:00 AM)")
             
             # Load and schedule all active queries
             self._load_scheduled_queries()
