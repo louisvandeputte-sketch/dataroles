@@ -214,32 +214,32 @@ class AutoEnrichService:
                 logger.info("⏭️  Auto-enrichment disabled via DISABLE_AUTO_ENRICHMENT env var")
                 return  # Skip auto-enrichment
             
-            # Strategy 1: Find jobs without any enrichment record
-            jobs_without_enrichment = db.client.table("job_postings")\
+            # Get all Data jobs
+            all_data_jobs = db.client.table("job_postings")\
                 .select("id, title")\
                 .eq("title_classification", "Data")\
                 .eq("is_active", True)\
-                .is_("llm_enrichment", "null")\
-                .limit(20)\
+                .limit(100)\
                 .execute()
             
-            jobs = []
-            for job in jobs_without_enrichment.data:
-                jobs.append({"id": job["id"], "title": job["title"]})
+            if not all_data_jobs.data:
+                return  # No Data jobs
             
-            # Strategy 2: If we need more, find jobs with enrichment but no completed_at
-            if len(jobs) < 20:
-                remaining = 20 - len(jobs)
-                jobs_incomplete = db.client.table("llm_enrichment")\
-                    .select("job_posting_id, job_postings!inner(id, title)")\
-                    .is_("enrichment_completed_at", "null")\
-                    .limit(remaining)\
-                    .execute()
-                
-                for enrichment in jobs_incomplete.data:
-                    job_data = enrichment.get("job_postings")
-                    if job_data:
-                        jobs.append({"id": job_data["id"], "title": job_data["title"]})
+            # Get all enriched job IDs (with completed_at set)
+            enriched = db.client.table("llm_enrichment")\
+                .select("job_posting_id")\
+                .not_.is_("enrichment_completed_at", "null")\
+                .execute()
+            
+            enriched_ids = {e["job_posting_id"] for e in enriched.data}
+            
+            # Filter to only unenriched jobs
+            jobs = []
+            for job in all_data_jobs.data:
+                if job["id"] not in enriched_ids:
+                    jobs.append({"id": job["id"], "title": job["title"]})
+                    if len(jobs) >= 20:
+                        break
             
             if not jobs:
                 return  # No pending Data jobs
