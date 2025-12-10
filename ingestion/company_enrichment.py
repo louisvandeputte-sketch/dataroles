@@ -351,46 +351,53 @@ def get_unenriched_companies(limit: int = 100, include_retries: bool = True) -> 
         List of company IDs
     """
     try:
-        from datetime import datetime, timedelta
-        
-        # ALWAYS query from companies table to catch companies without master data
-        result = db.client.table("companies")\
-            .select("id, company_master_data!left(ai_enriched, ai_enrichment_error, ai_enriched_at)")\
-            .limit(limit)\
-            .execute()
+        from datetime import datetime, timedelta, timezone
         
         unenriched_ids = []
         retry_count = 0
         
-        for company in result.data:
-            master_data = company.get("company_master_data")
+        # Strategy 1: Get companies without master data at all
+        result_no_master = db.client.table("companies")\
+            .select("id, company_master_data(ai_enriched)")\
+            .is_("company_master_data", "null")\
+            .limit(limit)\
+            .execute()
+        
+        for company in result_no_master.data:
+            unenriched_ids.append(company["id"])
+        
+        # Strategy 2: Get companies with master data but not enriched
+        if len(unenriched_ids) < limit:
+            remaining = limit - len(unenriched_ids)
+            result_not_enriched = db.client.table("company_master_data")\
+                .select("company_id, ai_enriched, ai_enrichment_error, ai_enriched_at")\
+                .or_("ai_enriched.is.null,ai_enriched.eq.false")\
+                .limit(remaining)\
+                .execute()
             
-            # Case 1: No master data at all → needs enrichment
-            # Check for None, empty dict, or empty list
-            if not master_data or master_data == {} or master_data == []:
-                unenriched_ids.append(company["id"])
-                continue
-            
-            # Case 2: ai_enriched is False or None AND no error → needs enrichment
-            if not master_data.get("ai_enriched") and not master_data.get("ai_enrichment_error"):
-                unenriched_ids.append(company["id"])
-                continue
-            
-            # Case 3: Has error AND include_retries is True → check if old enough to retry
-            if include_retries and master_data.get("ai_enrichment_error"):
-                enriched_at = master_data.get("ai_enriched_at")
-                if enriched_at:
-                    from dateutil import parser
-                    enriched_time = parser.parse(enriched_at)
-                    retry_cutoff = datetime.utcnow() - timedelta(hours=24)
-                    
-                    if enriched_time < retry_cutoff:
-                        unenriched_ids.append(company["id"])
+            for master_data in result_not_enriched.data:
+                company_id = master_data["company_id"]
+                
+                # Skip if no error (needs enrichment)
+                if not master_data.get("ai_enrichment_error"):
+                    unenriched_ids.append(company_id)
+                    continue
+                
+                # Has error - check if old enough to retry
+                if include_retries:
+                    enriched_at = master_data.get("ai_enriched_at")
+                    if enriched_at:
+                        from dateutil import parser
+                        enriched_time = parser.parse(enriched_at)
+                        retry_cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
+                        
+                        if enriched_time < retry_cutoff:
+                            unenriched_ids.append(company_id)
+                            retry_count += 1
+                    else:
+                        # No timestamp, retry anyway
+                        unenriched_ids.append(company_id)
                         retry_count += 1
-                else:
-                    # No timestamp, retry anyway
-                    unenriched_ids.append(company["id"])
-                    retry_count += 1
         
         new_count = len(unenriched_ids) - retry_count
         logger.info(f"Found {len(unenriched_ids)} unenriched companies ({new_count} new, {retry_count} retries)")

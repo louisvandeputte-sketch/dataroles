@@ -208,6 +208,10 @@ class AutoEnrichService:
         Uses LEFT JOIN to efficiently find jobs without enrichment.
         """
         try:
+            # Check if auto-enrichment is disabled
+            import os
+            if os.getenv("DISABLE_AUTO_ENRICHMENT", "false").lower() == "true":
+                return  # Skip auto-enrichment
             # Find Data jobs that don't have completed enrichment
             # Use LEFT JOIN to check for missing or incomplete enrichment
             result = db.client.table("job_postings")\
