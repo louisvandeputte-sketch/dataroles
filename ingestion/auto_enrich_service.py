@@ -205,13 +205,9 @@ class AutoEnrichService:
     async def process_pending_data_jobs(self):
         """
         Process Data jobs that need LLM enrichment.
-        Uses LEFT JOIN to efficiently find jobs without enrichment.
+        Uses client-side filtering to prevent re-enrichments.
         """
         try:
-            # HARDCODED DISABLE - Auto-enrichment is disabled to prevent costly re-enrichments
-            logger.info("⏭️  Auto-enrichment DISABLED (hardcoded) - skipping Data job enrichment")
-            return  # Skip auto-enrichment
-            
             # Check if auto-enrichment is disabled via env var
             import os
             if os.getenv("DISABLE_AUTO_ENRICHMENT", "false").lower() == "true":
