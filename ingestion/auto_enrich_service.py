@@ -211,26 +211,35 @@ class AutoEnrichService:
             # Check if auto-enrichment is disabled
             import os
             if os.getenv("DISABLE_AUTO_ENRICHMENT", "false").lower() == "true":
+                logger.info("⏭️  Auto-enrichment disabled via DISABLE_AUTO_ENRICHMENT env var")
                 return  # Skip auto-enrichment
-            # Find Data jobs that don't have completed enrichment
-            # Use LEFT JOIN to check for missing or incomplete enrichment
-            result = db.client.table("job_postings")\
-                .select("id, title, llm_enrichment!left(enrichment_completed_at)")\
+            
+            # Strategy 1: Find jobs without any enrichment record
+            jobs_without_enrichment = db.client.table("job_postings")\
+                .select("id, title")\
                 .eq("title_classification", "Data")\
                 .eq("is_active", True)\
+                .is_("llm_enrichment", "null")\
                 .limit(20)\
                 .execute()
             
-            if not result.data:
-                return  # No Data jobs at all
-            
-            # Filter to only jobs without completed enrichment
             jobs = []
-            for job in result.data:
-                enrichment = job.get("llm_enrichment")
-                # Include if no enrichment record OR enrichment_completed_at is null
-                if not enrichment or not enrichment.get("enrichment_completed_at"):
-                    jobs.append({"id": job["id"], "title": job["title"]})
+            for job in jobs_without_enrichment.data:
+                jobs.append({"id": job["id"], "title": job["title"]})
+            
+            # Strategy 2: If we need more, find jobs with enrichment but no completed_at
+            if len(jobs) < 20:
+                remaining = 20 - len(jobs)
+                jobs_incomplete = db.client.table("llm_enrichment")\
+                    .select("job_posting_id, job_postings!inner(id, title)")\
+                    .is_("enrichment_completed_at", "null")\
+                    .limit(remaining)\
+                    .execute()
+                
+                for enrichment in jobs_incomplete.data:
+                    job_data = enrichment.get("job_postings")
+                    if job_data:
+                        jobs.append({"id": job_data["id"], "title": job_data["title"]})
             
             if not jobs:
                 return  # No pending Data jobs
