@@ -208,7 +208,11 @@ class AutoEnrichService:
         Uses LEFT JOIN to efficiently find jobs without enrichment.
         """
         try:
-            # Check if auto-enrichment is disabled
+            # HARDCODED DISABLE - Auto-enrichment is disabled to prevent costly re-enrichments
+            logger.info("⏭️  Auto-enrichment DISABLED (hardcoded) - skipping Data job enrichment")
+            return  # Skip auto-enrichment
+            
+            # Check if auto-enrichment is disabled via env var
             import os
             if os.getenv("DISABLE_AUTO_ENRICHMENT", "false").lower() == "true":
                 logger.info("⏭️  Auto-enrichment disabled via DISABLE_AUTO_ENRICHMENT env var")
