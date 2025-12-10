@@ -354,7 +354,12 @@ class AutoEnrichService:
         """
         Retry enrichments for Data jobs with empty AI column (no type_datarol).
         This runs every hour to catch failed enrichments.
+        
+        DISABLED: This was causing infinite re-enrichments of jobs with NULL type_datarol.
         """
+        logger.info("⏭️  Retry failed enrichments DISABLED - skipping")
+        return  # DISABLED to prevent infinite re-enrichments
+        
         try:
             logger.info("🔄 Checking for Data jobs with empty AI column...")
             
