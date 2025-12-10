@@ -214,11 +214,13 @@ class AutoEnrichService:
                 logger.info("⏭️  Auto-enrichment disabled via DISABLE_AUTO_ENRICHMENT env var")
                 return  # Skip auto-enrichment
             
-            # Get all Data jobs
+            # Get all Data jobs from LinkedIn only (not Indeed search results)
+            # LinkedIn jobs are typically direct postings, Indeed can be search aggregations
             all_data_jobs = db.client.table("job_postings")\
-                .select("id, title")\
+                .select("id, title, source")\
                 .eq("title_classification", "Data")\
                 .eq("is_active", True)\
+                .eq("source", "linkedin")\
                 .limit(100)\
                 .execute()
             
