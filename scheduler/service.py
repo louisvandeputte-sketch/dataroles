@@ -12,6 +12,7 @@ from loguru import logger
 from database import db
 from scraper import execute_scrape_run
 from scheduler.retry_service import get_retry_service
+from services.similar_jobs import get_similar_jobs_service
 
 
 class SchedulerService:
@@ -55,6 +56,15 @@ class SchedulerService:
                 replace_existing=True
             )
             logger.info("✅ Job verification scheduled (weekly on Saturday at 10:00 AM)")
+
+            # Add similar job recompute (nightly at 02:00 AM)
+            self.scheduler.add_job(
+                self._refresh_similar_jobs,
+                trigger=CronTrigger(hour=2, minute=0),
+                id="similar_job_refresher",
+                replace_existing=True
+            )
+            logger.info("🤝 Similar job refresher scheduled (daily at 02:00 AM)")
             
             # Load and schedule all active queries
             self._load_scheduled_queries()
@@ -276,6 +286,23 @@ class SchedulerService:
             )
         except Exception as e:
             logger.error(f"Error verifying jobs: {e}")
+
+    async def _refresh_similar_jobs(self):
+        """Nightly task to recompute similar_job_ids for active postings."""
+        logger.info("🤝 Recomputing similar_job_ids for active jobs...")
+
+        loop = asyncio.get_running_loop()
+        service = get_similar_jobs_service()
+
+        try:
+            count, duration = await loop.run_in_executor(
+                None, service.recompute_all_active_jobs
+            )
+            logger.success(
+                f"🤝 Similar jobs updated for {count} jobs in {duration:.2f}s"
+            )
+        except Exception as exc:
+            logger.error(f"Failed to refresh similar jobs: {exc}")
 
 
 # Global scheduler instance
