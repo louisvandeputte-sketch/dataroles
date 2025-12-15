@@ -238,6 +238,34 @@ async def count_jobs(
     return {"count": total}
 
 
+@router.get("/count/new")
+async def count_new_jobs():
+    """
+    Count jobs posted in the last 7 days (new jobs).
+    Returns count without loading actual job data.
+    Uses vw_job_listings view which has posted_date_corrected.
+    """
+    try:
+        # Calculate date 7 days ago
+        from datetime import datetime, timedelta
+        seven_days_ago = datetime.utcnow() - timedelta(days=7)
+        
+        # Count jobs from vw_job_listings (which has posted_date_corrected calculated)
+        # Note: vw_job_listings already filters for is_active=true and title_classification='Data'
+        result = db.client.table("vw_job_listings")\
+            .select("job_posting_id", count="exact")\
+            .gte("posted_date_corrected", seven_days_ago.isoformat())\
+            .execute()
+        
+        return {
+            "count": result.count or 0,
+            "days": 7
+        }
+    except Exception as e:
+        logger.error(f"Error counting new jobs: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/{job_id}")
 async def get_job_detail(job_id: str):
     """Get detailed information about a specific job."""
