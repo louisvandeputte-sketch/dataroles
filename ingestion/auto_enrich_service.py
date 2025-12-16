@@ -30,6 +30,7 @@ class AutoEnrichService:
         self.last_ranking_check = datetime.utcnow()
         self.last_company_check = datetime.utcnow()
         self.company_enrichment_running = False  # Flag to prevent overlapping batches
+        self.job_enrichment_running = False  # Flag to prevent overlapping job enrichment batches
     
     async def start(self):
         """Start the auto-enrichment service."""
@@ -45,7 +46,13 @@ class AutoEnrichService:
                 # Process all enrichment tasks
                 await self.process_pending_locations()
                 await self.process_pending_job_titles()
-                await self.process_pending_data_jobs()
+                
+                # Only process jobs if not already running (prevent overlapping batches)
+                if not self.job_enrichment_running:
+                    await self.process_pending_data_jobs()
+                else:
+                    logger.warning("⚠️ Skipping job enrichment - previous batch still running")
+                
                 await self.process_pending_tech_scores()
                 
                 # Check if it's time for company enrichment (every 10 minutes)
@@ -206,7 +213,12 @@ class AutoEnrichService:
         """
         Process Data jobs that need LLM enrichment.
         Uses client-side filtering to prevent re-enrichments.
+        Prevents overlapping batches with flag.
         """
+        # Set flag to prevent overlapping batches
+        self.job_enrichment_running = True
+        start_time = datetime.utcnow()
+        
         try:
             # Check if auto-enrichment is disabled via env var
             import os
@@ -248,7 +260,7 @@ class AutoEnrichService:
             if not jobs:
                 return  # No pending Data jobs
             
-            logger.info(f"🧠 Auto-enriching {len(jobs)} Data jobs with LLM")
+            logger.info(f"🧠 Auto-enriching {len(jobs)} Data jobs with LLM (batch started at {start_time.isoformat()})")
             
             # Enrich each Data job
             for job in jobs:
@@ -273,8 +285,8 @@ class AutoEnrichService:
                     else:
                         logger.warning(f"⚠️ Failed to auto-enrich Data job: {title}")
                     
-                    # Small delay between jobs to avoid rate limiting
-                    await asyncio.sleep(2)
+                    # Small delay between jobs to avoid rate limiting (reduced from 2s to 1s)
+                    await asyncio.sleep(1)
                 
                 except Exception as e:
                     logger.error(f"Failed to enrich Data job '{job.get('title')}': {e}")
@@ -282,6 +294,12 @@ class AutoEnrichService:
         
         except Exception as e:
             logger.error(f"Failed to fetch pending Data jobs (check query size): {e}")
+        
+        finally:
+            # Always clear the flag when done (CRITICAL for preventing stuck state)
+            self.job_enrichment_running = False
+            duration = (datetime.utcnow() - start_time).total_seconds()
+            logger.info(f"🔓 Job enrichment batch complete in {duration:.1f}s, flag cleared")
     
     async def process_pending_tech_scores(self):
         """Process programming languages and ecosystems that need relevance scoring."""
