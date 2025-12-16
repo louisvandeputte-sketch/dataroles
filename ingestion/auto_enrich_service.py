@@ -26,9 +26,11 @@ class AutoEnrichService:
         self.retry_check_interval = 3600  # Check for retries every hour (3600 seconds)
         self.ranking_check_interval = 3600  # Calculate rankings every hour (3600 seconds)
         self.company_check_interval = 600  # Check for companies every 10 minutes (600 seconds)
+        self.cleanup_check_interval = 3600  # Cleanup stuck enrichments every hour (3600 seconds)
         self.last_retry_check = datetime.utcnow()
         self.last_ranking_check = datetime.utcnow()
         self.last_company_check = datetime.utcnow()
+        self.last_cleanup_check = datetime.utcnow()
         self.company_enrichment_running = False  # Flag to prevent overlapping batches
         self.job_enrichment_running = False  # Flag to prevent overlapping job enrichment batches
     
@@ -79,6 +81,13 @@ class AutoEnrichService:
                     logger.info("⏰ Running hourly ranking calculation")
                     await self.calculate_rankings()
                     self.last_ranking_check = datetime.utcnow()
+                
+                # Check if it's time for stuck enrichment cleanup
+                time_since_last_cleanup = (datetime.utcnow() - self.last_cleanup_check).total_seconds()
+                if time_since_last_cleanup >= self.cleanup_check_interval:
+                    logger.info("⏰ Running stuck enrichment cleanup")
+                    await self.cleanup_stuck_enrichments()
+                    self.last_cleanup_check = datetime.utcnow()
                     
             except Exception as e:
                 logger.error(f"Error in auto-enrichment service: {e}")
@@ -300,6 +309,52 @@ class AutoEnrichService:
             self.job_enrichment_running = False
             duration = (datetime.utcnow() - start_time).total_seconds()
             logger.info(f"🔓 Job enrichment batch complete in {duration:.1f}s, flag cleared")
+    
+    async def cleanup_stuck_enrichments(self):
+        """
+        Clean up stuck enrichment records for active Data jobs.
+        Removes records that are >1 hour old with no completed_at and no error.
+        This prevents jobs from being permanently blocked.
+        """
+        try:
+            from datetime import timedelta
+            
+            # Define cutoff: 1 hour ago
+            cutoff = datetime.utcnow() - timedelta(hours=1)
+            cutoff_str = cutoff.isoformat()
+            
+            # Find stuck enrichment records for active Data jobs
+            stuck = db.client.table("llm_enrichment")\
+                .select("id, job_posting_id, job_postings!inner(title_classification, is_active)")\
+                .eq("job_postings.title_classification", "Data")\
+                .eq("job_postings.is_active", True)\
+                .is_("enrichment_completed_at", "null")\
+                .is_("enrichment_error", "null")\
+                .lt("created_at", cutoff_str)\
+                .execute()
+            
+            if not stuck.data:
+                logger.debug("No stuck enrichments found")
+                return
+            
+            logger.warning(f"Found {len(stuck.data)} stuck enrichment records, cleaning up...")
+            
+            # Delete stuck records
+            deleted_count = 0
+            for e in stuck.data:
+                try:
+                    db.client.table("llm_enrichment")\
+                        .delete()\
+                        .eq("id", e["id"])\
+                        .execute()
+                    deleted_count += 1
+                except Exception as ex:
+                    logger.error(f"Failed to delete stuck enrichment {e['id']}: {ex}")
+            
+            logger.success(f"✅ Cleaned up {deleted_count} stuck enrichment records")
+        
+        except Exception as e:
+            logger.error(f"Failed to cleanup stuck enrichments: {e}")
     
     async def process_pending_tech_scores(self):
         """Process programming languages and ecosystems that need relevance scoring."""
