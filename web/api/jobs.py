@@ -55,12 +55,12 @@ async def list_jobs(
     run_id: Optional[str] = None,  # Filter by scrape run
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
-    sort_field: str = "ranking_position",  # Field to sort by (default: ranking)
-    sort_direction: str = "asc",  # asc or desc (asc = best rank first)
+    sort_field: str = "posted_date_corrected",  # Field to sort by (default: most recent first)
+    sort_direction: str = "desc",  # asc or desc (desc = most recent first)
     limit: int = 50,
     offset: int = 0
 ):
-    """List jobs with filtering and search. Default sort by ranking_position (best first)."""
+    """List jobs with filtering and search. Default sort by posted_date_corrected (most recent first)."""
     
     try:
         # If run_id is provided, filter jobs from that specific scrape run
