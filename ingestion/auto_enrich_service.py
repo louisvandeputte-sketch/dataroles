@@ -236,14 +236,14 @@ class AutoEnrichService:
                 return  # Skip auto-enrichment
             
             # OPTIMIZED: Fetch only recent Data jobs and check their enrichment status
-            # This avoids fetching 500 jobs + 3000 enrichments every time
-            # Instead: fetch 100 recent jobs + check enrichment for those 100
+            # This avoids fetching all jobs + all enrichments every time
+            # Instead: fetch 500 recent jobs + check enrichment for those 500
             recent_jobs = db.client.table("job_postings")\
                 .select("id, title")\
                 .eq("title_classification", "Data")\
                 .eq("is_active", True)\
                 .order("posted_date", desc=True)\
-                .limit(100)\
+                .limit(500)\
                 .execute()
             
             if not recent_jobs.data:
