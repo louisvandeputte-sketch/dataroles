@@ -215,11 +215,14 @@ class AutoEnrichService:
                 return  # Skip auto-enrichment
             
             # Get all Data jobs (title_classification = "Data")
+            # Sort by posted_date DESC to prioritize newest jobs first
+            # This ensures new jobs from overnight scrapes are processed first
             all_data_jobs = db.client.table("job_postings")\
                 .select("id, title")\
                 .eq("title_classification", "Data")\
                 .eq("is_active", True)\
-                .limit(100)\
+                .order("posted_date", desc=True)\
+                .limit(500)\
                 .execute()
             
             if not all_data_jobs.data:
@@ -234,11 +237,12 @@ class AutoEnrichService:
             enriched_ids = {e["job_posting_id"] for e in enriched.data}
             
             # Filter to only unenriched jobs
+            # Increased batch size to 30 for faster processing (was 20)
             jobs = []
             for job in all_data_jobs.data:
                 if job["id"] not in enriched_ids:
                     jobs.append({"id": job["id"], "title": job["title"]})
-                    if len(jobs) >= 20:
+                    if len(jobs) >= 30:
                         break
             
             if not jobs:
