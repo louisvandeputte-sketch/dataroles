@@ -458,16 +458,22 @@ async def get_unenriched_jobs_list(limit: int = 100):
 
 @router.get("/enrich/stats")
 async def get_enrichment_stats():
-    """Get enrichment statistics (only for 'Data' classified jobs)."""
+    """
+    Get enrichment statistics for Data jobs only (excluding NIS).
+    
+    Step 1: Total = jobs with title_classification='Data' (excludes NIS from title check)
+    Step 2: Enriched = jobs with completed enrichment (includes jobs that became NIS during enrichment)
+    """
     try:
-        # Total 'Data' jobs
-        total_result = db.client.table("llm_enrichment")\
-            .select("id, job_postings!inner(title_classification)", count="exact")\
-            .eq("job_postings.title_classification", "Data")\
+        # Step 1: Total 'Data' jobs (title_classification = 'Data', excludes NIS from title check)
+        total_result = db.client.table("job_postings")\
+            .select("id", count="exact")\
+            .eq("title_classification", "Data")\
             .execute()
         total = total_result.count or 0
         
-        # Enriched 'Data' jobs
+        # Step 2: Enriched jobs = all jobs with title_classification='Data' that have completed enrichment
+        # This includes jobs that were classified as NIS during LLM enrichment (type_datarol check)
         enriched_result = db.client.table("llm_enrichment")\
             .select("id, job_postings!inner(title_classification)", count="exact")\
             .eq("job_postings.title_classification", "Data")\
