@@ -167,6 +167,31 @@ class SupabaseClient:
         result = query.order("name").execute()
         return result.data if result.data else []
     
+    # ==================== TECH STACK ALIASES ====================
+    
+    def get_tech_alias(self, alias: str, tech_type: str) -> Optional[Dict]:
+        """Get canonical name for an alias (case-insensitive)."""
+        result = self.client.table("tech_stack_aliases")\
+            .select("*")\
+            .ilike("alias", alias)\
+            .eq("type", tech_type)\
+            .maybe_single()\
+            .execute()
+        return result.data if result else None
+    
+    def create_tech_alias(self, alias: str, canonical_name: str, tech_type: str, notes: str = None) -> UUID:
+        """Create a new tech stack alias."""
+        data = {
+            "alias": alias,
+            "canonical_name": canonical_name,
+            "type": tech_type
+        }
+        if notes:
+            data["notes"] = notes
+        
+        result = self.client.table("tech_stack_aliases").insert(data).execute()
+        return UUID(result.data[0]["id"])
+    
     # ==================== JOB TECH STACK ASSIGNMENTS ====================
     
     def assign_programming_language_to_job(
@@ -232,9 +257,26 @@ class SupabaseClient:
         return result.data if result else None
     
     def insert_job_posting(self, data: Dict[str, Any]) -> UUID:
-        """Insert a new job posting, return UUID."""
+        """
+        Insert a new job posting, return UUID.
+        Automatically sets posted_date_corrected if not provided.
+        """
+        # Automatically set posted_date_corrected if not provided
+        # This ensures new jobs always have this field populated
+        if "posted_date_corrected" not in data and "posted_date" in data:
+            data["posted_date_corrected"] = data["posted_date"]
+        
         result = self.client.table("job_postings").insert(data).execute()
-        return UUID(result.data[0]["id"])
+        job_id = UUID(result.data[0]["id"])
+        
+        # After insert, check if we need to update posted_date_corrected with first_seen_at
+        # This happens when job_sources is inserted after job_postings
+        if "posted_date" in data:
+            # Schedule an async update to check first_seen_at later
+            # For now, we use posted_date as initial value
+            pass
+        
+        return job_id
     
     def update_job_posting(self, job_id: UUID, data: Dict[str, Any]) -> None:
         """Update existing job posting."""
