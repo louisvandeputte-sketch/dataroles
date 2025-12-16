@@ -250,9 +250,11 @@ class AutoEnrichService:
                 return  # No Data jobs
             
             # Get all enriched job IDs (with completed_at set)
+            # CRITICAL: Set limit to 3000 to avoid missing enriched jobs (Supabase default is 1000)
             enriched = db.client.table("llm_enrichment")\
                 .select("job_posting_id")\
                 .not_.is_("enrichment_completed_at", "null")\
+                .limit(3000)\
                 .execute()
             
             enriched_ids = {e["job_posting_id"] for e in enriched.data}
