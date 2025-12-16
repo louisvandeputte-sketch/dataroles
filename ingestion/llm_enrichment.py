@@ -409,7 +409,7 @@ def process_job_enrichment(job_id: str, force: bool = False) -> Dict[str, Any]:
                 .maybe_single()\
                 .execute()
             
-            if existing.data and existing.data.get("enrichment_completed_at"):
+            if existing and existing.data and existing.data.get("enrichment_completed_at"):
                 logger.debug(f"Job {job_id} already enriched, skipping (use force=True to re-enrich)")
                 return {
                     "success": True,  # Changed to True so caller knows to skip
