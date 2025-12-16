@@ -361,10 +361,10 @@ def save_enrichment_to_db(job_id: str, enrichment_data: Dict[str, Any]) -> bool:
             "enrichment_model_version": f"prompt-{PROMPT_TEMPLATE_ID}-v{PROMPT_VERSION}"
         }
         
-        # Update llm_enrichment table
+        # Upsert to llm_enrichment table (insert if not exists, update if exists)
+        db_data["job_posting_id"] = job_id
         result = db.client.table("llm_enrichment")\
-            .update(db_data)\
-            .eq("job_posting_id", job_id)\
+            .upsert(db_data, on_conflict="job_posting_id")\
             .execute()
         
         if result.data:
