@@ -235,38 +235,40 @@ class AutoEnrichService:
                 logger.info("⏭️  Auto-enrichment disabled via DISABLE_AUTO_ENRICHMENT env var")
                 return  # Skip auto-enrichment
             
-            # Get all Data jobs (title_classification = "Data")
-            # Sort by posted_date DESC to prioritize newest jobs first
-            # This ensures new jobs from overnight scrapes are processed first
-            all_data_jobs = db.client.table("job_postings")\
+            # OPTIMIZED: Fetch only recent Data jobs and check their enrichment status
+            # This avoids fetching 500 jobs + 3000 enrichments every time
+            # Instead: fetch 100 recent jobs + check enrichment for those 100
+            recent_jobs = db.client.table("job_postings")\
                 .select("id, title")\
                 .eq("title_classification", "Data")\
                 .eq("is_active", True)\
                 .order("posted_date", desc=True)\
-                .limit(500)\
+                .limit(100)\
                 .execute()
             
-            if not all_data_jobs.data:
+            if not recent_jobs.data:
                 return  # No Data jobs
             
-            # Get all enriched job IDs (with completed_at set)
-            # CRITICAL: Set limit to 3000 to avoid missing enriched jobs (Supabase default is 1000)
-            enriched = db.client.table("llm_enrichment")\
-                .select("job_posting_id")\
-                .not_.is_("enrichment_completed_at", "null")\
-                .limit(3000)\
+            # Get enrichment status for these specific jobs only
+            job_ids = [j["id"] for j in recent_jobs.data]
+            enrichments = db.client.table("llm_enrichment")\
+                .select("job_posting_id, enrichment_completed_at")\
+                .in_("job_posting_id", job_ids)\
                 .execute()
             
-            enriched_ids = {e["job_posting_id"] for e in enriched.data}
+            # Build set of enriched job IDs (only from this batch)
+            enriched_ids = {
+                e["job_posting_id"] 
+                for e in enrichments.data 
+                if e.get("enrichment_completed_at")
+            }
             
-            # Filter to only unenriched jobs
-            # Increased batch size to 30 for faster processing (was 20)
-            jobs = []
-            for job in all_data_jobs.data:
-                if job["id"] not in enriched_ids:
-                    jobs.append({"id": job["id"], "title": job["title"]})
-                    if len(jobs) >= 30:
-                        break
+            # Filter to only unenriched jobs, take first 30
+            jobs = [
+                {"id": j["id"], "title": j["title"]}
+                for j in recent_jobs.data
+                if j["id"] not in enriched_ids
+            ][:30]
             
             if not jobs:
                 return  # No pending Data jobs
