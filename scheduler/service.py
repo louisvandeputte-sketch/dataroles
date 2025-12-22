@@ -235,22 +235,49 @@ class SchedulerService:
         return None
     
     async def _check_stuck_runs(self):
-        """Check for stuck runs and schedule retries."""
+        """Check for stuck runs and mark them as failed if stuck for more than 2 hours."""
         logger.info("🔍 Checking for stuck runs...")
         
         try:
-            # Import here to avoid circular dependency
-            import sys
-            from pathlib import Path
-            sys.path.insert(0, str(Path(__file__).parent.parent))
-            from scripts.fix_stuck_runs_with_retry import fix_stuck_runs_with_retry
+            # Calculate cutoff time (2 hours ago)
+            cutoff_time = datetime.utcnow() - timedelta(hours=2)
             
-            # Run the stuck run fixer
-            fix_stuck_runs_with_retry(
-                max_duration_hours=1,
-                retry_delay_hours=4,
-                max_retries=4
-            )
+            # Find stuck runs (both LinkedIn and Indeed)
+            stuck_runs = db.client.table("scrape_runs")\
+                .select("id, search_query, location_query, started_at, platform")\
+                .eq("status", "running")\
+                .lt("started_at", cutoff_time.isoformat())\
+                .execute()
+            
+            if not stuck_runs.data:
+                logger.info("✅ No stuck runs found")
+                return
+            
+            # Mark each as failed
+            cleaned_count = 0
+            for run in stuck_runs.data:
+                try:
+                    db.client.table("scrape_runs")\
+                        .update({
+                            "status": "failed",
+                            "completed_at": datetime.utcnow().isoformat(),
+                            "error_message": "Run stuck for more than 2 hours - automatically marked as failed"
+                        })\
+                        .eq("id", run["id"])\
+                        .execute()
+                    
+                    cleaned_count += 1
+                    logger.warning(
+                        f"⚠️ Marked stuck run as failed: {run['id']}\n"
+                        f"  Query: {run.get('search_query')}\n"
+                        f"  Location: {run.get('location_query')}\n"
+                        f"  Platform: {run.get('platform')}\n"
+                        f"  Started: {run.get('started_at')}"
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to clean up run {run['id']}: {e}")
+            
+            logger.success(f"✅ Cleaned up {cleaned_count} stuck runs")
         except Exception as e:
             logger.error(f"Error checking stuck runs: {e}")
     
