@@ -246,24 +246,34 @@
             </div>
 
             <div class="relative" x-data="{ open: false }">
-                <button @click="open = !open" class="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
+                <button @click="open = !open" 
+                        :class="filters.aiStatus !== 'all' ? 'bg-blue-50 border-blue-300 text-blue-700' : 'border-gray-300'"
+                        class="inline-flex items-center px-3 py-1.5 border rounded-lg text-sm hover:bg-gray-50">
                     <i data-lucide="sparkles" class="w-4 h-4 mr-1"></i>
-                    AI Status
+                    AI Enrichment
+                    <span x-show="filters.aiStatus === 'enriched'" class="ml-1 text-xs">(✓)</span>
+                    <span x-show="filters.aiStatus === 'not_enriched'" class="ml-1 text-xs">(✗)</span>
                     <i data-lucide="chevron-down" class="w-4 h-4 ml-1"></i>
                 </button>
                 <div x-show="open" @click.away="open = false" x-cloak
-                     class="absolute z-10 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 p-3">
+                     class="absolute z-10 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 p-3">
                     <label class="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
                         <input type="radio" value="all" x-model="filters.aiStatus" @change="applyFilter()" class="mr-2">
-                        <span class="text-sm">All</span>
+                        <span class="text-sm font-medium">All Jobs</span>
                     </label>
                     <label class="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
                         <input type="radio" value="enriched" x-model="filters.aiStatus" @change="applyFilter()" class="mr-2">
-                        <span class="text-sm">Enriched</span>
+                        <span class="text-sm">
+                            <span class="font-medium">✓ AI Enriched</span>
+                            <span class="block text-xs text-gray-500 ml-5">Has completed AI analysis</span>
+                        </span>
                     </label>
                     <label class="flex items-center px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
                         <input type="radio" value="not_enriched" x-model="filters.aiStatus" @change="applyFilter()" class="mr-2">
-                        <span class="text-sm">Not Enriched</span>
+                        <span class="text-sm">
+                            <span class="font-medium">✗ Not Enriched</span>
+                            <span class="block text-xs text-gray-500 ml-5">Missing AI analysis</span>
+                        </span>
                     </label>
                 </div>
             </div>
@@ -797,6 +807,8 @@ function jobsPage() {
                 }
                 if (this.filters.aiStatus && this.filters.aiStatus !== 'all') {
                     params.append('ai_enriched', this.filters.aiStatus === 'enriched' ? 'true' : 'false');
+                    // AI enrichment only applies to Data jobs (matches Enrich All logic)
+                    params.append('title_classification', 'Data');
                 }
                 if (this.filters.source && this.filters.source !== 'all') {
                     params.append('source', this.filters.source);
@@ -1141,6 +1153,8 @@ function jobsPage() {
                 }
                 if (this.filters.aiStatus && this.filters.aiStatus !== 'all') {
                     params.append('ai_enriched', this.filters.aiStatus === 'enriched' ? 'true' : 'false');
+                    // AI enrichment only applies to Data jobs (matches Enrich All logic)
+                    params.append('title_classification', 'Data');
                 }
                 if (this.filters.source && this.filters.source !== 'all') {
                     params.append('source', this.filters.source);
@@ -1444,6 +1458,22 @@ function jobsPage() {
             const month = String(date.getMonth() + 1).padStart(2, '0');
             const year = date.getFullYear();
             return `${day}-${month}-${year}`;
+        },
+        
+        formatTimeAgo(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            const now = new Date();
+            const diff = now - date;
+            const hours = Math.floor(diff / 3600000);
+            const days = Math.floor(diff / 86400000);
+            
+            if (hours < 1) return 'Just now';
+            if (hours < 24) return `${hours}h ago`;
+            if (days === 1) return 'Yesterday';
+            if (days < 7) return `${days}d ago`;
+            if (days < 30) return `${Math.floor(days / 7)}w ago`;
+            return `${Math.floor(days / 30)}mo ago`;
         }
     }
 }
