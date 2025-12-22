@@ -66,6 +66,15 @@ class SchedulerService:
             )
             logger.info("🤝 Similar job refresher scheduled (daily at 02:00 AM)")
             
+            # Add location enrichment (daily at 05:30 AM)
+            self.scheduler.add_job(
+                self._enrich_unenriched_locations,
+                trigger=CronTrigger(hour=5, minute=30),
+                id="location_enricher",
+                replace_existing=True
+            )
+            logger.info("🌍 Location enrichment scheduled (daily at 05:30 AM)")
+            
             # Load and schedule all active queries
             self._load_scheduled_queries()
     
@@ -330,6 +339,83 @@ class SchedulerService:
             )
         except Exception as exc:
             logger.error(f"Failed to refresh similar jobs: {exc}")
+
+    async def _enrich_unenriched_locations(self):
+        """Daily task to enrich locations with missing data (city names, provinces, etc.)."""
+        logger.info("🌍 Starting scheduled location enrichment...")
+        
+        try:
+            from ingestion.location_enrichment import enrich_location
+            
+            # Find locations that need enrichment:
+            # - Missing city_name_nl, city_name_fr, city_name_en
+            # - Missing subdivision_name, subdivision_name_fr, subdivision_name_en
+            # - Missing country_name_nl, country_name_fr, country_name_en
+            # - ai_enriched is null or false
+            result = db.client.table("locations")\
+                .select("id, city, country_code, region, full_location_string")\
+                .or_(
+                    "ai_enriched.is.null,"
+                    "ai_enriched.eq.false,"
+                    "city_name_nl.is.null,"
+                    "city_name_fr.is.null,"
+                    "city_name_en.is.null,"
+                    "subdivision_name.is.null,"
+                    "subdivision_name_fr.is.null,"
+                    "subdivision_name_en.is.null"
+                )\
+                .limit(50)\
+                .execute()
+            
+            locations = result.data if result.data else []
+            
+            if not locations:
+                logger.info("✅ No unenriched locations found")
+                return
+            
+            logger.info(f"🌍 Found {len(locations)} unenriched locations to process")
+            
+            # Enrich each location
+            success_count = 0
+            failed_count = 0
+            
+            for location in locations:
+                try:
+                    location_id = location["id"]
+                    city = location.get("city")
+                    country_code = location.get("country_code")
+                    region = location.get("region")
+                    full_location = location.get("full_location_string", "Unknown")
+                    
+                    logger.info(f"Enriching: {full_location}")
+                    
+                    # Enrich the location
+                    enrichment_result = enrich_location(
+                        location_id=location_id,
+                        city=city,
+                        country_code=country_code,
+                        region=region
+                    )
+                    
+                    if enrichment_result.get("success"):
+                        success_count += 1
+                        logger.success(f"✅ Enriched: {full_location}")
+                    else:
+                        failed_count += 1
+                        error = enrichment_result.get("error", "Unknown error")
+                        logger.warning(f"⚠️ Failed to enrich {full_location}: {error}")
+                
+                except Exception as e:
+                    failed_count += 1
+                    logger.error(f"Failed to enrich location {location.get('full_location_string', 'Unknown')}: {e}")
+                    continue
+            
+            logger.success(
+                f"✅ Location enrichment complete: {success_count} enriched, {failed_count} failed"
+            )
+        
+        except Exception as e:
+            logger.error(f"Error in scheduled location enrichment: {e}")
 
 
 # Global scheduler instance
