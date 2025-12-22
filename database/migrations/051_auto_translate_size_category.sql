@@ -39,7 +39,7 @@ BEGIN
                     NEW.category_fr := COALESCE(NEW.category_fr, 'Corporate');
                 
                 WHEN 'public_company' THEN
-                    NEW.category_nl := COALESCE(NEW.category_nl, 'Beursgenoteerd Bedrijf');
+                    NEW.category_nl := COALESCE(NEW.category_nl, 'Beursgenoteerd');
                     NEW.category_en := COALESCE(NEW.category_en, 'Public Company');
                     NEW.category_fr := COALESCE(NEW.category_fr, 'Société Cotée');
                 
