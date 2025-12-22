@@ -783,10 +783,17 @@ function jobsPage() {
                     offset: (page - 1) * this.pageSize
                 });
                 
-                // Apply all filters
+                // Only add search if not empty
                 if (this.searchQuery) {
                     params.append('search', this.searchQuery);
                 }
+                
+                // Only add is_active if activeOnly is true (otherwise show all jobs)
+                if (this.filters.activeOnly) {
+                    params.append('is_active', 'true');
+                }
+                
+                // Apply all filters
                 if (this.filters.companies.length > 0) {
                     params.append('company_ids', this.filters.companies.join(','));
                 }
@@ -1127,10 +1134,18 @@ function jobsPage() {
                 console.log(`Fetching page ${this.currentPage} from API`);
                 const params = new URLSearchParams({
                     limit: this.pageSize,
-                    offset: (this.currentPage - 1) * this.pageSize,
-                    search: this.searchQuery,
-                    is_active: this.filters.activeOnly
+                    offset: (this.currentPage - 1) * this.pageSize
                 });
+                
+                // Only add search if not empty
+                if (this.searchQuery) {
+                    params.append('search', this.searchQuery);
+                }
+                
+                // Only add is_active if activeOnly is true (otherwise show all jobs)
+                if (this.filters.activeOnly) {
+                    params.append('is_active', 'true');
+                }
                 
                 // Add filter parameters
                 if (this.filters.companies.length > 0) {

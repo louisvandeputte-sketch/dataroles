@@ -101,11 +101,11 @@ async def list_jobs(
             ai_enriched_bool = False
         
         # When filtering by run_id, show ALL jobs from that run (active and inactive)
-        # Otherwise, default to active jobs only
+        # Otherwise, default to showing ALL jobs (active + inactive)
         if run_id:
             active_only = is_active if is_active is not None else False
         else:
-            active_only = is_active if is_active is not None else True
+            active_only = is_active if is_active is not None else False
         
         # Build search query
         jobs, total = db.search_jobs(
@@ -266,6 +266,42 @@ async def count_new_jobs():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/companies/autocomplete")
+async def autocomplete_companies(q: str = Query(..., min_length=2)):
+    """Autocomplete company names."""
+    result = db.client.table("companies")\
+        .select("id, name, logo_url")\
+        .ilike("name", f"%{q}%")\
+        .limit(10)\
+        .execute()
+    
+    return {"companies": result.data if result.data else []}
+
+
+@router.get("/locations/autocomplete")
+async def autocomplete_locations(q: str = Query(..., min_length=2)):
+    """Autocomplete locations."""
+    result = db.client.table("locations")\
+        .select("id, full_location_string, city, region, country")\
+        .ilike("full_location_string", f"%{q}%")\
+        .limit(10)\
+        .execute()
+    
+    return {"locations": result.data if result.data else []}
+
+
+@router.get("/types")
+async def get_job_types():
+    """Get all job types."""
+    result = db.client.table("job_types")\
+        .select("id, name, description, color")\
+        .eq("is_active", True)\
+        .order("name")\
+        .execute()
+    
+    return {"types": result.data if result.data else []}
+
+
 @router.get("/{job_id}")
 async def get_job_detail(job_id: str):
     """Get detailed information about a specific job."""
@@ -341,42 +377,6 @@ async def delete_multiple_jobs(job_ids: List[str]):
             .execute()
     
     return {"message": f"Deleted {len(job_ids)} jobs"}
-
-
-@router.get("/companies/autocomplete")
-async def autocomplete_companies(q: str = Query(..., min_length=2)):
-    """Autocomplete company names."""
-    result = db.client.table("companies")\
-        .select("id, name, logo_url")\
-        .ilike("name", f"%{q}%")\
-        .limit(10)\
-        .execute()
-    
-    return {"companies": result.data if result.data else []}
-
-
-@router.get("/locations/autocomplete")
-async def autocomplete_locations(q: str = Query(..., min_length=2)):
-    """Autocomplete locations."""
-    result = db.client.table("locations")\
-        .select("id, full_location_string, city, region, country")\
-        .ilike("full_location_string", f"%{q}%")\
-        .limit(10)\
-        .execute()
-    
-    return {"locations": result.data if result.data else []}
-
-
-@router.get("/types")
-async def get_job_types():
-    """Get all job types."""
-    result = db.client.table("job_types")\
-        .select("id, name, description, color")\
-        .eq("is_active", True)\
-        .order("name")\
-        .execute()
-    
-    return {"types": result.data if result.data else []}
 
 
 # LLM Enrichment endpoints
@@ -472,12 +472,13 @@ async def get_enrichment_stats():
             .execute()
         total = total_result.count or 0
         
-        # Step 2: Enriched jobs = all jobs with title_classification='Data' that have completed enrichment
-        # This includes jobs that were classified as NIS during LLM enrichment (type_datarol check)
-        enriched_result = db.client.table("llm_enrichment")\
-            .select("id, job_postings!inner(title_classification)", count="exact")\
-            .eq("job_postings.title_classification", "Data")\
-            .not_.is_("enrichment_completed_at", "null")\
+        # Step 2: Enriched jobs = count from job_postings (not llm_enrichment) to match filter logic
+        # This ensures we count unique JOBS, not enrichment records
+        # Must include llm_enrichment in select to filter on it
+        enriched_result = db.client.table("job_postings")\
+            .select("id, llm_enrichment(enrichment_completed_at)", count="exact")\
+            .eq("title_classification", "Data")\
+            .not_.is_("llm_enrichment.enrichment_completed_at", "null")\
             .execute()
         enriched = enriched_result.count or 0
         
