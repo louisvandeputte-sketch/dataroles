@@ -128,12 +128,29 @@ class SupabaseClient:
         return UUID(result.data[0]["id"])
     
     def get_all_programming_languages(self, active_only: bool = True) -> List[Dict]:
-        """Get all programming languages."""
-        query = self.client.table("programming_languages").select("*")
-        if active_only:
-            query = query.eq("is_active", True)
-        result = query.order("name").execute()
-        return result.data if result.data else []
+        """Get all programming languages with pagination to handle >1000 records."""
+        all_languages = []
+        page_size = 1000
+        offset = 0
+        
+        while True:
+            query = self.client.table("programming_languages").select("*")
+            if active_only:
+                query = query.eq("is_active", True)
+            result = query.order("name").range(offset, offset + page_size - 1).execute()
+            
+            if not result.data:
+                break
+                
+            all_languages.extend(result.data)
+            
+            # If we got less than page_size, we've reached the end
+            if len(result.data) < page_size:
+                break
+                
+            offset += page_size
+        
+        return all_languages
     
     # ==================== ECOSYSTEMS ====================
     
@@ -160,12 +177,29 @@ class SupabaseClient:
         return UUID(result.data[0]["id"])
     
     def get_all_ecosystems(self, active_only: bool = True) -> List[Dict]:
-        """Get all ecosystems."""
-        query = self.client.table("ecosystems").select("*")
-        if active_only:
-            query = query.eq("is_active", True)
-        result = query.order("name").execute()
-        return result.data if result.data else []
+        """Get all ecosystems with pagination to handle >1000 records."""
+        all_ecosystems = []
+        page_size = 1000
+        offset = 0
+        
+        while True:
+            query = self.client.table("ecosystems").select("*")
+            if active_only:
+                query = query.eq("is_active", True)
+            result = query.order("name").range(offset, offset + page_size - 1).execute()
+            
+            if not result.data:
+                break
+                
+            all_ecosystems.extend(result.data)
+            
+            # If we got less than page_size, we've reached the end
+            if len(result.data) < page_size:
+                break
+                
+            offset += page_size
+        
+        return all_ecosystems
     
     # ==================== TECH STACK ALIASES ====================
     
@@ -436,7 +470,7 @@ class SupabaseClient:
         # Build query - include job_sources for multi-source support and llm_enrichment for type_datarol/contract filtering
         # Use explicit relationship name for locations to avoid ambiguity with location_id_override
         query = self.client.table("job_postings")\
-            .select("*, companies(id, name, logo_url), locations!job_postings_location_id_fkey(id, city, country_code, subdivision_name_en), job_sources(source, source_job_id), llm_enrichment(type_datarol, seniority, rolniveau, contract)", count="exact")
+            .select("*, companies(id, name, logo_url), locations!job_postings_location_id_fkey(id, city, country_code, subdivision_name_en), job_sources(source, source_job_id), llm_enrichment(type_datarol, seniority, rolniveau, contract, enrichment_completed_at)", count="exact")
         
         # NEW: Filter by job IDs if provided (for run_id filtering)
         if job_ids is not None:
@@ -505,6 +539,16 @@ class SupabaseClient:
         if source:
             query = query.eq("source", source)
         
+        # Filter by AI enrichment status (server-side)
+        if ai_enriched is not None:
+            if ai_enriched:
+                # Only enriched: must have llm_enrichment with completed_at
+                query = query.not_.is_("llm_enrichment.enrichment_completed_at", "null")
+            else:
+                # Only unenriched: either no llm_enrichment OR enrichment_completed_at is null
+                # Use OR filter: llm_enrichment is null OR enrichment_completed_at is null
+                query = query.or_("llm_enrichment.is.null,llm_enrichment.enrichment_completed_at.is.null")
+        
         # Execute with pagination and sorting
         # Apply sorting based on parameters
         is_desc = sort_direction.lower() == "desc"
@@ -547,26 +591,14 @@ class SupabaseClient:
                 if not any(type_id in job_type_ids for type_id in type_ids):
                     continue  # Skip this job
             
-            # Get AI enrichment status
-            enrichment_result = self.client.table("llm_enrichment")\
-                .select("enrichment_completed_at, type_datarol, rolniveau")\
-                .eq("job_posting_id", job["id"])\
-                .single()\
-                .execute()
-            
-            if enrichment_result.data:
-                job["ai_enriched"] = enrichment_result.data.get("enrichment_completed_at") is not None
-                job["ai_data"] = enrichment_result.data if job["ai_enriched"] else None
+            # Get AI enrichment status from joined data
+            enrichment_data = job.get("llm_enrichment")
+            if enrichment_data:
+                job["ai_enriched"] = enrichment_data.get("enrichment_completed_at") is not None
+                job["ai_data"] = enrichment_data if job["ai_enriched"] else None
             else:
                 job["ai_enriched"] = False
                 job["ai_data"] = None
-            
-            # Filter by AI enrichment status if specified
-            if ai_enriched is not None:
-                if ai_enriched and not job["ai_enriched"]:
-                    continue  # Skip unenriched jobs
-                if not ai_enriched and job["ai_enriched"]:
-                    continue  # Skip enriched jobs
             
             jobs_with_types.append(job)
         
