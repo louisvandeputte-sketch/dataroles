@@ -87,6 +87,11 @@
                         <input type="text" x-model="languageSearch" @input="filterLanguages" 
                                placeholder="Search languages..."
                                class="px-4 py-2 border border-gray-300 rounded-lg text-sm">
+                        <button @click="toggleLanguageSortDirection" 
+                                class="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2">
+                            <i data-lucide="arrow-up-down" class="w-4 h-4"></i>
+                            <span x-text="languageSortDescending ? 'Relevance: high → low' : 'Relevance: low → high'"></span>
+                        </button>
                         <button @click="showAddLanguageModal = true" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
                             <i data-lucide="plus" class="w-4 h-4 inline mr-1"></i>
                             Add Language
@@ -166,6 +171,11 @@
                         <input type="text" x-model="ecosystemSearch" @input="filterEcosystems" 
                                placeholder="Search ecosystems..."
                                class="px-4 py-2 border border-gray-300 rounded-lg text-sm">
+                        <button @click="toggleEcosystemSortDirection" 
+                                class="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2">
+                            <i data-lucide="arrow-up-down" class="w-4 h-4"></i>
+                            <span x-text="ecosystemSortDescending ? 'Relevance: high → low' : 'Relevance: low → high'"></span>
+                        </button>
                         <button @click="showAddEcosystemModal = true" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
                             <i data-lucide="plus" class="w-4 h-4 inline mr-1"></i>
                             Add Ecosystem
@@ -395,6 +405,8 @@ function techStackPage() {
         showAddEcosystemModal: false,
         editingLanguage: null,
         editingEcosystem: null,
+        languageSortDescending: true,
+        ecosystemSortDescending: true,
         
         async init() {
             await this.loadStats();
@@ -417,7 +429,7 @@ function techStackPage() {
                 const response = await fetch('/api/tech-stack/programming-languages');
                 const data = await response.json();
                 this.languages = data.languages || [];
-                this.filteredLanguages = this.languages;
+                this.filterLanguages();
             } catch (error) {
                 console.error('Failed to load languages:', error);
             }
@@ -428,7 +440,7 @@ function techStackPage() {
                 const response = await fetch('/api/tech-stack/ecosystems');
                 const data = await response.json();
                 this.ecosystems = data.ecosystems || [];
-                this.filteredEcosystems = this.ecosystems;
+                this.filterEcosystems();
             } catch (error) {
                 console.error('Failed to load ecosystems:', error);
             }
@@ -436,20 +448,45 @@ function techStackPage() {
         
         filterLanguages() {
             const search = this.languageSearch.toLowerCase();
-            this.filteredLanguages = this.languages.filter(lang => 
+            const filtered = this.languages.filter(lang => 
                 lang.name.toLowerCase().includes(search) ||
                 lang.display_name.toLowerCase().includes(search) ||
                 (lang.category && lang.category.toLowerCase().includes(search))
             );
+            this.filteredLanguages = this.sortByRelevance(filtered, this.languageSortDescending);
         },
-        
+
         filterEcosystems() {
             const search = this.ecosystemSearch.toLowerCase();
-            this.filteredEcosystems = this.ecosystems.filter(eco => 
+            const filtered = this.ecosystems.filter(eco => 
                 eco.name.toLowerCase().includes(search) ||
                 eco.display_name.toLowerCase().includes(search) ||
                 (eco.category && eco.category.toLowerCase().includes(search))
             );
+            this.filteredEcosystems = this.sortByRelevance(filtered, this.ecosystemSortDescending);
+        },
+
+        toggleLanguageSortDirection() {
+            this.languageSortDescending = !this.languageSortDescending;
+            this.filteredLanguages = this.sortByRelevance(this.filteredLanguages, this.languageSortDescending);
+            this.$nextTick(() => lucide.createIcons());
+        },
+
+        toggleEcosystemSortDirection() {
+            this.ecosystemSortDescending = !this.ecosystemSortDescending;
+            this.filteredEcosystems = this.sortByRelevance(this.filteredEcosystems, this.ecosystemSortDescending);
+            this.$nextTick(() => lucide.createIcons());
+        },
+
+        sortByRelevance(items, descending) {
+            return [...items].sort((a, b) => {
+                const aScore = (a.relevance_score ?? (descending ? -1 : Number.POSITIVE_INFINITY));
+                const bScore = (b.relevance_score ?? (descending ? -1 : Number.POSITIVE_INFINITY));
+                if (aScore === bScore) {
+                    return (a.display_name || a.name).localeCompare(b.display_name || b.name);
+                }
+                return descending ? bScore - aScore : aScore - bScore;
+            });
         },
         
         editLanguage(lang) {
