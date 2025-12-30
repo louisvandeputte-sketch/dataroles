@@ -382,6 +382,14 @@ class JobRankingSystem:
             if job.relevantie is not None:
                 job.base_score += job.relevantie
             
+            # Hiring model bonus: Direct hiring companies score higher than Recruitment
+            # Direct = +10, Recruitment = -5, Unknown/None = 0
+            if job.hiring_model:
+                if job.hiring_model.lower() == 'direct':
+                    job.base_score += 10
+                elif job.hiring_model.lower() == 'recruitment':
+                    job.base_score -= 5
+            
             # EXTREME PENALTY for non-enriched jobs (no AI enrichment)
             # These should ALWAYS rank at the bottom, even with perfect other scores
             # and recent scrape bonus (+15 max)
