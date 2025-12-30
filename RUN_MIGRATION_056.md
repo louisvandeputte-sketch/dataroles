@@ -59,6 +59,70 @@ LEFT JOIN company_master_data cmd ON c.id = cmd.company_id
 ORDER BY c.name;
 
 COMMENT ON VIEW companies_list_view IS 'Lightweight view for companies list interface including relevantie score, show_in_app flag, canonical size_category, multilingual sectors/categories, locatie_belgie and essential job metrics.';
+
+-- Also update job_ranking_view to include relevantie and show_in_app for ranking logic
+DROP VIEW IF EXISTS job_ranking_view;
+
+CREATE OR REPLACE VIEW job_ranking_view AS
+SELECT 
+    -- Job posting fields
+    jp.id,
+    jp.title,
+    jp.company_id,
+    jp.location_id,
+    jp.posted_date,
+    jp.posted_date_corrected,
+    jp.seniority_level,
+    jp.employment_type,
+    jp.function_areas,
+    jp.base_salary_min,
+    jp.base_salary_max,
+    jp.apply_url,
+    jp.num_applicants,
+    jp.is_active,
+    jp.title_classification,
+    
+    -- Company fields
+    c.name as company_name,
+    c.industry as company_industry,
+    c.company_url,
+    c.logo_data as company_logo_data,
+    c.employee_count_range as company_employee_count_range,
+    c.rating as company_rating,
+    c.reviews_count as company_reviews_count,
+    
+    -- Company master data
+    cmd.hiring_model,
+    cmd.relevantie,
+    cmd.show_in_app,
+    
+    -- Location fields
+    l.city as location_city,
+    
+    -- LLM Enrichment fields
+    e.enrichment_completed_at,
+    e.type_datarol as data_role_type,
+    e.hard_skills as skills_must_have,
+    e.samenvatting_kort_nl as samenvatting_kort,
+    e.samenvatting_lang_nl as samenvatting_lang,
+    e.must_have_programmeertalen,
+    e.nice_to_have_programmeertalen,
+    e.must_have_ecosystemen,
+    e.nice_to_have_ecosystemen,
+    e.labels,
+    
+    -- Job description
+    jd.full_description_text as description_text
+    
+FROM job_postings jp
+LEFT JOIN companies c ON jp.company_id = c.id
+LEFT JOIN company_master_data cmd ON c.id = cmd.company_id
+LEFT JOIN locations l ON jp.location_id = l.id
+LEFT JOIN llm_enrichment e ON jp.id = e.job_posting_id
+LEFT JOIN job_descriptions jd ON jp.id = jd.job_posting_id
+WHERE jp.is_active = true;
+
+COMMENT ON VIEW job_ranking_view IS 'Denormalized view for job ranking including company relevantie and show_in_app fields for ranking logic.';
 ```
 
 ## Verification
@@ -84,7 +148,9 @@ WHERE table_name = 'companies_list_view'
 1. **New columns** added to `company_master_data`:
    - `relevantie` (INTEGER) - manual relevance score
    - `show_in_app` (BOOLEAN, default: true) - visibility flag
-2. **Updated view**: `companies_list_view` now includes both columns
+2. **Updated views**:
+   - `companies_list_view` - includes both columns for UI
+   - `job_ranking_view` - includes both columns for ranking logic
 3. **UI**: `/companies` page now shows:
    - Narrower company name column
    - **Show** column with eye icon toggle (green=visible, red=hidden)
