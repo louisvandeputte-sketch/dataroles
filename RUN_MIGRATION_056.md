@@ -151,11 +151,13 @@ WHERE table_name = 'companies_list_view'
 2. **Updated views**:
    - `companies_list_view` - includes both columns for UI
    - `job_ranking_view` - includes both columns for ranking logic
+   - `vw_job_listings` - includes `show_in_app` column and **filters out** companies with `show_in_app = FALSE`
 3. **UI**: `/companies` page now shows:
    - Narrower company name column
    - **Show** column with eye icon toggle (green=visible, red=hidden)
    - **Relevantie** column (editable number)
 4. **API**: Companies API now returns `relevantie` and `show_in_app` in response
+5. **Ranking**: `relevantie` is added to `base_score` in ranking calculation
 
 ## Usage
 
