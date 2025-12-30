@@ -67,6 +67,7 @@ class JobData:
     company_rating: Optional[float]
     company_reviews_count: Optional[int]
     hiring_model: Optional[str]  # 'recruitment', 'direct', or 'unknown' from company_master_data
+    relevantie: Optional[int]  # Manual relevance score from company_master_data
     is_faang: bool
     
     # Location data
@@ -434,14 +435,18 @@ class JobRankingSystem:
         return multiplier
     
     def apply_diversity_modifiers(self, jobs: List[JobData]) -> List[JobData]:
-        """Apply hourly multiplier to base score (diversity modifiers removed)"""
+        """Apply hourly multiplier to base score and add company relevantie"""
         for job in jobs:
-            # Simple formula: final_score = base_score × hourly_multiplier
-            # No diversity penalties applied
+            # Calculate hourly multiplier
             hourly_multiplier = self.calculate_hourly_multiplier(job)
             job.hourly_multiplier = hourly_multiplier  # Store for database
             
+            # Base formula: final_score = base_score × hourly_multiplier
             job.final_score = job.base_score * hourly_multiplier
+            
+            # Add company relevantie if set (can be positive or negative)
+            if job.relevantie is not None:
+                job.final_score += job.relevantie
         
         return jobs
     
@@ -586,6 +591,7 @@ def load_jobs_from_database(only_needs_ranking: bool = False) -> List[JobData]:
                 company_rating=row.get('company_rating'),
                 company_reviews_count=row.get('company_reviews_count'),
                 hiring_model=row.get('hiring_model'),
+                relevantie=row.get('relevantie'),
                 is_faang=is_faang,
                 
                 # Location data (from view)
@@ -697,6 +703,7 @@ def save_rankings_to_database(ranked_jobs: List[JobData]):
                 'reputation_score': round(job.reputation_score, 2),
                 'base_score': round(job.base_score, 2),
                 'hourly_multiplier': round(job.hourly_multiplier, 3),
+                'relevantie': job.relevantie,  # Company relevance bonus (can be None)
                 'final_score': round(job.final_score, 2)
             }
             
