@@ -126,7 +126,8 @@ async def list_companies(
                     "email_hr": row.get("email_hr"),
                     "ai_enriched": row.get("ai_enriched"),
                     "ai_enriched_at": row.get("ai_enriched_at"),
-                    "relevantie": row.get("relevantie")
+                    "relevantie": row.get("relevantie"),
+                    "show_in_app": row.get("show_in_app")
                 } if row.get("master_data_id") else None
             }
             companies.append(company)

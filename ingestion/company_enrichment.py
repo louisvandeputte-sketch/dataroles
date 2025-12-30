@@ -2,6 +2,7 @@
 
 import json
 import time
+import re
 from typing import Dict, Any, Optional
 from datetime import datetime
 from loguru import logger
@@ -30,6 +31,61 @@ client = OpenAI(
 # Version 15: Added hiring_model field to distinguish recruitment vs direct hiring
 COMPANY_ENRICHMENT_PROMPT_ID = "pmpt_68fd06175d7c8190bd8767fddcb5486a0e87d16aa5f38bc2"
 COMPANY_ENRICHMENT_PROMPT_VERSION = "25"  # v25: locatie_belgie field, stricter classification
+
+
+def clean_aantal_werknemers(value: Optional[str]) -> Optional[str]:
+    """
+    Clean aantal_werknemers field by filtering out invalid placeholder values.
+    
+    Returns None for:
+    - Placeholder values like "[aantal]", "[number]"
+    - Bracketed numbers like "[270]"
+    - Unknown/not found values
+    - Empty strings
+    
+    Args:
+        value: Raw aantal_werknemers value from LLM
+        
+    Returns:
+        Cleaned value or None if invalid
+    """
+    if not value:
+        return None
+    
+    # Strip whitespace
+    value = value.strip()
+    
+    if not value:
+        return None
+    
+    # Convert to lowercase for case-insensitive matching
+    value_lower = value.lower()
+    
+    # Check for invalid patterns
+    invalid_patterns = [
+        '[aantal]',
+        '[number]',
+        'niet gevonden',
+        'onbekend',
+        'unknown',
+        'not found',
+        'n/a',
+        'na',
+    ]
+    
+    # Check if value matches any invalid pattern
+    for pattern in invalid_patterns:
+        if pattern in value_lower:
+            logger.debug(f"Filtering invalid aantal_werknemers: {value}")
+            return None
+    
+    # Check for bracketed numbers pattern: [270], [123], etc.
+    if re.match(r'^\[\d+\]$', value):
+        logger.debug(f"Filtering bracketed number aantal_werknemers: {value}")
+        return None
+    
+    # Value is valid
+    return value
 
 
 def enrich_company(company_id: str, company_name: str, company_url: Optional[str] = None) -> Dict[str, Any]:
@@ -165,13 +221,15 @@ def save_enrichment_to_db(company_id: str, enrichment_data: Dict[str, Any]) -> b
         # Database uses: bedrijfswebsite, jobspagina, bedrijfsomschrijving_en/nl/fr, aantal_werknemers, weetjes
         
         # Extract category values from nested object or direct fields
+        # Prompt v25+ uses: size_category (direct field)
         # Prompt v14 uses flat structure: maturity_en, maturity_nl, maturity_fr
         # Prompt v12 uses nested: maturity.category_en or category.en
         category_en = (
-            enrichment_data.get("maturity_en") or  # v14 flat
-            maturity.get("category_en") or         # v12 nested in maturity
-            category_obj.get("en") or              # v12 nested in category
-            enrichment_data.get("category_en")     # v12 flat fallback
+            enrichment_data.get("size_category") or  # v25+ direct field
+            enrichment_data.get("maturity_en") or    # v14 flat
+            maturity.get("category_en") or           # v12 nested in maturity
+            category_obj.get("en") or                # v12 nested in category
+            enrichment_data.get("category_en")       # v12 flat fallback
         )
         category_nl = (
             enrichment_data.get("maturity_nl") or
@@ -209,7 +267,9 @@ def save_enrichment_to_db(company_id: str, enrichment_data: Dict[str, Any]) -> b
             "hiring_model_en": enrichment_data.get("hiring_model_en"),
             "hiring_model_nl": enrichment_data.get("hiring_model_nl"),
             "hiring_model_fr": enrichment_data.get("hiring_model_fr"),
-            "aantal_werknemers": enrichment_data.get("employee_count_range") or enrichment_data.get("aantal_werknemers"),
+            "aantal_werknemers": clean_aantal_werknemers(
+                enrichment_data.get("employee_count_range") or enrichment_data.get("aantal_werknemers")
+            ),
             # Weetjes (factlets) - prompt v12 uses "factlets" instead of "weetjes"
             "weetjes": enrichment_data.get("factlets") or enrichment_data.get("weetjes"),
             "ai_enriched": True,
@@ -220,17 +280,27 @@ def save_enrichment_to_db(company_id: str, enrichment_data: Dict[str, Any]) -> b
             "size_category": category_en,
             # Note: category_nl/en/fr are auto-populated by trigger_translate_size_category
             # Only set them if LLM explicitly provides them (otherwise let trigger handle it)
-            "size_confidence": maturity.get("confidence") or enrichment_data.get("confidence"),
+            "size_confidence": (
+                enrichment_data.get("size_confidence") or  # v25+ direct field
+                maturity.get("confidence") or 
+                enrichment_data.get("confidence")
+            ),
             # Note: summary fields removed from prompt output (no longer generated)
             # Store arrays as JSONB (Supabase handles Python lists directly)
+            # Prompt v25+ uses size_key_arguments (direct field)
             # Prompt v14 uses key_arguments_en or arguments_en, v12 uses key_arguments
             "size_key_arguments": (
+                enrichment_data.get("size_key_arguments") or  # v25+ direct field
                 enrichment_data.get("key_arguments_en") or 
                 enrichment_data.get("arguments_en") or 
                 maturity.get("key_arguments") or 
                 enrichment_data.get("key_arguments")
             ),
-            "size_sources": maturity.get("sources") or enrichment_data.get("sources"),
+            "size_sources": (
+                enrichment_data.get("size_sources") or  # v25+ direct field
+                maturity.get("sources") or 
+                enrichment_data.get("sources")
+            ),
             "size_enriched_at": datetime.utcnow().isoformat() if category_en else None,
             "size_enrichment_error": None
         }

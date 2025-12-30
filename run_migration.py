@@ -37,7 +37,7 @@ def run_migration(migration_file: str):
 if __name__ == "__main__":
     print("🚀 Database Migration Tool\n")
     
-    success = run_migration("001_add_search_queries_table.sql")
+    success = run_migration("081_add_tijd_geleden_to_vw_job_listings.sql")
     
     if success:
         print("\n✅ Migration SQL prepared!")

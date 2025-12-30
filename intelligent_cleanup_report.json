@@ -1,0 +1,2665 @@
+{
+  "deactivated": [
+    {
+      "id": "c6bf5416-6b46-437a-b7dd-e70503b18542",
+      "name": ".NET",
+      "type": "language",
+      "reason": "AI-categorized as ecosystem: .NET \u2192 .NET",
+      "job_count": 10
+    },
+    {
+      "id": "0f9abd6c-bac4-4fd8-af8c-5025065ca36b",
+      "name": "Alteryx",
+      "type": "language",
+      "reason": "AI-categorized as ecosystem: Alteryx \u2192 Alteryx",
+      "job_count": 2
+    },
+    {
+      "id": "4630469d-3027-4b96-9cc6-10bc8e12bd28",
+      "name": "Angular",
+      "type": "language",
+      "reason": "AI-categorized as ecosystem: Angular \u2192 Angular",
+      "job_count": 2
+    },
+    {
+      "id": "a5a78f52-778e-4866-a1f4-b47a08e06923",
+      "name": "Apache Groovy",
+      "type": "ecosystem",
+      "reason": "AI-categorized as language: Apache Groovy \u2192 Apache Groovy",
+      "job_count": 1
+    },
+    {
+      "id": "fbcb3b59-5b0c-4844-b24b-61623c72507e",
+      "name": "Bash",
+      "type": "ecosystem",
+      "reason": "AI-categorized as language: Bash \u2192 Bash",
+      "job_count": 1
+    },
+    {
+      "id": "6c3b292f-983e-46a4-b641-6b03ed293bd1",
+      "name": "C",
+      "type": "language",
+      "reason": "AI-categorized as language: C \u2192 C#",
+      "job_count": 8
+    },
+    {
+      "id": "71cc7df3-d7cc-4956-a278-51f3cd1fbfc2",
+      "name": "C++",
+      "type": "language",
+      "reason": "AI-categorized as language: C++ \u2192 C#",
+      "job_count": 27
+    },
+    {
+      "id": "d3e1622c-5ff8-4302-9127-96efde4c4c91",
+      "name": "Cuda",
+      "type": "language",
+      "reason": "AI-categorized as ecosystem: Cuda \u2192 CUDA",
+      "job_count": 1
+    },
+    {
+      "id": "f65458cd-73b2-4192-956f-7b6f1cd1a244",
+      "name": "CUDA",
+      "type": "language",
+      "reason": "AI-categorized as ecosystem: CUDA \u2192 CUDA",
+      "job_count": 1
+    },
+    {
+      "id": "045901d4-6606-4da1-a302-f3ffe6f964a6",
+      "name": "Databricks",
+      "type": "language",
+      "reason": "AI-categorized as ecosystem: Databricks \u2192 Databricks",
+      "job_count": 1
+    },
+    {
+      "id": "c845d24d-878f-4e1e-bb11-d67b57b9a620",
+      "name": "DAX",
+      "type": "ecosystem",
+      "reason": "AI-categorized as language: DAX \u2192 DAX",
+      "job_count": 2
+    },
+    {
+      "id": "1fd4334c-01e7-4f16-8cf3-d179b02fcb79",
+      "name": "dbt",
+      "type": "language",
+      "reason": "AI-categorized as ecosystem: dbt \u2192 DBT",
+      "job_count": 1
+    },
+    {
+      "id": "74a6584f-3431-445e-81ba-1ececac06fcb",
+      "name": "dbt",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: dbt \u2192 DBT",
+      "job_count": 66
+    },
+    {
+      "id": "02703842-9a7a-4e2c-a778-41b922eca581",
+      "name": "Dbt",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: Dbt \u2192 DBT",
+      "job_count": 3
+    },
+    {
+      "id": "b5c02980-516a-4256-b73a-c6dc018ab8c8",
+      "name": "Excel",
+      "type": "language",
+      "reason": "AI-categorized as ecosystem: Excel \u2192 Excel",
+      "job_count": 3
+    },
+    {
+      "id": "e0a17b69-8b75-4416-bee0-604b1efc2b62",
+      "name": "Groovy",
+      "type": "ecosystem",
+      "reason": "AI-categorized as language: Groovy \u2192 Groovy",
+      "job_count": 1
+    },
+    {
+      "id": "2679e7de-0828-4d86-b990-139ce10c9928",
+      "name": "Hive",
+      "type": "language",
+      "reason": "AI-categorized as ecosystem: Hive \u2192 Hive",
+      "job_count": 1
+    },
+    {
+      "id": "dc9da85b-3772-4f5d-9dc8-23416ec3cba1",
+      "name": "Java",
+      "type": "ecosystem",
+      "reason": "AI-categorized as language: Java \u2192 Java",
+      "job_count": 1
+    },
+    {
+      "id": "c4c6a58d-dc1c-488a-b471-5634d3238ef8",
+      "name": "Javascript",
+      "type": "language",
+      "reason": "AI-categorized as language: Javascript \u2192 JavaScript",
+      "job_count": 2
+    },
+    {
+      "id": "8c21e594-4712-4d95-b03e-b6eb5a772b97",
+      "name": "JavaScript",
+      "type": "ecosystem",
+      "reason": "AI-categorized as language: JavaScript \u2192 JavaScript",
+      "job_count": 1
+    },
+    {
+      "id": "32424669-8e94-42e1-9273-7a64afbf27c1",
+      "name": "JSON",
+      "type": "ecosystem",
+      "reason": "AI-categorized as language: JSON \u2192 JSON",
+      "job_count": 1
+    },
+    {
+      "id": "99c7ec10-452a-4dfc-a8d0-400245af2f31",
+      "name": "Matlab",
+      "type": "language",
+      "reason": "AI-categorized as language: Matlab \u2192 MATLAB",
+      "job_count": 4
+    },
+    {
+      "id": "6fe5c3bc-315c-43e3-a88e-64a87deb2f3c",
+      "name": "NodeJS",
+      "type": "language",
+      "reason": "AI-categorized as ecosystem: NodeJS \u2192 Node.js",
+      "job_count": 1
+    },
+    {
+      "id": "125c9776-e3da-4dd6-ae4b-02bf5993ee00",
+      "name": "Oracle",
+      "type": "language",
+      "reason": "AI-categorized as ecosystem: Oracle \u2192 Oracle",
+      "job_count": 1
+    },
+    {
+      "id": "9efa5a46-95cb-44b2-8cf5-1f6a9ba0237c",
+      "name": "Pig",
+      "type": "language",
+      "reason": "AI-categorized as ecosystem: Pig \u2192 Pig",
+      "job_count": 1
+    },
+    {
+      "id": "c2495860-983d-4e49-90a1-15b3d662b8b3",
+      "name": "PLSQL",
+      "type": "language",
+      "reason": "AI-categorized as language: PLSQL \u2192 PL/SQL",
+      "job_count": 1
+    },
+    {
+      "id": "945644c5-4684-4f42-ac15-77347c81a50b",
+      "name": "PL-SQL",
+      "type": "ecosystem",
+      "reason": "AI-categorized as language: PL-SQL \u2192 PL/SQL",
+      "job_count": 1
+    },
+    {
+      "id": "711ec9ff-fc84-41df-be73-aaa5455ce70a",
+      "name": "Power BI",
+      "type": "language",
+      "reason": "AI-categorized as ecosystem: Power BI \u2192 Power BI",
+      "job_count": 1
+    },
+    {
+      "id": "989b25e1-10ff-4071-ba3c-e39a74d87dca",
+      "name": "PowerBI",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: PowerBI \u2192 Power BI",
+      "job_count": 5
+    },
+    {
+      "id": "05b9ca96-28af-4519-9754-a0ea364b8763",
+      "name": "Power Query",
+      "type": "language",
+      "reason": "AI-categorized as ecosystem: Power Query \u2192 Power Query",
+      "job_count": 1
+    },
+    {
+      "id": "430c3d1a-d2a9-4ce1-ae1d-b440c953f7bb",
+      "name": "Powershell",
+      "type": "ecosystem",
+      "reason": "AI-categorized as language: Powershell \u2192 PowerShell",
+      "job_count": 1
+    },
+    {
+      "id": "fc071da3-7f14-41df-9061-b2e8de58a0ca",
+      "name": "PowerShell",
+      "type": "ecosystem",
+      "reason": "AI-categorized as language: PowerShell \u2192 PowerShell",
+      "job_count": 3
+    },
+    {
+      "id": "32554e3d-b3ed-478a-b8e8-5ca686aa201a",
+      "name": "Pyspark",
+      "type": "language",
+      "reason": "AI-categorized as language: Pyspark \u2192 PySpark",
+      "job_count": 1
+    },
+    {
+      "id": "00b4db58-e682-4d20-940f-4b26a1feec31",
+      "name": "PySpark",
+      "type": "ecosystem",
+      "reason": "AI-categorized as language: PySpark \u2192 PySpark",
+      "job_count": 8
+    },
+    {
+      "id": "4e499596-7e9a-430c-bcc9-2489192cdf3e",
+      "name": "Python",
+      "type": "ecosystem",
+      "reason": "AI-categorized as language: Python \u2192 Python",
+      "job_count": 4
+    },
+    {
+      "id": "20dd5f14-5160-430a-b9d3-c08a877f8c88",
+      "name": "R",
+      "type": "ecosystem",
+      "reason": "AI-categorized as language: R \u2192 R",
+      "job_count": 3
+    },
+    {
+      "id": "aa71df16-8ec6-4ce4-812c-da1fbc2c9023",
+      "name": "React",
+      "type": "language",
+      "reason": "AI-categorized as ecosystem: React \u2192 React",
+      "job_count": 2
+    },
+    {
+      "id": "3efa874c-6dc8-48dc-8e55-82a5e9c5d830",
+      "name": "Rust",
+      "type": "language",
+      "reason": "AI-categorized as language: Rust \u2192 RUST",
+      "job_count": 15
+    },
+    {
+      "id": "94e28653-19c4-4752-96e0-93b7e8c20b75",
+      "name": "SAS",
+      "type": "language",
+      "reason": "AI-categorized as ecosystem: SAS \u2192 SAS",
+      "job_count": 61
+    },
+    {
+      "id": "c8673b7b-3005-457c-a6df-1e47098a61c4",
+      "name": "SAS EG",
+      "type": "language",
+      "reason": "AI-categorized as ecosystem: SAS EG \u2192 SAS EG",
+      "job_count": 4
+    },
+    {
+      "id": "3e5bc5a0-a488-48cc-adb2-66f4df3f878e",
+      "name": "Spark",
+      "type": "language",
+      "reason": "AI-categorized as ecosystem: Spark \u2192 Spark",
+      "job_count": 5
+    },
+    {
+      "id": "b218fd10-9c41-4d89-829d-4c7dd7ae99d5",
+      "name": "Spring",
+      "type": "language",
+      "reason": "AI-categorized as ecosystem: Spring \u2192 Spring",
+      "job_count": 1
+    },
+    {
+      "id": "35277a43-1327-4a23-ad00-d8c4cd2d2c6d",
+      "name": "SPSS",
+      "type": "language",
+      "reason": "AI-categorized as ecosystem: SPSS \u2192 SPSS",
+      "job_count": 1
+    },
+    {
+      "id": "aba342f5-8bc6-4251-a641-484f81da2b1d",
+      "name": "SQL",
+      "type": "ecosystem",
+      "reason": "AI-categorized as language: SQL \u2192 SQL",
+      "job_count": 19
+    },
+    {
+      "id": "0c58facb-73d4-4c6e-863e-7e4108115c49",
+      "name": "T-SQL",
+      "type": "ecosystem",
+      "reason": "AI-categorized as language: T-SQL \u2192 T-SQL",
+      "job_count": 1
+    },
+    {
+      "id": "c28b0ff0-8ab1-4bdf-84f0-df2983864aae",
+      "name": "Terraform",
+      "type": "language",
+      "reason": "AI-categorized as ecosystem: Terraform \u2192 TerraForm",
+      "job_count": 1
+    },
+    {
+      "id": "a44406c4-33f7-485e-aaee-295455856861",
+      "name": "Terraform",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: Terraform \u2192 TerraForm",
+      "job_count": 72
+    },
+    {
+      "id": "a64f4e55-c4d1-4ef0-87f7-eef9da21adb0",
+      "name": "TypeScript",
+      "type": "language",
+      "reason": "AI-categorized as language: TypeScript \u2192 Typescript",
+      "job_count": 25
+    },
+    {
+      "id": "be2023bd-e2ac-4f6a-b3e2-b2f5e8984035",
+      "name": "AbInitio",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: AbInitio \u2192 Ab Initio",
+      "job_count": 1
+    },
+    {
+      "id": "c52c2328-d978-446a-8b8d-bb3506851e06",
+      "name": "ARIS",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: ARIS \u2192 Aris",
+      "job_count": 3
+    },
+    {
+      "id": "969fe76f-538f-4dbb-8c9d-492e1759d664",
+      "name": "Artificial Intelligence",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: Artificial Intelligence \u2192 Artificial intelligence",
+      "job_count": 1
+    },
+    {
+      "id": "04f5536d-9ffd-4055-93b7-1a11c82f330e",
+      "name": "AVEVA",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: AVEVA \u2192 Aveva",
+      "job_count": 1
+    },
+    {
+      "id": "0859cbbd-ae7f-4cba-a473-fe0326585b29",
+      "name": "Aveva PI",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: Aveva PI \u2192 AVEVA PI",
+      "job_count": 1
+    },
+    {
+      "id": "cf3118b3-976d-4754-9335-008ec38c7cb2",
+      "name": "Azure DevOps",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: Azure DevOps \u2192 Azure Devops",
+      "job_count": 41
+    },
+    {
+      "id": "eef5a59c-8742-453d-b6d1-2385c376e7a4",
+      "name": "AzureML",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: AzureML \u2192 Azure ML",
+      "job_count": 1
+    },
+    {
+      "id": "f9967c0d-8fa5-4cb5-8751-eac9986fb603",
+      "name": "BigQuery",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: BigQuery \u2192 Big Query",
+      "job_count": 37
+    },
+    {
+      "id": "ecb9cd2f-bb60-4e32-b880-abdf4c8c82e6",
+      "name": "ClickHouse",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: ClickHouse \u2192 Clickhouse",
+      "job_count": 1
+    },
+    {
+      "id": "56cd5beb-ab85-4f97-8499-adf9048c7299",
+      "name": "CloudWatch",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: CloudWatch \u2192 Cloudwatch",
+      "job_count": 1
+    },
+    {
+      "id": "d77cff44-6843-4c09-bb7d-baafea2da37a",
+      "name": "Contentsquare",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: Contentsquare \u2192 ContentSquare",
+      "job_count": 1
+    },
+    {
+      "id": "e96e42b1-e4f9-4818-951f-dd3b9e1bc401",
+      "name": "Data catalogues",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: Data catalogues \u2192 Data Catalogues",
+      "job_count": 1
+    },
+    {
+      "id": "7f25a46d-61fd-45cd-8aa0-1b8dba0d0ffb",
+      "name": "Data Lakes",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: Data Lakes \u2192 Data lakes",
+      "job_count": 2
+    },
+    {
+      "id": "54ba32a3-f039-4690-a1c1-3177690f7b79",
+      "name": "Data mesh",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: Data mesh \u2192 Data Mesh",
+      "job_count": 1
+    },
+    {
+      "id": "c312e99b-6fae-415b-a5f4-1fff1c138dff",
+      "name": "ELK Stack",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: ELK Stack \u2192 ELK stack",
+      "job_count": 1
+    },
+    {
+      "id": "2c3ca1af-0177-4608-8a62-b123c8de6c79",
+      "name": "FAISS",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: FAISS \u2192 Faiss",
+      "job_count": 3
+    },
+    {
+      "id": "189602c5-09d2-400a-8b22-937bc4a20b8e",
+      "name": "Git",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: Git \u2192 git",
+      "job_count": 111
+    },
+    {
+      "id": "555565c7-562e-4d0c-b1dd-f6ce781e1ea7",
+      "name": "GIT",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: GIT \u2192 git",
+      "job_count": 10
+    },
+    {
+      "id": "06800706-760b-456a-9ffb-73f815315c0f",
+      "name": "GITHub",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: GITHub \u2192 GitHub",
+      "job_count": 1
+    },
+    {
+      "id": "6b743b53-7664-4104-915f-484be536da43",
+      "name": "Github Actions",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: Github Actions \u2192 GitHub Actions",
+      "job_count": 1
+    },
+    {
+      "id": "1a3221c2-ab68-4cbd-bc21-665b6ca0f2ed",
+      "name": "Gitlab",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: Gitlab \u2192 GitLab",
+      "job_count": 2
+    },
+    {
+      "id": "05c3174f-8131-4f07-bf17-14770c8a6f64",
+      "name": "Hugging face",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: Hugging face \u2192 Hugging Face",
+      "job_count": 1
+    },
+    {
+      "id": "9af61374-875f-4d92-8487-081793e46e4c",
+      "name": "HuggingFace",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: HuggingFace \u2192 Hugging Face",
+      "job_count": 4
+    },
+    {
+      "id": "d22dc4cf-2c90-4759-893b-055446ce1e02",
+      "name": "IBM Datastage",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: IBM Datastage \u2192 IBM DataStage",
+      "job_count": 1
+    },
+    {
+      "id": "7dbbd941-27d8-45c6-b998-188929375e63",
+      "name": "Jax",
+      "type": "ecosystem",
+      "reason": "AI-categorized as language: Jax \u2192 JAX",
+      "job_count": 1
+    },
+    {
+      "id": "e7c5b487-2f55-4b93-8b74-7fb3d1c85a11",
+      "name": "Jira",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: Jira \u2192 JIRA",
+      "job_count": 38
+    },
+    {
+      "id": "a9841c68-ab66-4adb-96c6-3d83f567dbdc",
+      "name": "Jmeter",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: Jmeter \u2192 JMeter",
+      "job_count": 1
+    },
+    {
+      "id": "4a0576cf-2a9d-4717-a9ed-1dd314f611fc",
+      "name": "Junit",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: Junit \u2192 JUnit",
+      "job_count": 1
+    },
+    {
+      "id": "5672c86e-de90-4736-8e8b-40161e9d93a7",
+      "name": "Jupyter Notebooks",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: Jupyter Notebooks \u2192 Jupyter notebooks",
+      "job_count": 3
+    },
+    {
+      "id": "4f166f92-db7a-4440-9f9d-f14f60d16ae7",
+      "name": "Langchain",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: Langchain \u2192 LangChain",
+      "job_count": 7
+    },
+    {
+      "id": "5fa2d5dc-99c8-49ea-9cd3-621e228b8c61",
+      "name": "LangGraph",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: LangGraph \u2192 Langgraph",
+      "job_count": 5
+    },
+    {
+      "id": "c1cb9672-78ed-437e-80bf-bd852a2db153",
+      "name": "LlamaIndex",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: LlamaIndex \u2192 Llamaindex",
+      "job_count": 2
+    },
+    {
+      "id": "a9bbc3ac-d03c-4f4d-bf9e-a96b6b08c02d",
+      "name": "Machine learning",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: Machine learning \u2192 Machine Learning",
+      "job_count": 1
+    },
+    {
+      "id": "f39a02fb-ed36-403c-b8a5-20f601291ea1",
+      "name": "Microsoft Azure Data Factory",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: Microsoft Azure Data Factory \u2192 Microsoft Azure data factory",
+      "job_count": 5
+    },
+    {
+      "id": "11a3f4f1-1db5-4237-a711-ca4a6ecda5c3",
+      "name": "Microsoft Azure Data Lake",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: Microsoft Azure Data Lake \u2192 Microsoft Azure data lake",
+      "job_count": 1
+    },
+    {
+      "id": "e0048408-97b6-41ef-b4ee-249fbe599a13",
+      "name": "Microsoft Azure Data Warehouse",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: Microsoft Azure Data Warehouse \u2192 Microsoft Azure data warehouse",
+      "job_count": 1
+    },
+    {
+      "id": "334f5ff2-2f4f-4eee-829f-47982e74b3ad",
+      "name": "ML-Ops",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: ML-Ops \u2192 MLOps",
+      "job_count": 1
+    },
+    {
+      "id": "3c69d367-fab8-435b-97eb-5aad33f8b4f5",
+      "name": "ML-OPS",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: ML-OPS \u2192 MLOps",
+      "job_count": 1
+    },
+    {
+      "id": "d5d3d3fb-824b-44a9-9ce9-81d1f303862b",
+      "name": "MLflow",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: MLflow \u2192 Mlflow",
+      "job_count": 30
+    },
+    {
+      "id": "188c8f30-eb73-45c3-b349-d3ccb349e493",
+      "name": "MLFlow",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: MLFlow \u2192 Mlflow",
+      "job_count": 3
+    },
+    {
+      "id": "b858d939-be0e-47df-8e95-981217d1526f",
+      "name": "MS-FABRIC",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: MS-FABRIC \u2192 MS Fabric",
+      "job_count": 2
+    },
+    {
+      "id": "e1179812-7e37-4d20-8289-b675188610fe",
+      "name": "MSSQL",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: MSSQL \u2192 MS SQL",
+      "job_count": 1
+    },
+    {
+      "id": "d6c5b7bc-ff13-4162-8483-8c885bd6bc81",
+      "name": "Neo4j",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: Neo4j \u2192 Neo4J",
+      "job_count": 1
+    },
+    {
+      "id": "ea94f665-d983-45de-9fe1-ac73e01bf91f",
+      "name": "NoSQL",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: NoSQL \u2192 noSQL",
+      "job_count": 9
+    },
+    {
+      "id": "2aa8b993-89d3-4fe5-b729-278bff61841e",
+      "name": "numpy",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: numpy \u2192 Numpy",
+      "job_count": 2
+    },
+    {
+      "id": "1d3ed1e1-a0d3-4194-9564-718b9bea7533",
+      "name": "NumPy",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: NumPy \u2192 Numpy",
+      "job_count": 6
+    },
+    {
+      "id": "20267437-58e7-45b7-b586-80b3e9049a1b",
+      "name": "Openshift",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: Openshift \u2192 OpenShift",
+      "job_count": 1
+    },
+    {
+      "id": "a67266e4-6e31-41e0-adfd-605bdd55041b",
+      "name": "pandas",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: pandas \u2192 Pandas",
+      "job_count": 4
+    },
+    {
+      "id": "6a367f76-5bb7-4cbe-a501-4e21735a3944",
+      "name": "PowerApps",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: PowerApps \u2192 Power Apps",
+      "job_count": 4
+    },
+    {
+      "id": "a7bc975f-e2ef-4fc7-824e-374542080a20",
+      "name": "PowerAutomate",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: PowerAutomate \u2192 Power Automate",
+      "job_count": 1
+    },
+    {
+      "id": "873a20b6-fd30-4370-a833-55bb9f44f25a",
+      "name": "Power Platform",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: Power Platform \u2192 PowerPlatform",
+      "job_count": 10
+    },
+    {
+      "id": "6122093d-a1b1-46cb-b519-78929704a43d",
+      "name": "Pytorch",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: Pytorch \u2192 PyTorch",
+      "job_count": 1
+    },
+    {
+      "id": "17b2c99d-91d7-4450-b469-dda2fec42364",
+      "name": "QLik",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: QLik \u2192 Qlik",
+      "job_count": 1
+    },
+    {
+      "id": "c6b022bb-2a8b-4f35-8fa4-3c891f4b42e9",
+      "name": "Qlik Sense",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: Qlik Sense \u2192 QlikSense",
+      "job_count": 5
+    },
+    {
+      "id": "ada54e6e-7a4f-4281-9f7d-30ce542621c7",
+      "name": "Qliksense",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: Qliksense \u2192 QlikSense",
+      "job_count": 1
+    },
+    {
+      "id": "94663c4b-469b-4cb5-816e-3d8a0d173517",
+      "name": "Qlikview",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: Qlikview \u2192 QlikView",
+      "job_count": 2
+    },
+    {
+      "id": "8ace4db7-926f-4c9c-bbb7-144ddd435f62",
+      "name": "R Shiny",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: R Shiny \u2192 R-Shiny",
+      "job_count": 1
+    },
+    {
+      "id": "a4f52a8c-8784-4e24-9857-56c011413d82",
+      "name": "RASA",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: RASA \u2192 Rasa",
+      "job_count": 2
+    },
+    {
+      "id": "a89d061b-cb54-4288-8583-9a7ef8759428",
+      "name": "S/4 Hana",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: S/4 Hana \u2192 S/4HANA",
+      "job_count": 1
+    },
+    {
+      "id": "271412c7-192e-4b4c-9eea-841f4d5c3532",
+      "name": "S/4 HANA",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: S/4 HANA \u2192 S/4HANA",
+      "job_count": 1
+    },
+    {
+      "id": "f564ad6c-ecb8-4466-bf28-b0c75f829753",
+      "name": "S4 Hana",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: S4 Hana \u2192 S/4HANA",
+      "job_count": 1
+    },
+    {
+      "id": "7e9d4803-1594-4e6c-83bb-28f190593312",
+      "name": "SageMaker",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: SageMaker \u2192 Sagemaker",
+      "job_count": 9
+    },
+    {
+      "id": "8e2b3df1-4de6-4699-b9af-52fcd459d8ad",
+      "name": "Salesforce",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: Salesforce \u2192 SalesForce",
+      "job_count": 23
+    },
+    {
+      "id": "a8a3c195-b076-4266-94e3-6a06b34b5f50",
+      "name": "SAP BusinessObjects",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: SAP BusinessObjects \u2192 SAP Business Objects",
+      "job_count": 4
+    },
+    {
+      "id": "0d6cb220-d01e-4e2d-b548-1e371faf307b",
+      "name": "SAP S4Hana",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: SAP S4Hana \u2192 SAP S/4HANA",
+      "job_count": 1
+    },
+    {
+      "id": "ca22758b-cc07-461b-8d67-8e33f6fb6439",
+      "name": "Scikit-learn",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: Scikit-learn \u2192 scikit-learn",
+      "job_count": 10
+    },
+    {
+      "id": "c56dfce6-9ee9-47e6-9856-7ebd97a8a842",
+      "name": "SciPy",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: SciPy \u2192 scipy",
+      "job_count": 1
+    },
+    {
+      "id": "961b7a98-857c-46b0-831e-c39ab93d048f",
+      "name": "Sharepoint",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: Sharepoint \u2192 SharePoint",
+      "job_count": 5
+    },
+    {
+      "id": "753620e7-a63c-42e3-94ac-ab9d03953b86",
+      "name": "Sparx Enterprise Architect",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: Sparx Enterprise Architect \u2192 SparX Enterprise Architect",
+      "job_count": 1
+    },
+    {
+      "id": "20e7b17e-94db-49ef-80bb-1a635beb7d03",
+      "name": "Spring Boot",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: Spring Boot \u2192 SpringBoot",
+      "job_count": 3
+    },
+    {
+      "id": "1ec5bc18-a286-45b6-96b9-ac36bb70c97d",
+      "name": "Springboot",
+      "type": "ecosystem",
+      "reason": "AI-categorized as ecosystem: Springboot \u2192 SpringBoot",
+      "job_count": 3
+    }
+  ],
+  "job_assignments_updated": [
+    {
+      "job_id": "26a529e1-0049-478c-a0cf-3bb6dc7ecb2f",
+      "from": "0f9abd6c-bac4-4fd8-af8c-5025065ca36b",
+      "to": "eb8488cf-f470-4feb-9244-baca5c0aa745",
+      "type": "language"
+    },
+    {
+      "job_id": "b6a199c1-c3b6-403b-8225-d9e7e7f3c855",
+      "from": "71cc7df3-d7cc-4956-a278-51f3cd1fbfc2",
+      "to": "0e6ee7f0-23a7-4046-a866-84f5dffee40d",
+      "type": "language"
+    },
+    {
+      "job_id": "c5782822-8421-4e68-bbd6-cc9e57d30441",
+      "from": "d3e1622c-5ff8-4302-9127-96efde4c4c91",
+      "to": "7a81faf9-279f-41dc-bc00-ec4cd2110271",
+      "type": "language"
+    },
+    {
+      "job_id": "f5eec9d4-b69b-45a5-83e2-2c4497d3becc",
+      "from": "74a6584f-3431-445e-81ba-1ececac06fcb",
+      "to": "af00a2ee-a75f-465f-8acc-134a4b9400e0",
+      "type": "ecosystem"
+    },
+    {
+      "job_id": "8ca06565-2bcd-44af-bfb6-f9df9271f595",
+      "from": "74a6584f-3431-445e-81ba-1ececac06fcb",
+      "to": "af00a2ee-a75f-465f-8acc-134a4b9400e0",
+      "type": "ecosystem"
+    },
+    {
+      "job_id": "afe84b47-dc26-41b3-af59-45be88037bf3",
+      "from": "74a6584f-3431-445e-81ba-1ececac06fcb",
+      "to": "af00a2ee-a75f-465f-8acc-134a4b9400e0",
+      "type": "ecosystem"
+    },
+    {
+      "job_id": "59f9deb0-5c48-4192-b8a6-196fb280b073",
+      "from": "e0a17b69-8b75-4416-bee0-604b1efc2b62",
+      "to": "21d37e72-15ea-45d9-8ba3-36d23c806d4e",
+      "type": "ecosystem"
+    },
+    {
+      "job_id": "f60a5212-0162-4e2e-86b2-61dfd733b1ba",
+      "from": "c4c6a58d-dc1c-488a-b471-5634d3238ef8",
+      "to": "dc08770c-e0cc-494b-9433-5094168e15ee",
+      "type": "language"
+    },
+    {
+      "job_id": "0d7a622f-2692-4319-bded-600df962619e",
+      "from": "125c9776-e3da-4dd6-ae4b-02bf5993ee00",
+      "to": "349454fe-7698-407b-9242-66062c80872f",
+      "type": "language"
+    },
+    {
+      "job_id": "b663cf23-9790-447c-a029-0f695896e6d0",
+      "from": "711ec9ff-fc84-41df-be73-aaa5455ce70a",
+      "to": "debb5502-f2ba-47e5-b31c-d07dd194040e",
+      "type": "language"
+    },
+    {
+      "job_id": "8161ac9b-68e9-4da0-9b9e-f5a3e9da00cc",
+      "from": "989b25e1-10ff-4071-ba3c-e39a74d87dca",
+      "to": "debb5502-f2ba-47e5-b31c-d07dd194040e",
+      "type": "ecosystem"
+    },
+    {
+      "job_id": "7207b33f-b04b-4f47-b182-1dc75b0ed643",
+      "from": "32554e3d-b3ed-478a-b8e8-5ca686aa201a",
+      "to": "0f2cfa9c-3fbe-4db8-b112-f36f73917bcb",
+      "type": "language"
+    },
+    {
+      "job_id": "e92172fc-cf13-45ce-984c-86c25d86b67f",
+      "from": "00b4db58-e682-4d20-940f-4b26a1feec31",
+      "to": "0f2cfa9c-3fbe-4db8-b112-f36f73917bcb",
+      "type": "ecosystem"
+    },
+    {
+      "job_id": "b039c481-e99a-45f1-90b5-8381a184a3d5",
+      "from": "4e499596-7e9a-430c-bcc9-2489192cdf3e",
+      "to": "d3219f30-d574-4f84-8c0e-378763ca29a1",
+      "type": "ecosystem"
+    },
+    {
+      "job_id": "7eaceadc-0966-449a-9878-12ab36d87844",
+      "from": "4e499596-7e9a-430c-bcc9-2489192cdf3e",
+      "to": "d3219f30-d574-4f84-8c0e-378763ca29a1",
+      "type": "ecosystem"
+    },
+    {
+      "job_id": "9e1ddb9b-1bf0-48af-b914-51dfafa26ed9",
+      "from": "4e499596-7e9a-430c-bcc9-2489192cdf3e",
+      "to": "d3219f30-d574-4f84-8c0e-378763ca29a1",
+      "type": "ecosystem"
+    },
+    {
+      "job_id": "f7603790-8e8d-47b0-a643-2ddc23f04b1e",
+      "from": "20dd5f14-5160-430a-b9d3-c08a877f8c88",
+      "to": "e9019d00-d56b-496f-98c4-6daf76e1451a",
+      "type": "ecosystem"
+    },
+    {
+      "job_id": "3bc99c79-9d0f-4767-99ab-d08f5980ba85",
+      "from": "20dd5f14-5160-430a-b9d3-c08a877f8c88",
+      "to": "e9019d00-d56b-496f-98c4-6daf76e1451a",
+      "type": "ecosystem"
+    },
+    {
+      "job_id": "3b3a5131-f902-4cf5-826e-1874c7496e32",
+      "from": "3efa874c-6dc8-48dc-8e55-82a5e9c5d830",
+      "to": "9d5c7177-ec61-4854-bd32-a5c141a7b2db",
+      "type": "language"
+    },
+    {
+      "job_id": "1dd59181-c173-404c-b418-5f31eddb64b2",
+      "from": "94e28653-19c4-4752-96e0-93b7e8c20b75",
+      "to": "dc7cc5b2-1316-4bb4-852e-469b0c940d16",
+      "type": "language"
+    },
+    {
+      "job_id": "7a79c4f1-76e3-4fa1-a4fd-90482be63c6a",
+      "from": "94e28653-19c4-4752-96e0-93b7e8c20b75",
+      "to": "dc7cc5b2-1316-4bb4-852e-469b0c940d16",
+      "type": "language"
+    },
+    {
+      "job_id": "79d980f9-3b6b-4ca7-b3ce-7bb50b10983f",
+      "from": "94e28653-19c4-4752-96e0-93b7e8c20b75",
+      "to": "dc7cc5b2-1316-4bb4-852e-469b0c940d16",
+      "type": "language"
+    },
+    {
+      "job_id": "bf41f7df-7bce-4993-a6c5-4df860d78149",
+      "from": "c8673b7b-3005-457c-a6df-1e47098a61c4",
+      "to": "f2a60c2f-a470-4193-956b-c6f9afac9057",
+      "type": "language"
+    },
+    {
+      "job_id": "0d7a622f-2692-4319-bded-600df962619e",
+      "from": "c8673b7b-3005-457c-a6df-1e47098a61c4",
+      "to": "f2a60c2f-a470-4193-956b-c6f9afac9057",
+      "type": "language"
+    },
+    {
+      "job_id": "2facc783-85a1-4421-bd2e-25e23eeac397",
+      "from": "aba342f5-8bc6-4251-a641-484f81da2b1d",
+      "to": "94cd8688-b618-45b6-8f7d-a774aa5c3c70",
+      "type": "ecosystem"
+    },
+    {
+      "job_id": "0e1a0482-f5d6-4b5a-a019-4129041aeef0",
+      "from": "aba342f5-8bc6-4251-a641-484f81da2b1d",
+      "to": "94cd8688-b618-45b6-8f7d-a774aa5c3c70",
+      "type": "ecosystem"
+    },
+    {
+      "job_id": "f7603790-8e8d-47b0-a643-2ddc23f04b1e",
+      "from": "aba342f5-8bc6-4251-a641-484f81da2b1d",
+      "to": "94cd8688-b618-45b6-8f7d-a774aa5c3c70",
+      "type": "ecosystem"
+    },
+    {
+      "job_id": "37a7546c-f65d-4021-ba8d-496193ddb34d",
+      "from": "aba342f5-8bc6-4251-a641-484f81da2b1d",
+      "to": "94cd8688-b618-45b6-8f7d-a774aa5c3c70",
+      "type": "ecosystem"
+    },
+    {
+      "job_id": "c68b7524-a0b3-486f-8380-05cfb710b5fe",
+      "from": "aba342f5-8bc6-4251-a641-484f81da2b1d",
+      "to": "94cd8688-b618-45b6-8f7d-a774aa5c3c70",
+      "type": "ecosystem"
+    },
+    {
+      "job_id": "f5342b55-fbe9-4f72-b53c-92c114fbb740",
+      "from": "aba342f5-8bc6-4251-a641-484f81da2b1d",
+      "to": "94cd8688-b618-45b6-8f7d-a774aa5c3c70",
+      "type": "ecosystem"
+    },
+    {
+      "job_id": "1c3910ed-48d1-4f75-8bf4-9ce56af41aaf",
+      "from": "aba342f5-8bc6-4251-a641-484f81da2b1d",
+      "to": "94cd8688-b618-45b6-8f7d-a774aa5c3c70",
+      "type": "ecosystem"
+    },
+    {
+      "job_id": "237ab8cd-9ff1-46dc-9d4c-2a96505f4a72",
+      "from": "aba342f5-8bc6-4251-a641-484f81da2b1d",
+      "to": "94cd8688-b618-45b6-8f7d-a774aa5c3c70",
+      "type": "ecosystem"
+    },
+    {
+      "job_id": "8b3331d4-b1a5-4843-bb27-aeb9ab458923",
+      "from": "aba342f5-8bc6-4251-a641-484f81da2b1d",
+      "to": "94cd8688-b618-45b6-8f7d-a774aa5c3c70",
+      "type": "ecosystem"
+    },
+    {
+      "job_id": "1e1286d6-9e6e-4389-b724-abd1c2ed4b53",
+      "from": "aba342f5-8bc6-4251-a641-484f81da2b1d",
+      "to": "94cd8688-b618-45b6-8f7d-a774aa5c3c70",
+      "type": "ecosystem"
+    },
+    {
+      "job_id": "20596dd1-501d-42a6-b0bd-af4f87f7249d",
+      "from": "a64f4e55-c4d1-4ef0-87f7-eef9da21adb0",
+      "to": "529a6c5e-93bf-442a-81f6-8aa4f6cfa125",
+      "type": "language"
+    },
+    {
+      "job_id": "be80271e-8364-41ca-95dc-d7c565123cd5",
+      "from": "6b743b53-7664-4104-915f-484be536da43",
+      "to": "b886f90b-75da-4bcf-994c-d9fa9810f592",
+      "type": "ecosystem"
+    },
+    {
+      "job_id": "7c099507-f377-454e-bba6-f1f89339677f",
+      "from": "6a367f76-5bb7-4cbe-a501-4e21735a3944",
+      "to": "9cc70d2a-09ed-4db4-bce0-9e2a292d7409",
+      "type": "ecosystem"
+    },
+    {
+      "job_id": "7c099507-f377-454e-bba6-f1f89339677f",
+      "from": "a7bc975f-e2ef-4fc7-824e-374542080a20",
+      "to": "0df1edb2-c387-4188-8102-f369b8ceb9ee",
+      "type": "ecosystem"
+    },
+    {
+      "job_id": "7dc09d36-3276-440f-9e5d-d114eb343db0",
+      "from": "7e9d4803-1594-4e6c-83bb-28f190593312",
+      "to": "cdee2719-1686-4500-92fc-a50c797fe721",
+      "type": "ecosystem"
+    },
+    {
+      "job_id": "567fab70-6f69-4ae4-a5c4-72b93c5515c3",
+      "from": "961b7a98-857c-46b0-831e-c39ab93d048f",
+      "to": "b1873682-28b0-452d-a0b7-0d553186be59",
+      "type": "ecosystem"
+    }
+  ],
+  "aliases_created": [
+    {
+      "alias": ".NET",
+      "canonical": ".NET",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Alteryx",
+      "canonical": "Alteryx",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Angular",
+      "canonical": "Angular",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Apache Groovy",
+      "canonical": "Apache Groovy",
+      "type": "language"
+    },
+    {
+      "alias": "Bash",
+      "canonical": "Bash",
+      "type": "language"
+    },
+    {
+      "alias": "C",
+      "canonical": "C#",
+      "type": "language"
+    },
+    {
+      "alias": "C++",
+      "canonical": "C#",
+      "type": "language"
+    },
+    {
+      "alias": "CUDA",
+      "canonical": "CUDA",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Databricks",
+      "canonical": "Databricks",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "DAX",
+      "canonical": "DAX",
+      "type": "language"
+    },
+    {
+      "alias": "dbt",
+      "canonical": "DBT",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Excel",
+      "canonical": "Excel",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Groovy",
+      "canonical": "Groovy",
+      "type": "language"
+    },
+    {
+      "alias": "Hive",
+      "canonical": "Hive",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Java",
+      "canonical": "Java",
+      "type": "language"
+    },
+    {
+      "alias": "JavaScript",
+      "canonical": "JavaScript",
+      "type": "language"
+    },
+    {
+      "alias": "JSON",
+      "canonical": "JSON",
+      "type": "language"
+    },
+    {
+      "alias": "Oracle",
+      "canonical": "Oracle",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Pig",
+      "canonical": "Pig",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Power BI",
+      "canonical": "Power BI",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Power Query",
+      "canonical": "Power Query",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "PowerShell",
+      "canonical": "PowerShell",
+      "type": "language"
+    },
+    {
+      "alias": "PySpark",
+      "canonical": "PySpark",
+      "type": "language"
+    },
+    {
+      "alias": "Python",
+      "canonical": "Python",
+      "type": "language"
+    },
+    {
+      "alias": "R",
+      "canonical": "R",
+      "type": "language"
+    },
+    {
+      "alias": "React",
+      "canonical": "React",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Rust",
+      "canonical": "RUST",
+      "type": "language"
+    },
+    {
+      "alias": "SAS",
+      "canonical": "SAS",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "SAS EG",
+      "canonical": "SAS EG",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Spark",
+      "canonical": "Spark",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Spring",
+      "canonical": "Spring",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "SPSS",
+      "canonical": "SPSS",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "SQL",
+      "canonical": "SQL",
+      "type": "language"
+    },
+    {
+      "alias": "T-SQL",
+      "canonical": "T-SQL",
+      "type": "language"
+    },
+    {
+      "alias": "Terraform",
+      "canonical": "TerraForm",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "TypeScript",
+      "canonical": "Typescript",
+      "type": "language"
+    },
+    {
+      "alias": "AbInitio",
+      "canonical": "Ab Initio",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "ARIS",
+      "canonical": "Aris",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Artificial Intelligence",
+      "canonical": "Artificial intelligence",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "AVEVA",
+      "canonical": "Aveva",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Aveva PI",
+      "canonical": "AVEVA PI",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Azure DevOps",
+      "canonical": "Azure Devops",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "AzureML",
+      "canonical": "Azure ML",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "BigQuery",
+      "canonical": "Big Query",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "ClickHouse",
+      "canonical": "Clickhouse",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "CloudWatch",
+      "canonical": "Cloudwatch",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Contentsquare",
+      "canonical": "ContentSquare",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Data catalogues",
+      "canonical": "Data Catalogues",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Data Lakes",
+      "canonical": "Data lakes",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Data mesh",
+      "canonical": "Data Mesh",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "ELK Stack",
+      "canonical": "ELK stack",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "FAISS",
+      "canonical": "Faiss",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Git",
+      "canonical": "git",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "GIT",
+      "canonical": "git",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "GITHub",
+      "canonical": "GitHub",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Github Actions",
+      "canonical": "GitHub Actions",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Gitlab",
+      "canonical": "GitLab",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Hugging face",
+      "canonical": "Hugging Face",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "HuggingFace",
+      "canonical": "Hugging Face",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "IBM Datastage",
+      "canonical": "IBM DataStage",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Jax",
+      "canonical": "JAX",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Jira",
+      "canonical": "JIRA",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Jmeter",
+      "canonical": "JMeter",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Junit",
+      "canonical": "JUnit",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Jupyter Notebooks",
+      "canonical": "Jupyter notebooks",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Langchain",
+      "canonical": "LangChain",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "LangGraph",
+      "canonical": "Langgraph",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "LlamaIndex",
+      "canonical": "Llamaindex",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Machine learning",
+      "canonical": "Machine Learning",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Microsoft Azure Data Factory",
+      "canonical": "Microsoft Azure data factory",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Microsoft Azure Data Lake",
+      "canonical": "Microsoft Azure data lake",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Microsoft Azure Data Warehouse",
+      "canonical": "Microsoft Azure data warehouse",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "ML-Ops",
+      "canonical": "MLOps",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "ML-OPS",
+      "canonical": "MLOps",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "MLflow",
+      "canonical": "Mlflow",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "MLFlow",
+      "canonical": "Mlflow",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "MS-FABRIC",
+      "canonical": "MS Fabric",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "MSSQL",
+      "canonical": "MS SQL",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Neo4j",
+      "canonical": "Neo4J",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "NoSQL",
+      "canonical": "noSQL",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "numpy",
+      "canonical": "Numpy",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "NumPy",
+      "canonical": "Numpy",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Openshift",
+      "canonical": "OpenShift",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "pandas",
+      "canonical": "Pandas",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "PowerApps",
+      "canonical": "Power Apps",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "PowerAutomate",
+      "canonical": "Power Automate",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Power Platform",
+      "canonical": "PowerPlatform",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Pytorch",
+      "canonical": "PyTorch",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "QLik",
+      "canonical": "Qlik",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Qlik Sense",
+      "canonical": "QlikSense",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Qliksense",
+      "canonical": "QlikSense",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Qlikview",
+      "canonical": "QlikView",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "R Shiny",
+      "canonical": "R-Shiny",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "RASA",
+      "canonical": "Rasa",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "S/4 HANA",
+      "canonical": "S/4HANA",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "SageMaker",
+      "canonical": "Sagemaker",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Salesforce",
+      "canonical": "SalesForce",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "SAP BusinessObjects",
+      "canonical": "SAP Business Objects",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "SAP S4Hana",
+      "canonical": "SAP S/4HANA",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Scikit-learn",
+      "canonical": "scikit-learn",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "SciPy",
+      "canonical": "scipy",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Sharepoint",
+      "canonical": "SharePoint",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Sparx Enterprise Architect",
+      "canonical": "SparX Enterprise Architect",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Spring Boot",
+      "canonical": "SpringBoot",
+      "type": "ecosystem"
+    },
+    {
+      "alias": "Springboot",
+      "canonical": "SpringBoot",
+      "type": "ecosystem"
+    }
+  ],
+  "ai_categorizations": {
+    "Apache Groovy": "language",
+    "Cloud": "ecosystem",
+    "Rust": "language",
+    "Fortinet": "ecosystem",
+    "Oracle SQL": "language",
+    "RabbitMQ": "ecosystem",
+    "Syniti": "ecosystem",
+    "Splunk Enterprise": "ecosystem",
+    "CPQ": "ecosystem",
+    "Excel Power Query": "ecosystem",
+    "Jmeter": "ecosystem",
+    "Meltano": "ecosystem",
+    "Ansible": "ecosystem",
+    "PIM": "ecosystem",
+    "AKS": "ecosystem",
+    "Google Charts": "ecosystem",
+    "Podman": "ecosystem",
+    "Pulumi": "ecosystem",
+    "Microsoft SQL Server": "ecosystem",
+    "Topdesk": "ecosystem",
+    "ARM TrustZone": "ecosystem",
+    "Sybase IQ": "ecosystem",
+    "Check Point": "ecosystem",
+    "Arabic": "language",
+    "Cognos": "ecosystem",
+    "Duck Creek": "ecosystem",
+    "MONAI": "ecosystem",
+    "Azure Synapse": "ecosystem",
+    "HuggingFace": "ecosystem",
+    "PowerPlatform": "ecosystem",
+    "Ranger": "ecosystem",
+    "SQLAlchemy": "ecosystem",
+    "Oracle Data Visualization": "ecosystem",
+    "React.js": "ecosystem",
+    "SoapUI": "ecosystem",
+    "Social Media Platforms": "ecosystem",
+    "Cisco": "ecosystem",
+    "DB2": "ecosystem",
+    "Postman": "ecosystem",
+    "Salesforce.com": "ecosystem",
+    "SAP PM": "ecosystem",
+    "LLaMA": "ecosystem",
+    "IBM DataStage": "ecosystem",
+    "L-Py": "language",
+    "PowerDesigner": "ecosystem",
+    "SAP Data Warehouse": "ecosystem",
+    "Service Bus": "ecosystem",
+    "Palo Alto Cortex XDR": "ecosystem",
+    "PLM": "ecosystem",
+    "SharePoint": "ecosystem",
+    "HTML/CSS": "language",
+    "Dutch": "language",
+    "AutoCAD": "ecosystem",
+    "Django": "ecosystem",
+    "Hortonworks": "ecosystem",
+    "IndexedDB": "ecosystem",
+    "Azure OpenAI Service": "ecosystem",
+    "SAP BO": "ecosystem",
+    "Synapse": "ecosystem",
+    "TypeScript": "language",
+    "MuleSoft": "ecosystem",
+    "Anaconda": "ecosystem",
+    "Oracle Cloud": "ecosystem",
+    "S4 Hana": "ecosystem",
+    "HTML": "language",
+    "Sinequa": "ecosystem",
+    "Step Functions": "ecosystem",
+    "Predictive modelling": "ecosystem",
+    "Informatica": "ecosystem",
+    "Baan": "ecosystem",
+    "ForgeRock": "ecosystem",
+    "Microsoft Dynamics 365": "ecosystem",
+    "Agent frameworks": "ecosystem",
+    "SciPy": "ecosystem",
+    "MS Fabric": "ecosystem",
+    "Feign": "ecosystem",
+    "Deep Learning": "ecosystem",
+    "ML-OPS": "ecosystem",
+    "BDD": "ecosystem",
+    "Apache Camel": "ecosystem",
+    "Qlikview": "ecosystem",
+    "Angular": "ecosystem",
+    "Azure Storage": "ecosystem",
+    "CMS platforms": "ecosystem",
+    "Tealium": "ecosystem",
+    "Hive": "ecosystem",
+    "Email Marketing": "ecosystem",
+    "Git": "ecosystem",
+    "Evals": "ecosystem",
+    "Azure Key Vault": "ecosystem",
+    "Jam": "ecosystem",
+    "NVIDIA NIM": "ecosystem",
+    "Dataflow": "ecosystem",
+    "Enterprise Architecture": "ecosystem",
+    "Azure AD": "ecosystem",
+    "SAP BTP": "ecosystem",
+    "Microsoft Dynamics": "ecosystem",
+    "REST APIs": "ecosystem",
+    "Azure OpenAI": "ecosystem",
+    "Endpoint protection": "ecosystem",
+    "Azure Kubernetes Service": "ecosystem",
+    "GTM": "ecosystem",
+    "Oracle Cloud ERP": "ecosystem",
+    "PostgreSQL": "ecosystem",
+    "Presto": "ecosystem",
+    "RedHat": "ecosystem",
+    "scikit-learn": "ecosystem",
+    "Sharepoint": "ecosystem",
+    "Adobe Creative Cloud": "ecosystem",
+    "Streaming": "ecosystem",
+    "MOM": "ecosystem",
+    "Information Architecture": "ecosystem",
+    "Big Query": "ecosystem",
+    "Splunk": "ecosystem",
+    "QuickSight": "ecosystem",
+    "Adobe Marketing Cloud": "ecosystem",
+    "Hotjar": "ecosystem",
+    "Springboot": "ecosystem",
+    "OvalEdge": "ecosystem",
+    "Data Cloud": "ecosystem",
+    "Google Workspace": "ecosystem",
+    "AI": "ecosystem",
+    "Data Warehouse": "ecosystem",
+    "Flourish": "ecosystem",
+    "Google Cloud Build": "ecosystem",
+    "RAFY": "ecosystem",
+    "SAP GRC": "ecosystem",
+    "SQLMesh": "ecosystem",
+    "Protractor": "ecosystem",
+    "SSMS": "ecosystem",
+    "VBA": "language",
+    "Material UI": "ecosystem",
+    "Facebook Ads": "ecosystem",
+    "S3": "ecosystem",
+    "TCL": "language",
+    "Confluent": "ecosystem",
+    "IoT": "ecosystem",
+    "Microsoft Defender": "ecosystem",
+    ".NET": "ecosystem",
+    "Kubeflow": "ecosystem",
+    "RIO e-commerce": "ecosystem",
+    "Hugging face": "ecosystem",
+    "Redis": "ecosystem",
+    "SIEM": "ecosystem",
+    "RPG": "language",
+    "MS Intune": "ecosystem",
+    "C#": "language",
+    "Milvus": "ecosystem",
+    "Microsoft Business Intelligence": "ecosystem",
+    "MDM": "ecosystem",
+    "Bicep": "ecosystem",
+    "Neocase": "ecosystem",
+    "On-premise": "ecosystem",
+    "pgvector": "ecosystem",
+    "MS Office": "ecosystem",
+    "Python": "language",
+    "Data Fabric": "ecosystem",
+    "Fastlane": "ecosystem",
+    "Tealium IQ": "ecosystem",
+    "Azure Databricks": "ecosystem",
+    "DataHub": "ecosystem",
+    "SAS": "ecosystem",
+    "Scala": "language",
+    "PL/SQL": "language",
+    "Spark": "ecosystem",
+    "App Services": "ecosystem",
+    "DAMA": "ecosystem",
+    "Machine Learning": "ecosystem",
+    "Microfocus UFT": "ecosystem",
+    "Teams": "ecosystem",
+    "Azure SQL Server": "ecosystem",
+    "Datalakehouse": "ecosystem",
+    "Jupyter": "ecosystem",
+    "Matplotlib": "ecosystem",
+    "DevOps": "ecosystem",
+    "Apache ETL stack": "ecosystem",
+    "ELK Stack": "ecosystem",
+    "NetApp": "ecosystem",
+    "Access": "ecosystem",
+    "BeyondTrust": "ecosystem",
+    "Azure Devops": "ecosystem",
+    "Mapping Applications": "ecosystem",
+    "SAP S4Hana": "ecosystem",
+    "Bamboo": "ecosystem",
+    "Greenplum": "ecosystem",
+    "Microsoft Office 365": "ecosystem",
+    "Identity Suite": "ecosystem",
+    "Quinyx": "ecosystem",
+    "AWS": "ecosystem",
+    "C/C++": "language",
+    "Apache Pulsar": "ecosystem",
+    "DMS": "ecosystem",
+    "Microsoft Defender for Endpoint": "ecosystem",
+    "Altova MapForce": "ecosystem",
+    "Tabular editor": "ecosystem",
+    "SolidWorks PDM": "ecosystem",
+    "SAS Visual Analytics": "ecosystem",
+    "FlowJo": "ecosystem",
+    "MS SQL": "ecosystem",
+    "Cucumber": "ecosystem",
+    "Microsoft Azure Data Lake": "ecosystem",
+    "Azure DevOps": "ecosystem",
+    "GitHub Actions": "ecosystem",
+    "SageMaker": "ecosystem",
+    "Dell Data Domain": "ecosystem",
+    "Qlik": "ecosystem",
+    "RSpec": "ecosystem",
+    "Azure": "ecosystem",
+    "AVEVA": "ecosystem",
+    "Dell servers": "ecosystem",
+    "Langchain": "ecosystem",
+    "None": "ecosystem",
+    "Oracle Integration Cloud": "ecosystem",
+    "Selenium WebDriver": "ecosystem",
+    "IAM": "ecosystem",
+    "Soda": "ecosystem",
+    "Helm": "ecosystem",
+    "EAM": "ecosystem",
+    "Denodo": "ecosystem",
+    "Cloudera Data Platform": "ecosystem",
+    "Marketo": "ecosystem",
+    "RStudio": "ecosystem",
+    "ERP": "ecosystem",
+    "Entity Framework": "ecosystem",
+    "Fivetran": "ecosystem",
+    "Alteryx": "ecosystem",
+    "GIS": "ecosystem",
+    "ARM": "ecosystem",
+    "JIRA": "ecosystem",
+    "Microsoft DevOps": "ecosystem",
+    "Haskell": "language",
+    "English": "language",
+    "NLTK": "ecosystem",
+    "CDISC": "ecosystem",
+    "Metabase": "ecosystem",
+    "Slack": "ecosystem",
+    "Azure Data Warehouse": "ecosystem",
+    "Haystack": "ecosystem",
+    "Spring Boot": "ecosystem",
+    "CDP": "ecosystem",
+    "data mining": "ecosystem",
+    "Anthropic": "ecosystem",
+    "SAP ECC": "ecosystem",
+    "Aspentech IP.21": "ecosystem",
+    "Spring": "ecosystem",
+    "Azure API Management": "ecosystem",
+    "Defender": "ecosystem",
+    "Microsoft Forms": "ecosystem",
+    "MSSQL": "ecosystem",
+    "SCCM": "ecosystem",
+    "scipy": "ecosystem",
+    "IDS": "ecosystem",
+    "ContentSquare": "ecosystem",
+    "Azure Functions": "ecosystem",
+    "Artifactory": "ecosystem",
+    "Aveva PI": "ecosystem",
+    "SQL Server Integration Services": "ecosystem",
+    "Starburst": "ecosystem",
+    "Data Analyst": "ecosystem",
+    "Software AG ARIS": "ecosystem",
+    "AI Labs": "ecosystem",
+    "BigQuery": "ecosystem",
+    "gRPC": "ecosystem",
+    "Kotlin": "language",
+    "Microsoft Defender for Endpoints": "ecosystem",
+    "Dagster": "ecosystem",
+    "MDX": "language",
+    "Fluentd": "ecosystem",
+    "Junit": "ecosystem",
+    "R Shiny": "ecosystem",
+    "API testing": "ecosystem",
+    "Atlassian tools": "ecosystem",
+    "Data Lake": "ecosystem",
+    "Atlassian Suite": "ecosystem",
+    "Helm charts": "ecosystem",
+    "Buildroot": "ecosystem",
+    "C++": "language",
+    "Looker Studio": "ecosystem",
+    "Google Apps": "ecosystem",
+    "Office 365": "ecosystem",
+    "Power Apps": "ecosystem",
+    "Nimbl": "ecosystem",
+    "SAP ERP": "ecosystem",
+    "ClickUp": "ecosystem",
+    "Copilot": "ecosystem",
+    "Apache Impala": "ecosystem",
+    "Dataiku DSS": "ecosystem",
+    "CMS": "ecosystem",
+    "Azure Monitor": "ecosystem",
+    "Flask": "ecosystem",
+    "Microsoft Azure": "ecosystem",
+    "CloudTrail": "ecosystem",
+    "Oracle DBMS": "ecosystem",
+    "Activiti": "ecosystem",
+    "GIT": "ecosystem",
+    "Llamaindex": "ecosystem",
+    "React": "ecosystem",
+    "M365": "ecosystem",
+    "Naviswork": "ecosystem",
+    "SalesForce Platform": "ecosystem",
+    "HPQC": "ecosystem",
+    "Apache Spark": "ecosystem",
+    "3DEXp\u00e9rience": "ecosystem",
+    "M365 architecture": "ecosystem",
+    "Faiss": "ecosystem",
+    "IBM MarketScan": "ecosystem",
+    "Product Recommendations": "ecosystem",
+    "NVIDIA": "ecosystem",
+    "Tricentis TOSCA": "ecosystem",
+    "Bash": "language",
+    "Atlas": "ecosystem",
+    "MLFlow": "ecosystem",
+    "BI4SAS": "ecosystem",
+    "BI4": "ecosystem",
+    "Luciad": "ecosystem",
+    "Magnolia": "ecosystem",
+    "SOAR": "ecosystem",
+    "eRAM": "ecosystem",
+    "Microsoft Synapse Analytics": "ecosystem",
+    "Blazor": "ecosystem",
+    "Quickbase": "ecosystem",
+    "ASANA": "ecosystem",
+    "MS Access": "ecosystem",
+    "Anthropic Claude": "ecosystem",
+    "RDF": "language",
+    "Job Scheduling Tools": "ecosystem",
+    "SpringBoot": "ecosystem",
+    "Tag management": "ecosystem",
+    "TensorFlow": "ecosystem",
+    "Other": "ecosystem",
+    "DAM": "ecosystem",
+    "ISO27001": "ecosystem",
+    "OpenLineage": "ecosystem",
+    "Hyperion Planning": "ecosystem",
+    "Claude": "ecosystem",
+    "Jsonnet": "language",
+    "Google": "ecosystem",
+    "SAP ECC6": "ecosystem",
+    "Scikit-learn": "ecosystem",
+    "Google Cloud Platform": "ecosystem",
+    "Infosum": "ecosystem",
+    "MS Excel": "ecosystem",
+    "Azure VDI": "ecosystem",
+    "Google Analytics": "ecosystem",
+    "Open Metadata": "ecosystem",
+    "AVEVA Historian": "ecosystem",
+    "ITB": "ecosystem",
+    "S/4 HANA": "ecosystem",
+    "Golang": "language",
+    "Microsoft Power Apps": "ecosystem",
+    "Azure Data Lake Storage": "ecosystem",
+    "Optimizely": "ecosystem",
+    "Aris": "ecosystem",
+    "TFS DevOps": "ecosystem",
+    "Julia": "language",
+    "Flink": "ecosystem",
+    "Redux": "ecosystem",
+    "GenAI": "ecosystem",
+    "JMeter": "ecosystem",
+    "GITHub": "ecosystem",
+    "Katalon": "ecosystem",
+    "FME": "ecosystem",
+    "Spring Cloud": "ecosystem",
+    "Jupyter Notebooks": "ecosystem",
+    "Microsoft Office Suite": "ecosystem",
+    "OpenAI": "ecosystem",
+    "MS Service Bus": "ecosystem",
+    "Microsoft Cluster Service": "ecosystem",
+    "BI": "ecosystem",
+    "LLMs": "ecosystem",
+    "Hadoop": "ecosystem",
+    "MLOps": "ecosystem",
+    "NIST": "ecosystem",
+    "Oracle": "ecosystem",
+    ".NET Core": "ecosystem",
+    "PL-SQL": "language",
+    "Elastic Stack": "ecosystem",
+    "FAISS": "ecosystem",
+    "Make": "ecosystem",
+    "Google ADK": "ecosystem",
+    "SAP XSA": "ecosystem",
+    "Elastic": "ecosystem",
+    "SQL Server": "ecosystem",
+    "Kibana": "ecosystem",
+    "SAP Migration Cockpit": "ecosystem",
+    "Salesforce CRM": "ecosystem",
+    "XML": "language",
+    "CATIA": "ecosystem",
+    "Power BI Service": "ecosystem",
+    "RUST": "language",
+    "PDM": "ecosystem",
+    "Odoo": "ecosystem",
+    "CSS": "language",
+    "Agentforce": "ecosystem",
+    "Enterprise Architect": "ecosystem",
+    "Relatics": "ecosystem",
+    "Cloudera": "ecosystem",
+    "Postgres": "ecosystem",
+    "Event Hubs": "ecosystem",
+    "GitLab CI/CD": "ecosystem",
+    "Cognitive Services": "ecosystem",
+    "NVIDIA Omniverse": "ecosystem",
+    "OpenTelemetry": "ecosystem",
+    "Powershell": "language",
+    "R-Shiny": "ecosystem",
+    "Stata": "ecosystem",
+    "Microsoft 365": "ecosystem",
+    "AI/ML": "ecosystem",
+    "Storage Area Networks": "ecosystem",
+    "OMOP": "ecosystem",
+    "Data Factory": "ecosystem",
+    "Azure AI Foundry": "ecosystem",
+    "Google Suite": "ecosystem",
+    "Microsoft Azure data warehouse": "ecosystem",
+    "Data Mesh": "ecosystem",
+    "Google Cloud Pub/Sub": "ecosystem",
+    "EPM": "ecosystem",
+    "DAX": "language",
+    "DomainTools": "ecosystem",
+    "Oracle Analytics Server": "ecosystem",
+    "Active Directory": "ecosystem",
+    "AppFlow": "ecosystem",
+    "TensorFlow Extended": "ecosystem",
+    "Defender for Cloud Apps": "ecosystem",
+    "JAX": "language",
+    "SAP DS": "ecosystem",
+    "Katalon Studio": "ecosystem",
+    "Quantum Lab": "ecosystem",
+    "BI Developer": "ecosystem",
+    "SAP BI": "ecosystem",
+    "Delta Lake": "ecosystem",
+    "Cloud Storage": "ecosystem",
+    "AWS Glue": "ecosystem",
+    "SAP Business Data Cloud": "ecosystem",
+    "Amazon QuickSight": "ecosystem",
+    "DataRobot": "ecosystem",
+    "F5": "ecosystem",
+    "ROS": "ecosystem",
+    "NodeJS": "ecosystem",
+    "SAP BODS Data Services": "ecosystem",
+    "Microsoft Hyper-V": "ecosystem",
+    "OpenSearch": "ecosystem",
+    "Microsoft Graph API": "ecosystem",
+    "CloudWatch": "ecosystem",
+    "Red Hat Linux": "ecosystem",
+    "S/4HANA migration cockpit": "ecosystem",
+    "Blender": "ecosystem",
+    "IBM Watson": "ecosystem",
+    "Microsoft PowerPoint": "ecosystem",
+    "QlikSense": "ecosystem",
+    "Github Actions": "ecosystem",
+    "LangFuse": "ecosystem",
+    "LRM": "ecosystem",
+    "IDS/IPS": "ecosystem",
+    "RESTful API": "ecosystem",
+    "AbInitio": "ecosystem",
+    "Data mesh": "ecosystem",
+    "MISP": "ecosystem",
+    "ETL": "ecosystem",
+    "Cloudwatch": "ecosystem",
+    "MS SSRS": "ecosystem",
+    "DeltaVFamiliarity": "ecosystem",
+    "SQL": "language",
+    "MES": "ecosystem",
+    "Domino": "ecosystem",
+    "TensorRT": "ecosystem",
+    "Clinical Practice Research Database": "ecosystem",
+    "Grafana": "ecosystem",
+    "Trifacta": "ecosystem",
+    "Rubrik": "ecosystem",
+    "SAP Business AI": "ecosystem",
+    "Informix": "ecosystem",
+    "Apache Hadoop": "ecosystem",
+    "Cisco ISE": "ecosystem",
+    "Data catalogues": "ecosystem",
+    "CyberArk": "ecosystem",
+    "Microsoft Synapse": "ecosystem",
+    "Palo Alto": "ecosystem",
+    "SAS Enterprise Guide": "ecosystem",
+    "JavaScript": "language",
+    "Prophet": "ecosystem",
+    "Apache NiFi": "ecosystem",
+    "Intel SGX": "ecosystem",
+    "API Management": "ecosystem",
+    "Google BigQuery": "ecosystem",
+    "NoSQL": "ecosystem",
+    "SparX Enterprise Architect": "ecosystem",
+    "AWS SageMaker": "ecosystem",
+    "AI Governance": "ecosystem",
+    "BFC": "ecosystem",
+    "KNIME Analytics Platform": "ecosystem",
+    "M365 Office Suite": "ecosystem",
+    "MsOperations": "ecosystem",
+    "Crashlytics": "ecosystem",
+    "dlib": "ecosystem",
+    "Keras": "ecosystem",
+    "Athena": "ecosystem",
+    "Azure AI Search": "ecosystem",
+    "KNIME": "ecosystem",
+    "MS Dynamics 365": "ecosystem",
+    "Generative AI": "ecosystem",
+    "SharePoint Online": "ecosystem",
+    "ROS2": "ecosystem",
+    "Business Objects": "ecosystem",
+    "EA": "ecosystem",
+    "SPSS": "ecosystem",
+    "Airbyte": "ecosystem",
+    "Alation": "ecosystem",
+    "SAP SuccessFactors": "ecosystem",
+    "Microsoft Intune": "ecosystem",
+    "Apache Kafka": "ecosystem",
+    "SAP HANA": "ecosystem",
+    "Microsoft stack": "ecosystem",
+    "S/4HANA": "ecosystem",
+    "YAML": "language",
+    "MicroStrategy": "ecosystem",
+    "GKE": "ecosystem",
+    "Log Analytics": "ecosystem",
+    "Pardot": "ecosystem",
+    "DBeaver": "ecosystem",
+    "LS-DYNA": "ecosystem",
+    "Azure Data Lake": "ecosystem",
+    "Excel": "ecosystem",
+    "Dataproc": "ecosystem",
+    "Deep learning frameworks": "ecosystem",
+    "AMD SEV": "ecosystem",
+    "Argo": "ecosystem",
+    "Prometheus": "ecosystem",
+    "Collibra": "ecosystem",
+    "Dataverse": "ecosystem",
+    "Qlik Sense": "ecosystem",
+    "Next.js": "ecosystem",
+    "MS-FABRIC": "ecosystem",
+    "DLP": "ecosystem",
+    "SCADA": "ecosystem",
+    "SQL Developer": "ecosystem",
+    "Drools": "ecosystem",
+    ".NET C#": "language",
+    "TigerGraph": "ecosystem",
+    "PHP": "language",
+    "Microsoft Analysis Services": "ecosystem",
+    "Personalization platforms": "ecosystem",
+    "Apache Airflow": "ecosystem",
+    "Monday": "ecosystem",
+    "SAP Datasphere": "ecosystem",
+    "MATLAB/Simulink": "ecosystem",
+    "SNP": "ecosystem",
+    "Power BI": "ecosystem",
+    "Guidewire": "ecosystem",
+    "Node-RED": "ecosystem",
+    "Adobe": "ecosystem",
+    "RPA": "ecosystem",
+    "Identity management": "ecosystem",
+    "Netezza": "ecosystem",
+    "Dbt": "ecosystem",
+    "Search Engines": "ecosystem",
+    "Google Sheets": "ecosystem",
+    "SNP CristalBridge": "ecosystem",
+    "Central Finance": "ecosystem",
+    "Datasphere": "ecosystem",
+    "Articulate": "ecosystem",
+    "Event Grid": "ecosystem",
+    "SAP MDG": "ecosystem",
+    "BIM 360": "ecosystem",
+    "Team City": "ecosystem",
+    "Data Governance": "ecosystem",
+    "eCommerce platforms": "ecosystem",
+    "Pytorch": "ecosystem",
+    "Swift": "language",
+    "Microsoft": "ecosystem",
+    "SAP BW on HANA": "ecosystem",
+    "Commvault": "ecosystem",
+    "Javascript": "language",
+    "SAP Analytics Cloud": "ecosystem",
+    "MS SQL Server": "ecosystem",
+    "Spring JPA": "ecosystem",
+    "Data Vault": "ecosystem",
+    "Adobe Launch": "ecosystem",
+    "IPS": "ecosystem",
+    "Programmatic": "ecosystem",
+    "Puppet": "ecosystem",
+    "SSRS": "ecosystem",
+    "Seeq Industrial Analytics": "ecosystem",
+    "Palo Alto XSOAR": "ecosystem",
+    "Google Analytics 4": "ecosystem",
+    "CircleCI": "ecosystem",
+    "Apache Iceberg": "ecosystem",
+    "LlamaIndex": "ecosystem",
+    "Microsoft tools": "ecosystem",
+    "Cliq Sense": "ecosystem",
+    "Gherkin": "language",
+    "LLM": "ecosystem",
+    "ANSYS": "ecosystem",
+    "REST API": "ecosystem",
+    "Databrew": "ecosystem",
+    "SigNoz": "ecosystem",
+    "Pinecone": "ecosystem",
+    "Rancher": "ecosystem",
+    "ArcGIS Pro": "ecosystem",
+    "S4 Hana MDG": "ecosystem",
+    "Elixir": "language",
+    "Azure Purview": "ecosystem",
+    "Ranorex": "ecosystem",
+    "Streamlit": "ecosystem",
+    "Copilot Studio": "ecosystem",
+    "HANA": "ecosystem",
+    "Azure Event Hubs": "ecosystem",
+    "Microsoft Purview": "ecosystem",
+    "Neo4j": "ecosystem",
+    "Master Data Management": "ecosystem",
+    "Azure Foundry": "ecosystem",
+    "SAP Business Objects": "ecosystem",
+    "Linkerd": "ecosystem",
+    "Sentinel": "ecosystem",
+    "FHIR": "ecosystem",
+    "Redshift": "ecosystem",
+    "ISO 19650": "ecosystem",
+    "Databricks": "ecosystem",
+    "Alloy": "ecosystem",
+    "Report Server": "ecosystem",
+    "Nunit": "ecosystem",
+    "Azure Data Lake Storage Gen2": "ecosystem",
+    "Omada": "ecosystem",
+    "French": "language",
+    "EMIGALL": "ecosystem",
+    "Groovy": "language",
+    "GitLab": "ecosystem",
+    "RESTful APIs": "ecosystem",
+    "VB.NET": "language",
+    "SAP S/4HANA": "ecosystem",
+    "noSQL": "ecosystem",
+    "Microsoft Fabric": "ecosystem",
+    "Infoblox": "ecosystem",
+    "Qliksense": "ecosystem",
+    "Salesforce Service Cloud": "ecosystem",
+    "SAP 4HANA": "ecosystem",
+    "Lambda": "ecosystem",
+    "Blueconic": "ecosystem",
+    "SAC": "ecosystem",
+    "Giskard": "ecosystem",
+    "TFX": "ecosystem",
+    "Dynamics 365": "ecosystem",
+    "Azure SQL Database": "ecosystem",
+    "Microsoft Azure data lake": "ecosystem",
+    "Dataiku": "ecosystem",
+    "AI Platform": "ecosystem",
+    "Amazon Marketing Cloud": "ecosystem",
+    "SOAP": "ecosystem",
+    "Azure Stream Analytics": "ecosystem",
+    "Cloud Functions": "ecosystem",
+    "Datadog": "ecosystem",
+    "Dell storage": "ecosystem",
+    "Slimstock": "ecosystem",
+    "Ruby": "language",
+    "Transformers": "ecosystem",
+    "Halcon": "ecosystem",
+    "Datawrapper": "ecosystem",
+    "Azure Logic Apps": "ecosystem",
+    "Artificial intelligence": "ecosystem",
+    "Looker": "ecosystem",
+    "Microsoft Active Directory": "ecosystem",
+    "Azure AI Document Intelligence": "ecosystem",
+    "Talend": "ecosystem",
+    "Essbase": "ecosystem",
+    "Impala": "ecosystem",
+    "OutSystems": "ecosystem",
+    "PowerApps": "ecosystem",
+    "GCP": "ecosystem",
+    "Seldon": "ecosystem",
+    "Firebase": "ecosystem",
+    "CRM": "ecosystem",
+    "Entra ID": "ecosystem",
+    "BPM platforms": "ecosystem",
+    "Business Central": "ecosystem",
+    "Precisely": "ecosystem",
+    "ADF": "ecosystem",
+    "Einstein Copilot": "ecosystem",
+    "SonarQube": "ecosystem",
+    "Fiori": "ecosystem",
+    "Big Data": "ecosystem",
+    "CUDA": "ecosystem",
+    "OpenAI SDK": "ecosystem",
+    "AI-enabled analytics": "ecosystem",
+    "PMI": "ecosystem",
+    "spaCy": "ecosystem",
+    "AutoGen": "ecosystem",
+    "Purview": "ecosystem",
+    "Pandas": "ecosystem",
+    "Pig": "ecosystem",
+    "Dynamics": "ecosystem",
+    "Aurora": "ecosystem",
+    "IBM Rational Functional Tester": "ecosystem",
+    "Rasa": "ecosystem",
+    "RASA": "ecosystem",
+    "Microsoft Sentinel": "ecosystem",
+    "LangChain": "ecosystem",
+    "Bol marketplace backend": "ecosystem",
+    "Machine learning": "ecosystem",
+    "Snowflake": "ecosystem",
+    "jQuery": "ecosystem",
+    "Matlab": "language",
+    "MS Project": "ecosystem",
+    "Apache AVRO": "ecosystem",
+    "BIG-IP": "ecosystem",
+    "A/B testing platforms": "ecosystem",
+    "M": "language",
+    "OBIE": "ecosystem",
+    "Microsoft Azure Synapse Analytics": "ecosystem",
+    "Neo4J": "ecosystem",
+    "Microsoft Azure Data Factory": "ecosystem",
+    "PowerPoint": "ecosystem",
+    "NVIDIA Nsight Compute": "ecosystem",
+    "SSIS": "ecosystem",
+    "Dask": "ecosystem",
+    "Cuda": "ecosystem",
+    "statsmodels": "ecosystem",
+    "Appium": "ecosystem",
+    "Terraform": "ecosystem",
+    "Apache Beam": "ecosystem",
+    "Data Catalog": "ecosystem",
+    "Datastax": "ecosystem",
+    "Optimu": "ecosystem",
+    "pandas": "ecosystem",
+    "QA/QC tools": "ecosystem",
+    "SaaS": "ecosystem",
+    "ONNX Runtime": "ecosystem",
+    "Java": "language",
+    "Azure Event Grid": "ecosystem",
+    "R": "language",
+    "CloudFormation": "ecosystem",
+    "JDE": "ecosystem",
+    "Cassandra": "ecosystem",
+    "BO": "ecosystem",
+    "Swagger": "ecosystem",
+    "AS/400": "ecosystem",
+    "CI/CD": "ecosystem",
+    "REST": "ecosystem",
+    "Data Catalogues": "ecosystem",
+    "Adobe Analytics": "ecosystem",
+    "ADFS": "ecosystem",
+    "Rapid7": "ecosystem",
+    "Selenium": "ecosystem",
+    "Apache Flink": "ecosystem",
+    "SalesForce": "ecosystem",
+    "Figma": "ecosystem",
+    "SAP": "ecosystem",
+    "OpenCTI": "ecosystem",
+    "Amplitude": "ecosystem",
+    "Spring Cloud Contract": "ecosystem",
+    "SVN": "ecosystem",
+    "CData Sync": "ecosystem",
+    "Dataform": "ecosystem",
+    "Embedded Linux": "ecosystem",
+    "Data lakes": "ecosystem",
+    "Firewalls": "ecosystem",
+    "Microsoft Azure Data Warehouse": "ecosystem",
+    "Mlflow": "ecosystem",
+    "test frameworks": "ecosystem",
+    "IBM Planning Analytics": "ecosystem",
+    "Airflow": "ecosystem",
+    "Azure Integration Services": "ecosystem",
+    "TestComplete": "ecosystem",
+    "PL/pgSQL": "language",
+    "SAP BO DS": "ecosystem",
+    "Specflow": "ecosystem",
+    "git": "ecosystem",
+    "IBM Datastage": "ecosystem",
+    "Atlassian": "ecosystem",
+    "Linux RedHat": "ecosystem",
+    "Kubernetes": "ecosystem",
+    "Prompt Builder": "ecosystem",
+    "MS Office Suite": "ecosystem",
+    "Microsoft Defender XDR": "ecosystem",
+    "Microsoft Windows Server": "ecosystem",
+    "Salesforce": "ecosystem",
+    "Crystal Reports": "ecosystem",
+    "SAP BW/4HANA": "ecosystem",
+    "OsiPi": "ecosystem",
+    "MV90": "ecosystem",
+    "numpy": "ecosystem",
+    "Shell": "language",
+    "Data360": "ecosystem",
+    "Business Intelligence": "ecosystem",
+    "Public cloud": "ecosystem",
+    "NVIDIA Physics": "ecosystem",
+    "Microsoft SQL Studio": "ecosystem",
+    "QAD": "ecosystem",
+    "SAP Business Technology Platform": "ecosystem",
+    "Pyspark": "language",
+    "dbt": "ecosystem",
+    "Research Centres": "ecosystem",
+    "SHACL": "language",
+    "LoadRunner": "ecosystem",
+    "Superset": "ecosystem",
+    "Jest": "ecosystem",
+    "Cypress": "ecosystem",
+    "Euromonitor": "ecosystem",
+    "Agile": "ecosystem",
+    "OCI": "ecosystem",
+    "NLP": "ecosystem",
+    "OpenCV": "ecosystem",
+    "HBase": "ecosystem",
+    "Minos": "ecosystem",
+    "GitHub": "ecosystem",
+    "PowerAutomate": "ecosystem",
+    "OpenStack": "ecosystem",
+    "Clarity": "ecosystem",
+    "Nextflow": "ecosystem",
+    "SQL Developer Data Modeler": "ecosystem",
+    "Azure AI": "ecosystem",
+    "OpenAI GPT models": "ecosystem",
+    "Sagemaker": "ecosystem",
+    "Azure ML": "ecosystem",
+    "SAP BW/HANA": "ecosystem",
+    "Artificial Intelligence": "ecosystem",
+    "Blockchain": "ecosystem",
+    "Juniper": "ecosystem",
+    "Microsoft Defender for Cloud Apps": "ecosystem",
+    "BEX": "ecosystem",
+    "Prince2": "ecosystem",
+    "QlikView": "ecosystem",
+    "T-SQL": "language",
+    "Microsoft SharePoint": "ecosystem",
+    "IBM IGCK": "ecosystem",
+    "GA4": "ecosystem",
+    "MongoDB": "ecosystem",
+    "SAP Analytical Cloud": "ecosystem",
+    "ARIS": "ecosystem",
+    "Typescript": "language",
+    "Gitlab": "ecosystem",
+    "Ab Initio": "ecosystem",
+    "Maven": "ecosystem",
+    "n8n": "ecosystem",
+    "Jupyter notebooks": "ecosystem",
+    "Azure Analysis Services": "ecosystem",
+    "TerraForm": "ecosystem",
+    "Datastage": "ecosystem",
+    "FCSExpress": "ecosystem",
+    "Microsoft Teams": "ecosystem",
+    "Ray": "ecosystem",
+    "ML AI": "ecosystem",
+    "RUP": "ecosystem",
+    "Power Platform": "ecosystem",
+    "MLflow": "ecosystem",
+    "RestAssure": "ecosystem",
+    "L-systems": "language",
+    "Sybase": "ecosystem",
+    "Adobe Acrobat": "ecosystem",
+    "Oracle Database": "ecosystem",
+    "Neptune": "ecosystem",
+    "Scrum": "ecosystem",
+    "S/4 Hana": "ecosystem",
+    "TensorFlow Lite": "ecosystem",
+    "Contentsquare": "ecosystem",
+    "HDFS": "ecosystem",
+    "WebFOCUS": "ecosystem",
+    "PySpark": "ecosystem",
+    "ClickHouse": "ecosystem",
+    "Hugging Face Transformers": "ecosystem",
+    "OpenAlea": "ecosystem",
+    "Software AG": "ecosystem",
+    "Dialogflow": "ecosystem",
+    "Syniti ADM(M)": "ecosystem",
+    "Tableau": "ecosystem",
+    "Elasticsearch": "ecosystem",
+    "PyTorch": "ecosystem",
+    "DWHSE": "ecosystem",
+    "GPU": "ecosystem",
+    "Playwright": "ecosystem",
+    "GraphQL": "language",
+    "Bitbucket": "ecosystem",
+    "Iceberg": "ecosystem",
+    "ETL tools": "ecosystem",
+    "Numpy": "ecosystem",
+    "Azure CLI": "ecosystem",
+    "PyTorch Lightning": "ecosystem",
+    "TPM": "ecosystem",
+    "QLik": "ecosystem",
+    "BW/4HANA": "ecosystem",
+    "Microsoft Office": "ecosystem",
+    "PowerBI": "ecosystem",
+    "Navision": "ecosystem",
+    "ML.NET": "ecosystem",
+    "Hugging Face": "ecosystem",
+    "Polarion": "ecosystem",
+    "ArcGIS Server": "ecosystem",
+    "AWS Aurora": "ecosystem",
+    "AzureML": "ecosystem",
+    "BI tools": "ecosystem",
+    "Node.js": "ecosystem",
+    "CTI": "ecosystem",
+    "Apache JMeter": "ecosystem",
+    "Teradata": "ecosystem",
+    "AB Tasty": "ecosystem",
+    "SAS EG": "ecosystem",
+    "Anaplan": "ecosystem",
+    "Cosmos DB": "ecosystem",
+    "Pub/Sub": "ecosystem",
+    "MS SSIS": "ecosystem",
+    "MuleSoft Platform": "ecosystem",
+    "Microsoft Entra ID": "ecosystem",
+    "FastAPI": "ecosystem",
+    "Power Query": "ecosystem",
+    "AMAP models": "ecosystem",
+    "Data Lakes": "ecosystem",
+    "Robotics Lab": "ecosystem",
+    "Google Cloud": "ecosystem",
+    "Semantic Kernel": "ecosystem",
+    "MySQL": "ecosystem",
+    "Amazon Redshift": "ecosystem",
+    "ServiceNow": "ecosystem",
+    "Hyperion": "ecosystem",
+    "Citrix Cloud": "ecosystem",
+    "Palantir": "ecosystem",
+    "InfluxDB": "ecosystem",
+    "Luigi": "ecosystem",
+    "Supabase": "ecosystem",
+    "Microsoft Power Automate": "ecosystem",
+    "Google Data Studio": "ecosystem",
+    "HPALM": "ecosystem",
+    "SAP Data Warehouse Cloud": "ecosystem",
+    "MS DevOps": "ecosystem",
+    "Amazon Seller Central": "ecosystem",
+    "Katalon Framework": "ecosystem",
+    "MQTT": "ecosystem",
+    "Adobe Professional": "ecosystem",
+    "Dify": "ecosystem",
+    "IoT Hubs": "ecosystem",
+    "SAP ISU": "ecosystem",
+    "Nagios": "ecosystem",
+    "SAP BusinessObjects": "ecosystem",
+    "O365": "ecosystem",
+    "IBM": "ecosystem",
+    "ML": "ecosystem",
+    "MITRE ATT&CK": "ecosystem",
+    "Quadient": "ecosystem",
+    "SAP Data services": "ecosystem",
+    "AI-assisted coding": "ecosystem",
+    "Prefect": "ecosystem",
+    "Cognos Report Studio": "ecosystem",
+    "Adobe Target": "ecosystem",
+    "Scrapy": "ecosystem",
+    "FileMaker Pro": "ecosystem",
+    "Chef": "ecosystem",
+    "SPARQL": "language",
+    "Microsoft SSRS": "ecosystem",
+    "Azure Service Bus": "ecosystem",
+    "HashiCorp Vault": "ecosystem",
+    "JUnit": "ecosystem",
+    "Microsoft Power Platform": "ecosystem",
+    "TimeXtender": "ecosystem",
+    "Perl": "language",
+    "DTI": "ecosystem",
+    "ELK": "ecosystem",
+    "C": "language",
+    "Clickhouse": "ecosystem",
+    "ELK stack": "ecosystem",
+    "Jax": "ecosystem",
+    "Langgraph": "ecosystem",
+    "Google Tag Manager": "ecosystem",
+    "Microsoft Dynamics 365 F&O": "ecosystem",
+    "PlantGL": "ecosystem",
+    "SAP BW": "ecosystem",
+    "Informatica ETL": "ecosystem",
+    "LSMW": "ecosystem",
+    "Intune": "ecosystem",
+    "PostgresSQL": "ecosystem",
+    "Go": "language",
+    "Singlestore": "ecosystem",
+    "Cloud Composer": "ecosystem",
+    "Azure Cognitive Services": "ecosystem",
+    "MEP software": "ecosystem",
+    "API": "ecosystem",
+    "Openshift": "ecosystem",
+    "Google AI Platform": "ecosystem",
+    "Microsoft .Net": "ecosystem",
+    "Spring Batch": "ecosystem",
+    "Nielsen": "ecosystem",
+    "ABAP": "language",
+    "Altova FlowForce": "ecosystem",
+    "BIM": "ecosystem",
+    "Ignition SCADA": "ecosystem",
+    "Glue": "ecosystem",
+    "MXNet": "ecosystem",
+    "Defender for Endpoints": "ecosystem",
+    "Mistral": "ecosystem",
+    "MATLAB": "language",
+    "Docker": "ecosystem",
+    "DataOps": "ecosystem",
+    "JSON": "language",
+    "DBT": "ecosystem",
+    "SAP FI/CO": "ecosystem",
+    "Microsoft Azure data factory": "ecosystem",
+    "MS Purview": "ecosystem",
+    "Matomo": "ecosystem",
+    "Composer": "ecosystem",
+    "SSAS": "ecosystem",
+    "D3.js": "ecosystem",
+    "Scripting": "language",
+    "HighRadius": "ecosystem",
+    "Microsoft SSIS": "ecosystem",
+    "Synapse Analytics": "ecosystem",
+    "Jenkins": "ecosystem",
+    "RestAssured": "ecosystem",
+    "LangGraph": "ecosystem",
+    "Mantis": "ecosystem",
+    "Google Ads": "ecosystem",
+    "Kafka": "ecosystem",
+    "Istio": "ecosystem",
+    "OpenShift": "ecosystem",
+    "NumPy": "ecosystem",
+    "Azure Data Factory": "ecosystem",
+    "Atlassian Stack": "ecosystem",
+    "Aspen Plus": "ecosystem",
+    "Celebrus": "ecosystem",
+    "Qlik/Tableau": "ecosystem",
+    "GRC tooling": "ecosystem",
+    "Bitbucket Pipelines": "ecosystem",
+    "Fabric": "ecosystem",
+    "Russian": "language",
+    "AI scripting": "language",
+    "Sparx Enterprise Architect": "ecosystem",
+    "Azure SQL": "ecosystem",
+    "Miro": "ecosystem",
+    "Graph/vector databases": "ecosystem",
+    "Microsoft Excel": "ecosystem",
+    "GitLab CI": "ecosystem",
+    "Group Policy Object": "ecosystem",
+    "RobotFramework": "ecosystem",
+    "Attack Surface Reduction": "ecosystem",
+    "PowerShell": "language",
+    "Balsamiq": "ecosystem",
+    "Datastudio": "ecosystem",
+    "Chinese": "language",
+    "Django Rest Framework": "ecosystem",
+    "HubSpot": "ecosystem",
+    "ONNX": "ecosystem",
+    "ML-Ops": "ecosystem",
+    "PLSQL": "language",
+    "Confluence": "ecosystem",
+    "Marquez": "ecosystem",
+    "Power Automate": "ecosystem",
+    "DVC": "ecosystem",
+    "Aveva": "ecosystem",
+    "SimCorp Coric": "ecosystem",
+    "Splunk Enterprise Security": "ecosystem",
+    "Atlan": "ecosystem",
+    "MCP": "ecosystem",
+    "Linux": "ecosystem",
+    "Microsoft Power BI": "ecosystem",
+    "Jira": "ecosystem",
+    "ImageJ/Fiji": "ecosystem",
+    "AVEVA PI": "ecosystem",
+    "Red Hat Enterprise Linux": "ecosystem",
+    "S/4HANA Fiori": "ecosystem",
+    "Ignition SCADA/MES": "ecosystem",
+    "Apex": "ecosystem"
+  }
+}

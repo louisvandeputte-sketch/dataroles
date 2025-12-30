@@ -7,6 +7,46 @@ from loguru import logger
 from database.client import db
 
 
+def normalize_tech_name(name: str, tech_type: str) -> str:
+    """
+    Normalize tech stack name using alias mapping.
+    
+    This function checks the tech_stack_aliases table to map common variations
+    to their canonical names (e.g., "PowerBI" → "Power BI").
+    
+    Args:
+        name: Raw name from LLM (e.g., "PowerBI", "MS Power BI")
+        tech_type: 'language' or 'ecosystem'
+    
+    Returns:
+        Canonical name if alias found, otherwise original name
+    
+    Examples:
+        >>> normalize_tech_name("PowerBI", "ecosystem")
+        "Power BI"
+        >>> normalize_tech_name("python", "language")
+        "Python"
+        >>> normalize_tech_name("Unknown Tool", "ecosystem")
+        "Unknown Tool"
+    """
+    name = name.strip()
+    if not name:
+        return name
+    
+    # Try to find alias mapping (case-insensitive)
+    try:
+        alias_result = db.get_tech_alias(name, tech_type)
+        if alias_result:
+            canonical = alias_result['canonical_name']
+            logger.debug(f"Normalized '{name}' → '{canonical}' ({tech_type})")
+            return canonical
+    except Exception as e:
+        logger.warning(f"Failed to lookup alias for '{name}': {e}")
+    
+    # No alias found, return original
+    return name
+
+
 def process_tech_stack_for_job(job_id: UUID, enrichment_data: Dict[str, Any]) -> None:
     """
     Process tech stack from LLM enrichment and create masterdata entries + assignments.
@@ -63,8 +103,8 @@ def _process_programming_language(job_id: UUID, language_name: str, requirement_
         requirement_level: 'must_have' or 'nice_to_have'
     """
     try:
-        # Normalize name (trim whitespace)
-        language_name = language_name.strip()
+        # Normalize name using alias table
+        language_name = normalize_tech_name(language_name, 'language')
         if not language_name:
             return
         
@@ -109,8 +149,8 @@ def _process_ecosystem(job_id: UUID, ecosystem_name: str, requirement_level: str
         requirement_level: 'must_have' or 'nice_to_have'
     """
     try:
-        # Normalize name (trim whitespace)
-        ecosystem_name = ecosystem_name.strip()
+        # Normalize name using alias table
+        ecosystem_name = normalize_tech_name(ecosystem_name, 'ecosystem')
         if not ecosystem_name:
             return
         

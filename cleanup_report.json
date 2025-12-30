@@ -1,0 +1,888 @@
+{
+  "deactivated": [
+    {
+      "id": "2127b2bf-4a48-49ea-9a82-911d55931e86",
+      "name": ".NET",
+      "type": "ecosystem",
+      "reason": "Cross-table duplicate: .NET",
+      "job_count": 4
+    },
+    {
+      "id": "0f9abd6c-bac4-4fd8-af8c-5025065ca36b",
+      "name": "Alteryx",
+      "type": "language",
+      "reason": "Cross-table duplicate: Alteryx",
+      "job_count": 2
+    },
+    {
+      "id": "4630469d-3027-4b96-9cc6-10bc8e12bd28",
+      "name": "Angular",
+      "type": "language",
+      "reason": "Cross-table duplicate: Angular",
+      "job_count": 2
+    },
+    {
+      "id": "6906ae1b-a0c6-437f-98fc-891a3cb4157f",
+      "name": "Apache Groovy",
+      "type": "language",
+      "reason": "Cross-table duplicate: Apache Groovy",
+      "job_count": 1
+    },
+    {
+      "id": "fbcb3b59-5b0c-4844-b24b-61623c72507e",
+      "name": "Bash",
+      "type": "ecosystem",
+      "reason": "Cross-table duplicate: Bash",
+      "job_count": 1
+    },
+    {
+      "id": "f65458cd-73b2-4192-956f-7b6f1cd1a244",
+      "name": "CUDA",
+      "type": "language",
+      "reason": "Cross-table duplicate: CUDA",
+      "job_count": 1
+    },
+    {
+      "id": "c845d24d-878f-4e1e-bb11-d67b57b9a620",
+      "name": "DAX",
+      "type": "ecosystem",
+      "reason": "Cross-table duplicate: DAX",
+      "job_count": 2
+    },
+    {
+      "id": "045901d4-6606-4da1-a302-f3ffe6f964a6",
+      "name": "Databricks",
+      "type": "language",
+      "reason": "Cross-table duplicate: Databricks",
+      "job_count": 1
+    },
+    {
+      "id": "b5c02980-516a-4256-b73a-c6dc018ab8c8",
+      "name": "Excel",
+      "type": "language",
+      "reason": "Cross-table duplicate: Excel",
+      "job_count": 3
+    },
+    {
+      "id": "21d37e72-15ea-45d9-8ba3-36d23c806d4e",
+      "name": "Groovy",
+      "type": "language",
+      "reason": "Cross-table duplicate: Groovy",
+      "job_count": 4
+    },
+    {
+      "id": "62accb41-eb89-449f-8d8b-f67af97fb73f",
+      "name": "Hive",
+      "type": "ecosystem",
+      "reason": "Cross-table duplicate: Hive",
+      "job_count": 7
+    },
+    {
+      "id": "32424669-8e94-42e1-9273-7a64afbf27c1",
+      "name": "JSON",
+      "type": "ecosystem",
+      "reason": "Cross-table duplicate: JSON",
+      "job_count": 1
+    },
+    {
+      "id": "dc9da85b-3772-4f5d-9dc8-23416ec3cba1",
+      "name": "Java",
+      "type": "ecosystem",
+      "reason": "Cross-table duplicate: Java",
+      "job_count": 1
+    },
+    {
+      "id": "8c21e594-4712-4d95-b03e-b6eb5a772b97",
+      "name": "JavaScript",
+      "type": "ecosystem",
+      "reason": "Cross-table duplicate: JavaScript",
+      "job_count": 1
+    },
+    {
+      "id": "349454fe-7698-407b-9242-66062c80872f",
+      "name": "Oracle",
+      "type": "ecosystem",
+      "reason": "Cross-table duplicate: Oracle",
+      "job_count": 50
+    },
+    {
+      "id": "aafd38c5-9937-4dcf-acb2-6d45cbdbe6ee",
+      "name": "Pig",
+      "type": "ecosystem",
+      "reason": "Cross-table duplicate: Pig",
+      "job_count": 1
+    },
+    {
+      "id": "711ec9ff-fc84-41df-be73-aaa5455ce70a",
+      "name": "Power BI",
+      "type": "language",
+      "reason": "Cross-table duplicate: Power BI",
+      "job_count": 1
+    },
+    {
+      "id": "05b9ca96-28af-4519-9754-a0ea364b8763",
+      "name": "Power Query",
+      "type": "language",
+      "reason": "Cross-table duplicate: Power Query",
+      "job_count": 1
+    },
+    {
+      "id": "bf9a50a5-cce0-464f-a11b-babf2996ee82",
+      "name": "PowerShell",
+      "type": "language",
+      "reason": "Cross-table duplicate: PowerShell",
+      "job_count": 46
+    },
+    {
+      "id": "00b4db58-e682-4d20-940f-4b26a1feec31",
+      "name": "PySpark",
+      "type": "ecosystem",
+      "reason": "Cross-table duplicate: PySpark",
+      "job_count": 8
+    },
+    {
+      "id": "4e499596-7e9a-430c-bcc9-2489192cdf3e",
+      "name": "Python",
+      "type": "ecosystem",
+      "reason": "Cross-table duplicate: Python",
+      "job_count": 4
+    },
+    {
+      "id": "e9019d00-d56b-496f-98c4-6daf76e1451a",
+      "name": "R",
+      "type": "language",
+      "reason": "Cross-table duplicate: R",
+      "job_count": 154
+    },
+    {
+      "id": "201ed86d-f6c9-45e3-ad87-c9c425cda6e5",
+      "name": "React",
+      "type": "ecosystem",
+      "reason": "Cross-table duplicate: React",
+      "job_count": 11
+    },
+    {
+      "id": "dc7cc5b2-1316-4bb4-852e-469b0c940d16",
+      "name": "SAS",
+      "type": "ecosystem",
+      "reason": "Cross-table duplicate: SAS",
+      "job_count": 15
+    },
+    {
+      "id": "c8673b7b-3005-457c-a6df-1e47098a61c4",
+      "name": "SAS EG",
+      "type": "language",
+      "reason": "Cross-table duplicate: SAS EG",
+      "job_count": 4
+    },
+    {
+      "id": "64c515b4-270e-45ec-9775-50c2678f843b",
+      "name": "SPSS",
+      "type": "ecosystem",
+      "reason": "Cross-table duplicate: SPSS",
+      "job_count": 2
+    },
+    {
+      "id": "94cd8688-b618-45b6-8f7d-a774aa5c3c70",
+      "name": "SQL",
+      "type": "language",
+      "reason": "Cross-table duplicate: SQL",
+      "job_count": 844
+    },
+    {
+      "id": "4fde36bc-532e-4d6d-9d6e-ff9f10e550ec",
+      "name": "Spark",
+      "type": "ecosystem",
+      "reason": "Cross-table duplicate: Spark",
+      "job_count": 50
+    },
+    {
+      "id": "0f6e9016-5860-4642-836d-655093d95389",
+      "name": "Spring",
+      "type": "ecosystem",
+      "reason": "Cross-table duplicate: Spring",
+      "job_count": 1
+    },
+    {
+      "id": "e1e46364-6b95-484a-8907-74d1722edcfb",
+      "name": "T-SQL",
+      "type": "language",
+      "reason": "Cross-table duplicate: T-SQL",
+      "job_count": 3
+    },
+    {
+      "id": "c28b0ff0-8ab1-4bdf-84f0-df2983864aae",
+      "name": "Terraform",
+      "type": "language",
+      "reason": "Cross-table duplicate: Terraform",
+      "job_count": 1
+    },
+    {
+      "id": "1fd4334c-01e7-4f16-8cf3-d179b02fcb79",
+      "name": "dbt",
+      "type": "language",
+      "reason": "Cross-table duplicate: dbt",
+      "job_count": 1
+    },
+    {
+      "id": "71cc7df3-d7cc-4956-a278-51f3cd1fbfc2",
+      "name": "C++",
+      "type": "language",
+      "reason": "Naming variation: C++ \u2192 C#",
+      "job_count": 27
+    },
+    {
+      "id": "6c3b292f-983e-46a4-b641-6b03ed293bd1",
+      "name": "C",
+      "type": "language",
+      "reason": "Naming variation: C \u2192 C#",
+      "job_count": 8
+    },
+    {
+      "id": "d3e1622c-5ff8-4302-9127-96efde4c4c91",
+      "name": "Cuda",
+      "type": "language",
+      "reason": "Naming variation: Cuda \u2192 CUDA",
+      "job_count": 1
+    },
+    {
+      "id": "f65458cd-73b2-4192-956f-7b6f1cd1a244",
+      "name": "CUDA",
+      "type": "language",
+      "reason": "Naming variation: CUDA \u2192 CUDA",
+      "job_count": 1
+    },
+    {
+      "id": "1fd4334c-01e7-4f16-8cf3-d179b02fcb79",
+      "name": "dbt",
+      "type": "language",
+      "reason": "Naming variation: dbt \u2192 DBT",
+      "job_count": 1
+    },
+    {
+      "id": "74a6584f-3431-445e-81ba-1ececac06fcb",
+      "name": "dbt",
+      "type": "ecosystem",
+      "reason": "Naming variation: dbt \u2192 DBT",
+      "job_count": 66
+    },
+    {
+      "id": "02703842-9a7a-4e2c-a778-41b922eca581",
+      "name": "Dbt",
+      "type": "ecosystem",
+      "reason": "Naming variation: Dbt \u2192 DBT",
+      "job_count": 3
+    },
+    {
+      "id": "8c21e594-4712-4d95-b03e-b6eb5a772b97",
+      "name": "JavaScript",
+      "type": "ecosystem",
+      "reason": "Naming variation: JavaScript \u2192 JavaScript",
+      "job_count": 1
+    },
+    {
+      "id": "c4c6a58d-dc1c-488a-b471-5634d3238ef8",
+      "name": "Javascript",
+      "type": "language",
+      "reason": "Naming variation: Javascript \u2192 JavaScript",
+      "job_count": 2
+    },
+    {
+      "id": "99c7ec10-452a-4dfc-a8d0-400245af2f31",
+      "name": "Matlab",
+      "type": "language",
+      "reason": "Naming variation: Matlab \u2192 MATLAB",
+      "job_count": 4
+    },
+    {
+      "id": "396c5fa1-5576-4683-940b-90c6ea6b0f88",
+      "name": "Node.js",
+      "type": "ecosystem",
+      "reason": "Naming variation: Node.js \u2192 NodeJS",
+      "job_count": 2
+    },
+    {
+      "id": "c2495860-983d-4e49-90a1-15b3d662b8b3",
+      "name": "PLSQL",
+      "type": "language",
+      "reason": "Naming variation: PLSQL \u2192 PL/SQL",
+      "job_count": 1
+    },
+    {
+      "id": "945644c5-4684-4f42-ac15-77347c81a50b",
+      "name": "PL-SQL",
+      "type": "ecosystem",
+      "reason": "Naming variation: PL-SQL \u2192 PL/SQL",
+      "job_count": 1
+    },
+    {
+      "id": "debb5502-f2ba-47e5-b31c-d07dd194040e",
+      "name": "Power BI",
+      "type": "ecosystem",
+      "reason": "Naming variation: Power BI \u2192 Power BI",
+      "job_count": 511
+    },
+    {
+      "id": "989b25e1-10ff-4071-ba3c-e39a74d87dca",
+      "name": "PowerBI",
+      "type": "ecosystem",
+      "reason": "Naming variation: PowerBI \u2192 Power BI",
+      "job_count": 5
+    },
+    {
+      "id": "bf9a50a5-cce0-464f-a11b-babf2996ee82",
+      "name": "PowerShell",
+      "type": "language",
+      "reason": "Naming variation: PowerShell \u2192 PowerShell",
+      "job_count": 46
+    },
+    {
+      "id": "430c3d1a-d2a9-4ce1-ae1d-b440c953f7bb",
+      "name": "Powershell",
+      "type": "ecosystem",
+      "reason": "Naming variation: Powershell \u2192 PowerShell",
+      "job_count": 1
+    },
+    {
+      "id": "32554e3d-b3ed-478a-b8e8-5ca686aa201a",
+      "name": "Pyspark",
+      "type": "language",
+      "reason": "Naming variation: Pyspark \u2192 PySpark",
+      "job_count": 1
+    },
+    {
+      "id": "00b4db58-e682-4d20-940f-4b26a1feec31",
+      "name": "PySpark",
+      "type": "ecosystem",
+      "reason": "Naming variation: PySpark \u2192 PySpark",
+      "job_count": 8
+    },
+    {
+      "id": "3efa874c-6dc8-48dc-8e55-82a5e9c5d830",
+      "name": "Rust",
+      "type": "language",
+      "reason": "Naming variation: Rust \u2192 RUST",
+      "job_count": 15
+    },
+    {
+      "id": "a44406c4-33f7-485e-aaee-295455856861",
+      "name": "Terraform",
+      "type": "ecosystem",
+      "reason": "Naming variation: Terraform \u2192 TerraForm",
+      "job_count": 72
+    },
+    {
+      "id": "c28b0ff0-8ab1-4bdf-84f0-df2983864aae",
+      "name": "Terraform",
+      "type": "language",
+      "reason": "Naming variation: Terraform \u2192 TerraForm",
+      "job_count": 1
+    },
+    {
+      "id": "a64f4e55-c4d1-4ef0-87f7-eef9da21adb0",
+      "name": "TypeScript",
+      "type": "language",
+      "reason": "Naming variation: TypeScript \u2192 Typescript",
+      "job_count": 25
+    },
+    {
+      "id": "be2023bd-e2ac-4f6a-b3e2-b2f5e8984035",
+      "name": "AbInitio",
+      "type": "ecosystem",
+      "reason": "Naming variation: AbInitio \u2192 Ab Initio",
+      "job_count": 1
+    },
+    {
+      "id": "c52c2328-d978-446a-8b8d-bb3506851e06",
+      "name": "ARIS",
+      "type": "ecosystem",
+      "reason": "Naming variation: ARIS \u2192 Aris",
+      "job_count": 3
+    },
+    {
+      "id": "969fe76f-538f-4dbb-8c9d-492e1759d664",
+      "name": "Artificial Intelligence",
+      "type": "ecosystem",
+      "reason": "Naming variation: Artificial Intelligence \u2192 Artificial intelligence",
+      "job_count": 1
+    },
+    {
+      "id": "04f5536d-9ffd-4055-93b7-1a11c82f330e",
+      "name": "AVEVA",
+      "type": "ecosystem",
+      "reason": "Naming variation: AVEVA \u2192 Aveva",
+      "job_count": 1
+    },
+    {
+      "id": "0859cbbd-ae7f-4cba-a473-fe0326585b29",
+      "name": "Aveva PI",
+      "type": "ecosystem",
+      "reason": "Naming variation: Aveva PI \u2192 AVEVA PI",
+      "job_count": 1
+    },
+    {
+      "id": "cf3118b3-976d-4754-9335-008ec38c7cb2",
+      "name": "Azure DevOps",
+      "type": "ecosystem",
+      "reason": "Naming variation: Azure DevOps \u2192 Azure Devops",
+      "job_count": 41
+    },
+    {
+      "id": "eef5a59c-8742-453d-b6d1-2385c376e7a4",
+      "name": "AzureML",
+      "type": "ecosystem",
+      "reason": "Naming variation: AzureML \u2192 Azure ML",
+      "job_count": 1
+    },
+    {
+      "id": "f9967c0d-8fa5-4cb5-8751-eac9986fb603",
+      "name": "BigQuery",
+      "type": "ecosystem",
+      "reason": "Naming variation: BigQuery \u2192 Big Query",
+      "job_count": 37
+    },
+    {
+      "id": "ecb9cd2f-bb60-4e32-b880-abdf4c8c82e6",
+      "name": "ClickHouse",
+      "type": "ecosystem",
+      "reason": "Naming variation: ClickHouse \u2192 Clickhouse",
+      "job_count": 1
+    },
+    {
+      "id": "56cd5beb-ab85-4f97-8499-adf9048c7299",
+      "name": "CloudWatch",
+      "type": "ecosystem",
+      "reason": "Naming variation: CloudWatch \u2192 Cloudwatch",
+      "job_count": 1
+    },
+    {
+      "id": "d77cff44-6843-4c09-bb7d-baafea2da37a",
+      "name": "Contentsquare",
+      "type": "ecosystem",
+      "reason": "Naming variation: Contentsquare \u2192 ContentSquare",
+      "job_count": 1
+    },
+    {
+      "id": "e96e42b1-e4f9-4818-951f-dd3b9e1bc401",
+      "name": "Data catalogues",
+      "type": "ecosystem",
+      "reason": "Naming variation: Data catalogues \u2192 Data Catalogues",
+      "job_count": 1
+    },
+    {
+      "id": "7f25a46d-61fd-45cd-8aa0-1b8dba0d0ffb",
+      "name": "Data Lakes",
+      "type": "ecosystem",
+      "reason": "Naming variation: Data Lakes \u2192 Data lakes",
+      "job_count": 2
+    },
+    {
+      "id": "54ba32a3-f039-4690-a1c1-3177690f7b79",
+      "name": "Data mesh",
+      "type": "ecosystem",
+      "reason": "Naming variation: Data mesh \u2192 Data Mesh",
+      "job_count": 1
+    },
+    {
+      "id": "c312e99b-6fae-415b-a5f4-1fff1c138dff",
+      "name": "ELK Stack",
+      "type": "ecosystem",
+      "reason": "Naming variation: ELK Stack \u2192 ELK stack",
+      "job_count": 1
+    },
+    {
+      "id": "2c3ca1af-0177-4608-8a62-b123c8de6c79",
+      "name": "FAISS",
+      "type": "ecosystem",
+      "reason": "Naming variation: FAISS \u2192 Faiss",
+      "job_count": 3
+    },
+    {
+      "id": "189602c5-09d2-400a-8b22-937bc4a20b8e",
+      "name": "Git",
+      "type": "ecosystem",
+      "reason": "Naming variation: Git \u2192 git",
+      "job_count": 111
+    },
+    {
+      "id": "555565c7-562e-4d0c-b1dd-f6ce781e1ea7",
+      "name": "GIT",
+      "type": "ecosystem",
+      "reason": "Naming variation: GIT \u2192 git",
+      "job_count": 10
+    },
+    {
+      "id": "06800706-760b-456a-9ffb-73f815315c0f",
+      "name": "GITHub",
+      "type": "ecosystem",
+      "reason": "Naming variation: GITHub \u2192 GitHub",
+      "job_count": 1
+    },
+    {
+      "id": "6b743b53-7664-4104-915f-484be536da43",
+      "name": "Github Actions",
+      "type": "ecosystem",
+      "reason": "Naming variation: Github Actions \u2192 GitHub Actions",
+      "job_count": 1
+    },
+    {
+      "id": "1a3221c2-ab68-4cbd-bc21-665b6ca0f2ed",
+      "name": "Gitlab",
+      "type": "ecosystem",
+      "reason": "Naming variation: Gitlab \u2192 GitLab",
+      "job_count": 2
+    },
+    {
+      "id": "9af61374-875f-4d92-8487-081793e46e4c",
+      "name": "HuggingFace",
+      "type": "ecosystem",
+      "reason": "Naming variation: HuggingFace \u2192 Hugging Face",
+      "job_count": 4
+    },
+    {
+      "id": "05c3174f-8131-4f07-bf17-14770c8a6f64",
+      "name": "Hugging face",
+      "type": "ecosystem",
+      "reason": "Naming variation: Hugging face \u2192 Hugging Face",
+      "job_count": 1
+    },
+    {
+      "id": "d22dc4cf-2c90-4759-893b-055446ce1e02",
+      "name": "IBM Datastage",
+      "type": "ecosystem",
+      "reason": "Naming variation: IBM Datastage \u2192 IBM DataStage",
+      "job_count": 1
+    },
+    {
+      "id": "7dbbd941-27d8-45c6-b998-188929375e63",
+      "name": "Jax",
+      "type": "ecosystem",
+      "reason": "Naming variation: Jax \u2192 JAX",
+      "job_count": 1
+    },
+    {
+      "id": "e7c5b487-2f55-4b93-8b74-7fb3d1c85a11",
+      "name": "Jira",
+      "type": "ecosystem",
+      "reason": "Naming variation: Jira \u2192 JIRA",
+      "job_count": 38
+    },
+    {
+      "id": "a9841c68-ab66-4adb-96c6-3d83f567dbdc",
+      "name": "Jmeter",
+      "type": "ecosystem",
+      "reason": "Naming variation: Jmeter \u2192 JMeter",
+      "job_count": 1
+    },
+    {
+      "id": "4a0576cf-2a9d-4717-a9ed-1dd314f611fc",
+      "name": "Junit",
+      "type": "ecosystem",
+      "reason": "Naming variation: Junit \u2192 JUnit",
+      "job_count": 1
+    },
+    {
+      "id": "5672c86e-de90-4736-8e8b-40161e9d93a7",
+      "name": "Jupyter Notebooks",
+      "type": "ecosystem",
+      "reason": "Naming variation: Jupyter Notebooks \u2192 Jupyter notebooks",
+      "job_count": 3
+    },
+    {
+      "id": "4f166f92-db7a-4440-9f9d-f14f60d16ae7",
+      "name": "Langchain",
+      "type": "ecosystem",
+      "reason": "Naming variation: Langchain \u2192 LangChain",
+      "job_count": 7
+    },
+    {
+      "id": "5fa2d5dc-99c8-49ea-9cd3-621e228b8c61",
+      "name": "LangGraph",
+      "type": "ecosystem",
+      "reason": "Naming variation: LangGraph \u2192 Langgraph",
+      "job_count": 5
+    },
+    {
+      "id": "c1cb9672-78ed-437e-80bf-bd852a2db153",
+      "name": "LlamaIndex",
+      "type": "ecosystem",
+      "reason": "Naming variation: LlamaIndex \u2192 Llamaindex",
+      "job_count": 2
+    },
+    {
+      "id": "a9bbc3ac-d03c-4f4d-bf9e-a96b6b08c02d",
+      "name": "Machine learning",
+      "type": "ecosystem",
+      "reason": "Naming variation: Machine learning \u2192 Machine Learning",
+      "job_count": 1
+    },
+    {
+      "id": "f39a02fb-ed36-403c-b8a5-20f601291ea1",
+      "name": "Microsoft Azure Data Factory",
+      "type": "ecosystem",
+      "reason": "Naming variation: Microsoft Azure Data Factory \u2192 Microsoft Azure data factory",
+      "job_count": 5
+    },
+    {
+      "id": "11a3f4f1-1db5-4237-a711-ca4a6ecda5c3",
+      "name": "Microsoft Azure Data Lake",
+      "type": "ecosystem",
+      "reason": "Naming variation: Microsoft Azure Data Lake \u2192 Microsoft Azure data lake",
+      "job_count": 1
+    },
+    {
+      "id": "e0048408-97b6-41ef-b4ee-249fbe599a13",
+      "name": "Microsoft Azure Data Warehouse",
+      "type": "ecosystem",
+      "reason": "Naming variation: Microsoft Azure Data Warehouse \u2192 Microsoft Azure data warehouse",
+      "job_count": 1
+    },
+    {
+      "id": "334f5ff2-2f4f-4eee-829f-47982e74b3ad",
+      "name": "ML-Ops",
+      "type": "ecosystem",
+      "reason": "Naming variation: ML-Ops \u2192 MLOps",
+      "job_count": 1
+    },
+    {
+      "id": "3c69d367-fab8-435b-97eb-5aad33f8b4f5",
+      "name": "ML-OPS",
+      "type": "ecosystem",
+      "reason": "Naming variation: ML-OPS \u2192 MLOps",
+      "job_count": 1
+    },
+    {
+      "id": "d5d3d3fb-824b-44a9-9ce9-81d1f303862b",
+      "name": "MLflow",
+      "type": "ecosystem",
+      "reason": "Naming variation: MLflow \u2192 Mlflow",
+      "job_count": 30
+    },
+    {
+      "id": "188c8f30-eb73-45c3-b349-d3ccb349e493",
+      "name": "MLFlow",
+      "type": "ecosystem",
+      "reason": "Naming variation: MLFlow \u2192 Mlflow",
+      "job_count": 3
+    },
+    {
+      "id": "b858d939-be0e-47df-8e95-981217d1526f",
+      "name": "MS-FABRIC",
+      "type": "ecosystem",
+      "reason": "Naming variation: MS-FABRIC \u2192 MS Fabric",
+      "job_count": 2
+    },
+    {
+      "id": "e1179812-7e37-4d20-8289-b675188610fe",
+      "name": "MSSQL",
+      "type": "ecosystem",
+      "reason": "Naming variation: MSSQL \u2192 MS SQL",
+      "job_count": 1
+    },
+    {
+      "id": "d6c5b7bc-ff13-4162-8483-8c885bd6bc81",
+      "name": "Neo4j",
+      "type": "ecosystem",
+      "reason": "Naming variation: Neo4j \u2192 Neo4J",
+      "job_count": 1
+    },
+    {
+      "id": "ea94f665-d983-45de-9fe1-ac73e01bf91f",
+      "name": "NoSQL",
+      "type": "ecosystem",
+      "reason": "Naming variation: NoSQL \u2192 noSQL",
+      "job_count": 9
+    },
+    {
+      "id": "2aa8b993-89d3-4fe5-b729-278bff61841e",
+      "name": "numpy",
+      "type": "ecosystem",
+      "reason": "Naming variation: numpy \u2192 Numpy",
+      "job_count": 2
+    },
+    {
+      "id": "1d3ed1e1-a0d3-4194-9564-718b9bea7533",
+      "name": "NumPy",
+      "type": "ecosystem",
+      "reason": "Naming variation: NumPy \u2192 Numpy",
+      "job_count": 6
+    },
+    {
+      "id": "20267437-58e7-45b7-b586-80b3e9049a1b",
+      "name": "Openshift",
+      "type": "ecosystem",
+      "reason": "Naming variation: Openshift \u2192 OpenShift",
+      "job_count": 1
+    },
+    {
+      "id": "a67266e4-6e31-41e0-adfd-605bdd55041b",
+      "name": "pandas",
+      "type": "ecosystem",
+      "reason": "Naming variation: pandas \u2192 Pandas",
+      "job_count": 4
+    },
+    {
+      "id": "6a367f76-5bb7-4cbe-a501-4e21735a3944",
+      "name": "PowerApps",
+      "type": "ecosystem",
+      "reason": "Naming variation: PowerApps \u2192 Power Apps",
+      "job_count": 4
+    },
+    {
+      "id": "a7bc975f-e2ef-4fc7-824e-374542080a20",
+      "name": "PowerAutomate",
+      "type": "ecosystem",
+      "reason": "Naming variation: PowerAutomate \u2192 Power Automate",
+      "job_count": 1
+    },
+    {
+      "id": "873a20b6-fd30-4370-a833-55bb9f44f25a",
+      "name": "Power Platform",
+      "type": "ecosystem",
+      "reason": "Naming variation: Power Platform \u2192 PowerPlatform",
+      "job_count": 10
+    },
+    {
+      "id": "6122093d-a1b1-46cb-b519-78929704a43d",
+      "name": "Pytorch",
+      "type": "ecosystem",
+      "reason": "Naming variation: Pytorch \u2192 PyTorch",
+      "job_count": 1
+    },
+    {
+      "id": "17b2c99d-91d7-4450-b469-dda2fec42364",
+      "name": "QLik",
+      "type": "ecosystem",
+      "reason": "Naming variation: QLik \u2192 Qlik",
+      "job_count": 1
+    },
+    {
+      "id": "ada54e6e-7a4f-4281-9f7d-30ce542621c7",
+      "name": "Qliksense",
+      "type": "ecosystem",
+      "reason": "Naming variation: Qliksense \u2192 QlikSense",
+      "job_count": 1
+    },
+    {
+      "id": "c6b022bb-2a8b-4f35-8fa4-3c891f4b42e9",
+      "name": "Qlik Sense",
+      "type": "ecosystem",
+      "reason": "Naming variation: Qlik Sense \u2192 QlikSense",
+      "job_count": 5
+    },
+    {
+      "id": "94663c4b-469b-4cb5-816e-3d8a0d173517",
+      "name": "Qlikview",
+      "type": "ecosystem",
+      "reason": "Naming variation: Qlikview \u2192 QlikView",
+      "job_count": 2
+    },
+    {
+      "id": "8ace4db7-926f-4c9c-bbb7-144ddd435f62",
+      "name": "R Shiny",
+      "type": "ecosystem",
+      "reason": "Naming variation: R Shiny \u2192 R-Shiny",
+      "job_count": 1
+    },
+    {
+      "id": "a4f52a8c-8784-4e24-9857-56c011413d82",
+      "name": "RASA",
+      "type": "ecosystem",
+      "reason": "Naming variation: RASA \u2192 Rasa",
+      "job_count": 2
+    },
+    {
+      "id": "f564ad6c-ecb8-4466-bf28-b0c75f829753",
+      "name": "S4 Hana",
+      "type": "ecosystem",
+      "reason": "Naming variation: S4 Hana \u2192 S/4HANA",
+      "job_count": 1
+    },
+    {
+      "id": "a89d061b-cb54-4288-8583-9a7ef8759428",
+      "name": "S/4 Hana",
+      "type": "ecosystem",
+      "reason": "Naming variation: S/4 Hana \u2192 S/4HANA",
+      "job_count": 1
+    },
+    {
+      "id": "271412c7-192e-4b4c-9eea-841f4d5c3532",
+      "name": "S/4 HANA",
+      "type": "ecosystem",
+      "reason": "Naming variation: S/4 HANA \u2192 S/4HANA",
+      "job_count": 1
+    },
+    {
+      "id": "7e9d4803-1594-4e6c-83bb-28f190593312",
+      "name": "SageMaker",
+      "type": "ecosystem",
+      "reason": "Naming variation: SageMaker \u2192 Sagemaker",
+      "job_count": 9
+    },
+    {
+      "id": "8e2b3df1-4de6-4699-b9af-52fcd459d8ad",
+      "name": "Salesforce",
+      "type": "ecosystem",
+      "reason": "Naming variation: Salesforce \u2192 SalesForce",
+      "job_count": 23
+    },
+    {
+      "id": "a8a3c195-b076-4266-94e3-6a06b34b5f50",
+      "name": "SAP BusinessObjects",
+      "type": "ecosystem",
+      "reason": "Naming variation: SAP BusinessObjects \u2192 SAP Business Objects",
+      "job_count": 4
+    },
+    {
+      "id": "0d6cb220-d01e-4e2d-b548-1e371faf307b",
+      "name": "SAP S4Hana",
+      "type": "ecosystem",
+      "reason": "Naming variation: SAP S4Hana \u2192 SAP S/4HANA",
+      "job_count": 1
+    },
+    {
+      "id": "ca22758b-cc07-461b-8d67-8e33f6fb6439",
+      "name": "Scikit-learn",
+      "type": "ecosystem",
+      "reason": "Naming variation: Scikit-learn \u2192 scikit-learn",
+      "job_count": 10
+    },
+    {
+      "id": "c56dfce6-9ee9-47e6-9856-7ebd97a8a842",
+      "name": "SciPy",
+      "type": "ecosystem",
+      "reason": "Naming variation: SciPy \u2192 scipy",
+      "job_count": 1
+    },
+    {
+      "id": "961b7a98-857c-46b0-831e-c39ab93d048f",
+      "name": "Sharepoint",
+      "type": "ecosystem",
+      "reason": "Naming variation: Sharepoint \u2192 SharePoint",
+      "job_count": 5
+    },
+    {
+      "id": "753620e7-a63c-42e3-94ac-ab9d03953b86",
+      "name": "Sparx Enterprise Architect",
+      "type": "ecosystem",
+      "reason": "Naming variation: Sparx Enterprise Architect \u2192 SparX Enterprise Architect",
+      "job_count": 1
+    },
+    {
+      "id": "1ec5bc18-a286-45b6-96b9-ac36bb70c97d",
+      "name": "Springboot",
+      "type": "ecosystem",
+      "reason": "Naming variation: Springboot \u2192 SpringBoot",
+      "job_count": 3
+    },
+    {
+      "id": "20e7b17e-94db-49ef-80bb-1a635beb7d03",
+      "name": "Spring Boot",
+      "type": "ecosystem",
+      "reason": "Naming variation: Spring Boot \u2192 SpringBoot",
+      "job_count": 3
+    }
+  ],
+  "job_assignments_updated": [],
+  "aliases_created": []
+}
