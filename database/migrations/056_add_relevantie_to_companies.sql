@@ -183,6 +183,7 @@ SELECT
     cmd.founded_year,
     cmd.industry,
     cmd.show_in_app,
+    cmd.hiring_model_nl,
     
     -- Location fields
     COALESCE(j.location_id_override, j.location_id) AS location_id,
