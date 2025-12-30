@@ -378,6 +378,10 @@ class JobRankingSystem:
                 job.reputation_score * self.WEIGHT_REPUTATION
             )
             
+            # Add company relevantie bonus if set (can be positive or negative)
+            if job.relevantie is not None:
+                job.base_score += job.relevantie
+            
             # EXTREME PENALTY for non-enriched jobs (no AI enrichment)
             # These should ALWAYS rank at the bottom, even with perfect other scores
             # and recent scrape bonus (+15 max)
@@ -435,18 +439,14 @@ class JobRankingSystem:
         return multiplier
     
     def apply_diversity_modifiers(self, jobs: List[JobData]) -> List[JobData]:
-        """Apply hourly multiplier to base score and add company relevantie"""
+        """Apply hourly multiplier to base score"""
         for job in jobs:
             # Calculate hourly multiplier
             hourly_multiplier = self.calculate_hourly_multiplier(job)
             job.hourly_multiplier = hourly_multiplier  # Store for database
             
-            # Base formula: final_score = base_score × hourly_multiplier
+            # Formula: final_score = base_score × hourly_multiplier
             job.final_score = job.base_score * hourly_multiplier
-            
-            # Add company relevantie if set (can be positive or negative)
-            if job.relevantie is not None:
-                job.final_score += job.relevantie
         
         return jobs
     
