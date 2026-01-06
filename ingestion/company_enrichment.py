@@ -500,21 +500,22 @@ def get_unenriched_companies(limit: int = 100, include_retries: bool = True) -> 
                     unenriched_ids.append(company_id)
                     continue
                 
-                # Has error - check if old enough to retry
-                if include_retries:
-                    enriched_at = master_data.get("ai_enriched_at")
-                    if enriched_at:
-                        from dateutil import parser
-                        enriched_time = parser.parse(enriched_at)
-                        retry_cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
-                        
-                        if enriched_time < retry_cutoff:
-                            unenriched_ids.append(company_id)
-                            retry_count += 1
-                    else:
-                        # No timestamp, retry anyway
+                # Has error - ALWAYS check if old enough to retry (prevents infinite loops)
+                enriched_at = master_data.get("ai_enriched_at")
+                if enriched_at:
+                    from dateutil import parser
+                    enriched_time = parser.parse(enriched_at)
+                    retry_cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
+                    
+                    # Only retry if error is older than 24h AND include_retries is True
+                    if enriched_time < retry_cutoff and include_retries:
                         unenriched_ids.append(company_id)
                         retry_count += 1
+                    # If error is recent (<24h), NEVER retry - this prevents infinite loops
+                elif include_retries:
+                    # No timestamp but has error, only retry if include_retries
+                    unenriched_ids.append(company_id)
+                    retry_count += 1
         
         new_count = len(unenriched_ids) - retry_count
         logger.info(f"Found {len(unenriched_ids)} unenriched companies ({new_count} new, {retry_count} retries)")
