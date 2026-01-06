@@ -170,7 +170,22 @@ def enrich_company(company_id: str, company_name: str, company_url: Optional[str
                     for content in item.content:
                         if hasattr(content, 'type') and content.type == 'output_text':
                             # Parse JSON from text output
-                            enrichment_data = json.loads(content.text)
+                            # Handle cases where LLM returns malformed JSON
+                            text = content.text.strip()
+                            try:
+                                enrichment_data = json.loads(text)
+                            except json.JSONDecodeError as e:
+                                error_msg = str(e)
+                                # Try to extract just the first JSON object if extra data
+                                if "Extra data" in error_msg:
+                                    logger.warning(f"LLM returned extra data after JSON, attempting to extract first object")
+                                    decoder = json.JSONDecoder()
+                                    enrichment_data, _ = decoder.raw_decode(text)
+                                else:
+                                    # Log the raw text for debugging
+                                    logger.error(f"JSON parse error: {error_msg}")
+                                    logger.error(f"Raw text (first 500 chars): {text[:500]}")
+                                    raise
                             break
                 if enrichment_data:
                     break
