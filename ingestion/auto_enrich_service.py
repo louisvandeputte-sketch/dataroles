@@ -517,13 +517,15 @@ class AutoEnrichService:
         logger.info(f"🏢 Starting company enrichment batch at {start_time.isoformat()}")
         
         try:
-            # Get unenriched companies (includes retries)
+            # Get unenriched companies
+            # TEMPORARILY DISABLED RETRIES to stop infinite enrichment loop
+            # TODO: Re-enable retries once LLM output issues are resolved
             # Query limit is high (1000) to find all pending companies
             # But we only process 3 at a time (3 × 2min = 6min, safe for 10min interval)
             company_ids = await asyncio.to_thread(
                 get_unenriched_companies,
                 limit=1000,  # Query limit: check up to 1000 companies
-                include_retries=True
+                include_retries=False  # DISABLED: was causing infinite retry loops
             )
             
             # Process up to 3 companies per batch (safe for 10min interval)
