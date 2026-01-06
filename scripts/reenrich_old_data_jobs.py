@@ -105,13 +105,19 @@ class ReEnrichmentStats:
         logger.info("=" * 80)
 
 
-def get_old_data_jobs(cutoff_date: str = "2025-12-05", skip_errors: bool = False) -> List[Dict[str, Any]]:
+def get_old_data_jobs(
+    cutoff_date: str = "2025-12-05",
+    skip_errors: bool = False,
+    skip_enriched_after: str = None
+) -> List[Dict[str, Any]]:
     """
     Get all active Data jobs posted before the cutoff date.
     
     Args:
-        cutoff_date: ISO date string (YYYY-MM-DD)
+        cutoff_date: ISO date string (YYYY-MM-DD) - jobs posted before this date
         skip_errors: If True, skip jobs that already have enrichment errors
+        skip_enriched_after: ISO datetime string - skip jobs enriched after this time
+                            (prevents re-enriching jobs already processed in this run)
     
     Returns:
         List of job dicts with id, title, posted_date, enrichment status
@@ -165,12 +171,20 @@ def get_old_data_jobs(cutoff_date: str = "2025-12-05", skip_errors: bool = False
                 logger.debug(f"Skipping {job['title']} - has enrichment error")
                 continue
             
+            # Skip jobs that were enriched after the cutoff (already processed in this run)
+            if skip_enriched_after and enrich_status.get("completed"):
+                enriched_at = enrich_status.get("completed")
+                if enriched_at > skip_enriched_after:
+                    logger.debug(f"Skipping {job['title']} - already re-enriched after {skip_enriched_after}")
+                    continue
+            
             jobs.append({
                 "id": job_id,
                 "title": job["title"],
                 "posted_date": job["posted_date"],
                 "company_id": job["company_id"],
                 "enriched": bool(enrich_status.get("completed")),
+                "enriched_at": enrich_status.get("completed"),
                 "has_error": bool(enrich_status.get("error")),
                 "error": enrich_status.get("error")
             })
@@ -329,6 +343,13 @@ def main():
         default="2025-12-05",
         help="Cutoff date for jobs to re-enrich (default: 2025-12-05)"
     )
+    parser.add_argument(
+        "--skip-enriched-after",
+        type=str,
+        default=None,
+        help="Skip jobs enriched after this datetime (ISO format, e.g. 2026-01-06T18:00:00). "
+             "Use this to avoid re-enriching jobs already processed in a previous run."
+    )
     
     args = parser.parse_args()
     
@@ -362,10 +383,16 @@ def main():
     logger.info(f"Batch size: {args.batch_size}")
     logger.info(f"Delay: {args.delay}s")
     logger.info(f"Log file: {log_file}")
+    if args.skip_enriched_after:
+        logger.info(f"Skip enriched after: {args.skip_enriched_after}")
     logger.info("=" * 80)
     
     # Get jobs to process
-    jobs = get_old_data_jobs(cutoff_date=args.cutoff_date, skip_errors=args.skip_errors)
+    jobs = get_old_data_jobs(
+        cutoff_date=args.cutoff_date,
+        skip_errors=args.skip_errors,
+        skip_enriched_after=args.skip_enriched_after
+    )
     
     if not jobs:
         logger.warning("No jobs to process. Exiting.")
