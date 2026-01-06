@@ -88,7 +88,7 @@ def clean_aantal_werknemers(value: Optional[str]) -> Optional[str]:
     return value
 
 
-def enrich_company(company_id: str, company_name: str, company_url: Optional[str] = None) -> Dict[str, Any]:
+def enrich_company(company_id: str, company_name: str, company_url: Optional[str] = None, force: bool = False) -> Dict[str, Any]:
     """
     Enrich a single company using OpenAI LLM.
     
@@ -96,11 +96,30 @@ def enrich_company(company_id: str, company_name: str, company_url: Optional[str
         company_id: UUID of the company
         company_name: Name of the company
         company_url: Optional company website URL
+        force: If True, re-enrich even if already enriched
         
     Returns:
         Dictionary with success status and enrichment data or error
     """
     try:
+        # CRITICAL: Check if already enriched BEFORE making API call (prevents infinite re-enrichment)
+        if not force:
+            existing = db.client.table("company_master_data")\
+                .select("ai_enriched, ai_enriched_at")\
+                .eq("company_id", company_id)\
+                .maybe_single()\
+                .execute()
+            
+            if existing and existing.data and existing.data.get("ai_enriched") == True:
+                logger.info(f"⏭️  Skipping {company_name} - already enriched (use force=True to re-enrich)")
+                return {
+                    "success": True,
+                    "company_id": company_id,
+                    "company_name": company_name,
+                    "skipped": True,
+                    "message": "Already enriched"
+                }
+        
         logger.info(f"Starting enrichment for company: {company_name} (ID: {company_id})")
         
         # Prepare input for the LLM
@@ -375,8 +394,13 @@ def enrich_companies_batch(company_ids: list, max_companies: int = 50) -> Dict[s
             result = enrich_company(company_id, company_name, company_url)
             
             if result["success"]:
-                stats["successful"] += 1
-                logger.info(f"✅ [{i}/{len(company_ids)}] Enriched: {company_name}")
+                if result.get("skipped"):
+                    # Already enriched, don't count as successful enrichment
+                    stats["skipped"] = stats.get("skipped", 0) + 1
+                    logger.info(f"⏭️  [{i}/{len(company_ids)}] Skipped (already enriched): {company_name}")
+                else:
+                    stats["successful"] += 1
+                    logger.info(f"✅ [{i}/{len(company_ids)}] Enriched: {company_name}")
             else:
                 stats["failed"] += 1
                 logger.warning(f"❌ [{i}/{len(company_ids)}] Failed: {company_name} - {result.get('error', 'Unknown error')}")
@@ -387,7 +411,8 @@ def enrich_companies_batch(company_ids: list, max_companies: int = 50) -> Dict[s
                 })
             
             # Add delay between companies to avoid rate limiting (except for last company)
-            if i < len(company_ids):
+            # Skip delay for skipped companies (no API call was made)
+            if i < len(company_ids) and not result.get("skipped"):
                 logger.debug(f"Waiting 3s before next company to avoid rate limits...")
                 time.sleep(3)
                 
