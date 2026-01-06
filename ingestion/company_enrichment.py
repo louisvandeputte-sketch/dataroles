@@ -102,23 +102,45 @@ def enrich_company(company_id: str, company_name: str, company_url: Optional[str
         Dictionary with success status and enrichment data or error
     """
     try:
-        # CRITICAL: Check if already enriched BEFORE making API call (prevents infinite re-enrichment)
+        # CRITICAL: Check if already enriched OR has recent error BEFORE making API call
+        # This prevents infinite re-enrichment loops that waste money
         if not force:
             existing = db.client.table("company_master_data")\
-                .select("ai_enriched, ai_enriched_at")\
+                .select("ai_enriched, ai_enriched_at, ai_enrichment_error")\
                 .eq("company_id", company_id)\
                 .maybe_single()\
                 .execute()
             
-            if existing and existing.data and existing.data.get("ai_enriched") == True:
-                logger.info(f"⏭️  Skipping {company_name} - already enriched (use force=True to re-enrich)")
-                return {
-                    "success": True,
-                    "company_id": company_id,
-                    "company_name": company_name,
-                    "skipped": True,
-                    "message": "Already enriched"
-                }
+            if existing and existing.data:
+                # Already successfully enriched - skip
+                if existing.data.get("ai_enriched") == True:
+                    logger.info(f"⏭️  Skipping {company_name} - already enriched (use force=True to re-enrich)")
+                    return {
+                        "success": True,
+                        "company_id": company_id,
+                        "company_name": company_name,
+                        "skipped": True,
+                        "message": "Already enriched"
+                    }
+                
+                # Has recent error (within 24h) - skip to prevent infinite retry loop
+                if existing.data.get("ai_enrichment_error"):
+                    from dateutil import parser
+                    from datetime import timedelta, timezone
+                    enriched_at = existing.data.get("ai_enriched_at")
+                    if enriched_at:
+                        enriched_time = parser.parse(enriched_at)
+                        retry_cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
+                        if enriched_time > retry_cutoff:
+                            error_msg = existing.data.get("ai_enrichment_error", "")[:50]
+                            logger.info(f"⏭️  Skipping {company_name} - has recent error (<24h): {error_msg}...")
+                            return {
+                                "success": True,
+                                "company_id": company_id,
+                                "company_name": company_name,
+                                "skipped": True,
+                                "message": f"Has recent error: {error_msg}"
+                            }
         
         logger.info(f"Starting enrichment for company: {company_name} (ID: {company_id})")
         
