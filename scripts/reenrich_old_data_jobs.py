@@ -473,7 +473,124 @@ def main():
         logger.info(f"Error details saved to: {error_log_file}")
     
     logger.info(f"Complete log saved to: {log_file}")
+    
+    return all_stats, original_count if args.limit else len(jobs)
+
+
+def archive_script():
+    """
+    Archive this script by moving it to scripts/_archived/ folder.
+    Called when all jobs have been processed.
+    """
+    import shutil
+    
+    script_path = Path(__file__)
+    archive_dir = script_path.parent / "_archived"
+    archive_dir.mkdir(exist_ok=True)
+    
+    # Move script and related files
+    archived_script = archive_dir / script_path.name
+    shutil.move(str(script_path), str(archived_script))
+    
+    # Also move the README files
+    for readme in ["README_REENRICHMENT.md", "QUICK_START_REENRICHMENT.md"]:
+        readme_path = script_path.parent / readme
+        if readme_path.exists():
+            shutil.move(str(readme_path), str(archive_dir / readme))
+    
+    logger.info(f"✅ Script archived to: {archive_dir}")
+    logger.info("This script is no longer needed - all old Data jobs have been re-enriched.")
+
+
+def run_continuous():
+    """
+    Run the re-enrichment script continuously until all jobs are processed.
+    Automatically starts the next batch when the previous one finishes.
+    """
+    import sys as sys_module
+    
+    # Configure logger for continuous mode
+    logger.remove()
+    logger.add(
+        sys_module.stdout,
+        format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <level>{message}</level>",
+        level="INFO"
+    )
+    
+    log_file = f"reenrich_continuous_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.log"
+    logger.add(log_file, format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {message}", level="DEBUG")
+    logger.info(f"Log file: {log_file}")
+    
+    # Track the start time of the first run
+    first_run_start = datetime.utcnow().isoformat()
+    batch_number = 1
+    total_processed = 0
+    
+    logger.info("=" * 80)
+    logger.info("CONTINUOUS RE-ENRICHMENT MODE")
+    logger.info("=" * 80)
+    logger.info(f"Started at: {first_run_start}")
+    logger.info("Will automatically continue until all jobs are processed.")
+    logger.info("=" * 80)
+    
+    while True:
+        logger.info(f"\n🔄 Starting batch {batch_number}...")
+        
+        # Get remaining jobs (skip those already enriched after first run started)
+        jobs = get_old_data_jobs(
+            cutoff_date="2025-12-05",
+            skip_errors=False,
+            skip_enriched_after=first_run_start
+        )
+        
+        if not jobs:
+            logger.info("\n" + "=" * 80)
+            logger.info("🎉 ALL JOBS HAVE BEEN RE-ENRICHED!")
+            logger.info(f"Total batches: {batch_number - 1}")
+            logger.info(f"Total jobs processed: {total_processed}")
+            logger.info("=" * 80)
+            
+            # Archive the script
+            response = input("\nArchive this script? (yes/no): ")
+            if response.lower() in ["yes", "y"]:
+                archive_script()
+            else:
+                logger.info("Script not archived. You can manually archive it later.")
+            
+            break
+        
+        remaining = len(jobs)
+        batch_size = min(300, remaining)
+        
+        logger.info(f"Remaining jobs to process: {remaining}")
+        logger.info(f"Processing batch of {batch_size} jobs...")
+        
+        # Process this batch
+        batch_jobs = jobs[:batch_size]
+        stats = reenrich_jobs_batch(
+            batch_jobs,
+            force=True,  # Force re-enrich old jobs
+            delay=1.5,
+            dry_run=False
+        )
+        
+        total_processed += stats.successful
+        batch_number += 1
+        
+        logger.info(f"\nBatch complete: {stats.successful} successful, {stats.failed} failed")
+        logger.info(f"Total processed so far: {total_processed}")
+        
+        # Small pause between batches
+        if remaining > batch_size:
+            logger.info("Pausing 10s before next batch...")
+            time.sleep(10)
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    
+    # Check if running in continuous mode
+    if len(sys.argv) > 1 and sys.argv[1] == "--continuous":
+        run_continuous()
+    else:
+        main()
