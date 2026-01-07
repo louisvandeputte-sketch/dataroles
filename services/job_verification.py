@@ -545,7 +545,7 @@ class JobVerificationService:
             for job_info in inactive_jobs:
                 # Get full job details
                 job_result = db.client.table("job_postings")\
-                    .select("id, title, url, source, companies(name)")\
+                    .select("id, title, job_url, source, companies(name)")\
                     .eq("id", job_info["job_id"])\
                     .single()\
                     .execute()
@@ -558,7 +558,7 @@ class JobVerificationService:
                         "job_title": job.get("title"),
                         "company_name": job.get("companies", {}).get("name") if job.get("companies") else None,
                         "source": job.get("source"),
-                        "url": job.get("url"),
+                        "url": job.get("job_url"),
                         "reason": job_info["reason"]
                     }).execute()
         
