@@ -319,7 +319,8 @@ def save_enrichment_to_db(company_id: str, enrichment_data: Dict[str, Any]) -> b
             "sector_nl": enrichment_data.get("sector_nl"),
             "sector_fr": enrichment_data.get("sector_fr"),
             # Hiring model fields (prompt v15+)
-            "hiring_model": enrichment_data.get("hiring_model"),
+            # Capitalize hiring_model to match DB constraint (Recruitment, Direct, Unknown)
+            "hiring_model": enrichment_data.get("hiring_model", "").capitalize() if enrichment_data.get("hiring_model") else None,
             "hiring_model_en": enrichment_data.get("hiring_model_en"),
             "hiring_model_nl": enrichment_data.get("hiring_model_nl"),
             "hiring_model_fr": enrichment_data.get("hiring_model_fr"),
