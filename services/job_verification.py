@@ -467,7 +467,7 @@ class JobVerificationService:
         """
         # Get job from database
         result = db.client.table("job_postings")\
-            .select("id, linkedin_job_id, url, title")\
+            .select("id, linkedin_job_id, job_url, apply_url, title")\
             .eq("id", str(job_id))\
             .single()\
             .execute()
@@ -476,13 +476,14 @@ class JobVerificationService:
             return False, "Job not found"
         
         job = result.data
+        job_url = job.get("job_url") or job.get("apply_url")
         
-        if not job.get("url"):
+        if not job_url:
             return False, "Job has no URL"
         
         try:
             # Verify via API
-            results = await self._fetch_jobs_by_url([job["url"]])
+            results = await self._fetch_jobs_by_url([job_url])
             
             if results and len(results) > 0:
                 api_job = results[0]
