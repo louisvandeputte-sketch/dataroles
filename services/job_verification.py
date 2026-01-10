@@ -171,11 +171,23 @@ class JobVerificationService:
             List of job dictionaries with id, source_job_id, url, title, source
         """
         # Get job IDs that have this source via job_sources bridge table
-        source_rows = db.client.table("job_sources")\
-            .select("job_posting_id, source_job_id")\
-            .eq("source", source)\
-            .execute()
-        source_rows = source_rows.data or []
+        # Fetch all rows by paginating (Supabase default limit is 1000)
+        source_rows = []
+        page_size = 1000
+        offset = 0
+        while True:
+            page = db.client.table("job_sources")\
+                .select("job_posting_id, source_job_id")\
+                .eq("source", source)\
+                .range(offset, offset + page_size - 1)\
+                .execute()
+            if not page.data:
+                break
+            source_rows.extend(page.data)
+            if len(page.data) < page_size:
+                break
+            offset += page_size
+        
         if not source_rows:
             return []
         
